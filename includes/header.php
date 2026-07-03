@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/seo.php';
 $siteName = getSetting('site_name', 'Kizza Tours & Safaris');
 $siteEmail = getSetting('site_email', SITE_EMAIL);

@@ -22,7 +22,7 @@ define('DB_CHARSET', 'utf8mb4');
 // Site Configuration
 define('SITE_NAME', 'Kizza Tours & Safaris');
 define('SITE_TAGLINE', 'Discover East Africa Beyond Expectations');
-define('SITE_EMAIL', 'info@kizzatours.com');
+define('SITE_EMAIL', 'info@kizzatoursandsafaris.com');
 define('SITE_PHONE', '+255 734 335 668');
 define('SITE_WHATSAPP', '+255734335668');
 define('SITE_ADDRESS', 'Arusha, Tanzania');
@@ -34,7 +34,7 @@ $siteHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $siteDocRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? getenv('DOCUMENT_ROOT') ?: ''), '/');
 $siteBasePath = rtrim(str_replace('\\', '/', dirname(__DIR__)), '/');
 $siteScriptDir = !empty($siteDocRoot) ? str_replace($siteDocRoot, '', $siteBasePath) : rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-$productionDomains = ['kizzatours.com', 'www.kizzatours.com'];
+$productionDomains = ['kizzatoursandsafaris.com', 'www.kizzatoursandsafaris.com'];
 if (in_array($siteHost, $productionDomains)) {
     define('SITE_URL', $siteProtocol . '://' . $siteHost);
 } else {
