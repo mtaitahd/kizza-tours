@@ -60,7 +60,7 @@ if ($q !== '') {
     <title>Search - Kizza Tours Admin</title>
     <link rel="icon" href="../assets/images/log.png" type="image/png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="../templates/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../templates/assets/css/ruang-admin.min.css" rel="stylesheet">
     <link href="css/admin.css" rel="stylesheet">
     <style>
@@ -286,9 +286,9 @@ if ($q !== '') {
         </div>
     </div>
 
-    <script src="../templates/assets/vendor/jquery/jquery.min.js"></script>
-    <script src="../templates/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="../templates/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
 </body>
 </html>
