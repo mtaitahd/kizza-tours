@@ -1,9 +1,5 @@
 RewriteEngine On
 
-# Redirect index.php to /admin/
-RewriteCond %{THE_REQUEST} /admin/index\.php [NC]
-RewriteRule ^index\.php$ /kizza-tours/admin/ [R=301,L]
-
 # Remove .php extension for admin URLs
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
