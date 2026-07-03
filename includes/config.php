@@ -12,54 +12,77 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// ===========================================
+// ENVIRONMENT (.env) LOADER
+// ===========================================
+$envFile = dirname(__DIR__) . '/.env';
+if (file_exists($envFile)) {
+    $envLines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($envLines as $envLine) {
+        $envLine = trim($envLine);
+        if ($envLine === '' || strpos($envLine, '#') === 0) continue;
+        if (strpos($envLine, '=') !== false) {
+            list($envKey, $envValue) = explode('=', $envLine, 2);
+            $_ENV[trim($envKey)] = trim(trim($envValue), '"\'');
+            putenv(trim($envKey) . '=' . trim(trim($envValue), '"\''));
+        }
+    }
+}
+
+function env($key, $default = null) {
+    $value = $_ENV[$key] ?? getenv($key);
+    return ($value === false || $value === null) ? $default : $value;
+}
+
 // Database Configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'kizza_tours');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST', env('DB_HOST', 'localhost'));
+define('DB_NAME', env('DB_NAME', 'kizza_tours'));
+define('DB_USER', env('DB_USER', 'root'));
+define('DB_PASS', env('DB_PASS', ''));
+define('DB_CHARSET', env('DB_CHARSET', 'utf8mb4'));
 
 // Site Configuration
-define('SITE_NAME', 'Kizza Tours & Safaris');
-define('SITE_TAGLINE', 'Discover East Africa Beyond Expectations');
-define('SITE_EMAIL', 'info@kizzatoursandsafaris.com');
-define('SITE_PHONE', '+255 734 335 668');
-define('SITE_WHATSAPP', '+255734335668');
-define('SITE_ADDRESS', 'Arusha, Tanzania');
+define('SITE_NAME', env('SITE_NAME', 'Kizza Tours & Safaris'));
+define('SITE_TAGLINE', env('SITE_TAGLINE', 'Discover East Africa Beyond Expectations'));
+define('SITE_EMAIL', env('SITE_EMAIL', 'info@kizzatoursandsafaris.com'));
+define('SITE_PHONE', env('SITE_PHONE', '+255 734 335 668'));
+define('SITE_WHATSAPP', env('SITE_WHATSAPP', '+255734335668'));
+define('SITE_ADDRESS', env('SITE_ADDRESS', 'Arusha, Tanzania'));
 
 // Auto-detect SITE_URL: production domains use root path, dev uses subdirectory
 $siteProtocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $siteHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
-// Derive script dir relative to document root (works regardless of entry point)
 $siteDocRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? getenv('DOCUMENT_ROOT') ?: ''), '/');
 $siteBasePath = rtrim(str_replace('\\', '/', dirname(__DIR__)), '/');
 $siteScriptDir = !empty($siteDocRoot) ? str_replace($siteDocRoot, '', $siteBasePath) : rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-$productionDomains = ['kizzatoursandsafaris.com', 'www.kizzatoursandsafaris.com'];
+$productionDomainsEnv = env('PRODUCTION_DOMAINS', 'kizzatoursandsafaris.com,www.kizzatoursandsafaris.com');
+$productionDomains = array_map('trim', explode(',', $productionDomainsEnv));
 if (in_array($siteHost, $productionDomains)) {
     define('SITE_URL', $siteProtocol . '://' . $siteHost);
 } else {
     define('SITE_URL', $siteProtocol . '://' . $siteHost . $siteScriptDir);
 }
-define('SITE_CURRENCY', 'USD');
+define('SITE_CURRENCY', env('SITE_CURRENCY', 'USD'));
 
 // Paths
 define('BASE_PATH', dirname(__DIR__) . '/');
-define('ASSETS_PATH', 'assets/');
-define('UPLOADS_PATH', 'uploads/');
-define('ADMIN_PATH', 'admin/');
+define('ASSETS_PATH', env('ASSETS_PATH', 'assets/'));
+define('UPLOADS_PATH', env('UPLOADS_PATH', 'uploads/'));
+define('ADMIN_PATH', env('ADMIN_PATH', 'admin/'));
 
 // Timezone
-date_default_timezone_set('Africa/Dar_es_Salaam');
+date_default_timezone_set(env('TIMEZONE', 'Africa/Dar_es_Salaam'));
 
 // Pagination
-define('ITEMS_PER_PAGE', 12);
+define('ITEMS_PER_PAGE', (int)env('ITEMS_PER_PAGE', 12));
 
 // Booking Reference Prefix
-define('BOOKING_PREFIX', 'KIZ');
+define('BOOKING_PREFIX', env('BOOKING_PREFIX', 'KIZ'));
 
 // Upload Limits
-define('MAX_FILE_SIZE', 20 * 1024 * 1024); // 20MB
-define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp', 'tiff', 'tif', 'heic', 'heif', 'mp4', 'webm', 'ogg']);
+define('MAX_FILE_SIZE', (int)env('MAX_FILE_SIZE', 20971520));
+$allowedExts = env('ALLOWED_EXTENSIONS', 'jpg,jpeg,png,webp,gif,svg,avif,bmp,tiff,tif,heic,heif,mp4,webm,ogg');
+define('ALLOWED_EXTENSIONS', array_map('trim', explode(',', $allowedExts)));
 
 // ===========================================
 // DYNAMIC SETTINGS HELPER
