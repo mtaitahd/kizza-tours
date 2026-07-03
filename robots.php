@@ -1,3 +1,7 @@
+<?php
+header('Content-Type: text/plain; charset=utf-8');
+require_once __DIR__ . '/includes/config.php';
+?>
 # KIZZA TOURS & SAFARIS - Robots.txt
 # Premium East Africa Tourism Platform
 
@@ -14,4 +18,4 @@ Disallow: /vendor/
 Disallow: /uploads/private/
 
 # Sitemap
-Sitemap: http://localhost/kizza-tours/sitemap.xml
+Sitemap: <?php echo SITE_URL; ?>/sitemap.xml

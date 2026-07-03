@@ -8,6 +8,9 @@ RewriteBase /kizza-tours/
 # Sitemap: route .xml request to PHP executor
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
+# Robots.txt: route to dynamic PHP generator
+RewriteRule ^robots\.txt$ robots.php [L]
+
 # Redirect .php URLs to clean SEO URLs (301) - public pages only
 RewriteCond %{THE_REQUEST} \s(/[^/]+/)?(about-us|contact-us|book-tour|tanzania-safari|kenya-tanzania-safari|uganda-tours|zanzibar-holidays|burundi-tours|rwanda-gorilla-trekking|mount-kenya-climbing)\.php[\s?] [NC]
 RewriteCond %{REQUEST_URI} !^/admin/ [NC]
