@@ -3,7 +3,7 @@
 
 # Enable Rewrite Engine
 RewriteEngine On
-RewriteBase /kizza-tours/
+RewriteBase /
 
 # Sitemap: route .xml request to PHP executor
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
