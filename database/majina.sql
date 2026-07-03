@@ -1,0 +1,1 @@
+insert into students(first_name,last_name,DoB) values("Johnson","Mtaita","2003.3.6"),("John","Hassan","2002.4.5");

@@ -1,0 +1,17 @@
+# KIZZA TOURS & SAFARIS - Robots.txt
+# Premium East Africa Tourism Platform
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /includes/
+Disallow: /templates/
+Disallow: /database/
+Disallow: /vendor/
+Disallow: /uploads/private/
+
+# Sitemap
+Sitemap: http://localhost/kizza-tours/sitemap.xml

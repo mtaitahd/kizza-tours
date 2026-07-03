@@ -1,0 +1,28 @@
+# Environment
+.env
+.env.*
+
+# Dependencies
+vendor/
+node_modules/
+
+# Logs
+*.log
+
+# Cache
+cache/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# XAMPP
+xampp/
+
+# Composer
+composer.phar

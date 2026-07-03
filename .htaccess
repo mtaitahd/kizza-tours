@@ -1,0 +1,109 @@
+# KIZZA TOURS & SAFARIS - Apache Configuration
+# Premium East Africa Tourism Platform
+
+# Enable Rewrite Engine
+RewriteEngine On
+RewriteBase /kizza-tours/
+
+# Sitemap: route .xml request to PHP executor
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# Redirect .php URLs to clean SEO URLs (301) - public pages only
+RewriteCond %{THE_REQUEST} \s(/[^/]+/)?(about-us|contact-us|book-tour|tanzania-safari|kenya-tanzania-safari|uganda-tours|zanzibar-holidays|burundi-tours|rwanda-gorilla-trekking|mount-kenya-climbing)\.php[\s?] [NC]
+RewriteCond %{REQUEST_URI} !^/admin/ [NC]
+RewriteRule ^ %1%2 [R=301,L]
+
+# Redirect index.php to directory root
+RewriteCond %{ENV:REDIRECT_STATUS} ^$
+RewriteCond %{THE_REQUEST} \s(.*/)index\.php[\s?] [NC]
+RewriteRule ^ %1 [R=301,L]
+
+# Redirect old duplicate slugs to canonical URLs
+RewriteRule ^mount-kenya/?$ mount-kenya-climbing [R=301,L]
+RewriteRule ^rwanda-gorilla/?$ rwanda-gorilla-trekking [R=301,L]
+
+# SEO Friendly URLs - Tour & Destination Pages
+RewriteRule ^safari/([a-z0-9-]+)/?$ tour-details.php?slug=$1 [L,QSA]
+RewriteRule ^destination/([a-z0-9-]+)/?$ destination.php?slug=$1 [L,QSA]
+
+# SEO Standalone Pages (must come before .php extension removal)
+RewriteRule ^about-us/?$ about-us.php [L,QSA]
+RewriteRule ^contact-us/?$ contact-us.php [L,QSA]
+RewriteRule ^book-tour/?$ book-tour.php [L,QSA]
+RewriteRule ^tanzania-safari/?$ tanzania-safari.php [L,QSA]
+RewriteRule ^kenya-tanzania-safari/?$ kenya-tanzania-safari.php [L,QSA]
+RewriteRule ^uganda-tours/?$ uganda-tours.php [L,QSA]
+RewriteRule ^zanzibar-holidays/?$ zanzibar-holidays.php [L,QSA]
+RewriteRule ^burundi-tours/?$ burundi-tours.php [L,QSA]
+RewriteRule ^rwanda-gorilla-trekking/?$ rwanda-gorilla.php [L,QSA]
+RewriteRule ^mount-kenya-climbing/?$ mount-kenya.php [L,QSA]
+
+# Remove .php extension
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^([^/]+)/?$ $1.php [L]
+
+# Block access to sensitive files
+<FilesMatch "\.(sql|log|env|git|md)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block directory listing
+Options -Indexes
+
+# Cache Control
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType video/mp4 "access plus 1 year"
+    ExpiresByType video/webm "access plus 1 year"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|gif|png|webp|avif|ico|svg|woff|woff2|ttf|mp4|webm|css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "public, max-age=0, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# Compress files
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml font/woff font/woff2
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Custom error pages
+ErrorDocument 500 /500.php
+
+# 404 catch-all (rewrite-based, more reliable than ErrorDocument)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !/404\.php
+RewriteRule . 404.php [L]
+
+# Set default charset
+AddDefaultCharset UTF-8
