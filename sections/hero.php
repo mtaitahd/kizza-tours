@@ -1,11 +1,7 @@
 <?php
-$heroVideo = getMediaUrl('hero_video', 'videos/hero-bg.mp4');
 $heroPoster = getMediaUrl('hero_poster', 'images/hero-poster.jpg');
 ?>
-<section class="hero-section" id="home">
-    <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="<?php echo $heroPoster; ?>">
-        <source src="<?php echo $heroVideo; ?>" type="video/mp4">
-    </video>
+<section class="hero-section" id="home" style="background: url('<?php echo $heroPoster; ?>') center center / cover no-repeat;">
     <div class="hero-overlay"></div>
     <div class="particles-container" id="particlesContainer"></div>
     <div class="hero-content">

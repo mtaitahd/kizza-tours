@@ -5,7 +5,7 @@ $siteName = getSetting('site_name', 'Kizza Tours & Safaris');
 $siteEmail = getSetting('site_email', SITE_EMAIL);
 $sitePhone = getSetting('site_phone', SITE_PHONE);
 $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
-$ogImage = getMediaUrl('og_image', 'images/log.png');
+$ogImage = getMediaUrl('og_image', 'https://kizzatoursandsafaris.com/assets/images/log.png');
 $favicon = getMediaUrl('site_favicon', 'images/log.png');
 
 if (!isset($pageSeo) || !is_array($pageSeo)) {
@@ -117,8 +117,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     </script>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="<?php echo $favicon; ?>">
-    <link rel="apple-touch-icon" href="<?php echo $favicon; ?>">
+    <link rel="icon" type="image/png" href="https://kizzatoursandsafaris.com/assets/images/log.png">
+    <link rel="apple-touch-icon" href="https://kizzatoursandsafaris.com/assets/images/log.png">
 
     <!-- Preconnect (limited to 4 most critical) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -268,7 +268,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
     <div class="container">
         <a class="navbar-brand" href="index.php">
-            <img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris">
+            <img src="https://kizzatoursandsafaris.com/assets/images/log.png" alt="Kizza Tours &amp; Safaris">
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

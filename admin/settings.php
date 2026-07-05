@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // File uploads
     $fileFields = [
-        'hero_video' => ['dir' => 'uploads/', 'prefix' => 'hero_video'],
         'hero_poster' => ['dir' => 'uploads/', 'prefix' => 'hero_poster'],
         'about_image' => ['dir' => 'uploads/', 'prefix' => 'about'],
         'cta_background' => ['dir' => 'uploads/', 'prefix' => 'cta'],
@@ -73,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Remove file actions
-    $removeKeys = ['hero_video', 'hero_poster', 'about_image', 'cta_background', 'og_image', 'site_favicon',
+    $removeKeys = ['hero_poster', 'about_image', 'cta_background', 'og_image', 'site_favicon',
         'tanzania_safari_image', 'kenya_tanzania_image', 'rwanda_gorilla_image', 'uganda_tours_image',
         'zanzibar_holidays_image', 'burundi_tours_image', 'mount_kenya_image',
         'maasai_mara_image', 'uganda_gorilla_adventure_image', 'rwanda_luxury_gorilla_image', 'amboseli_kilimanjaro_image'
