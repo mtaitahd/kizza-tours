@@ -5,7 +5,7 @@ $siteName = getSetting('site_name', 'Kizza Tours & Safaris');
 $siteEmail = getSetting('site_email', SITE_EMAIL);
 $sitePhone = getSetting('site_phone', SITE_PHONE);
 $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
-$ogImage = getMediaUrl('og_image', 'images/og-image.jpg');
+$ogImage = getMediaUrl('og_image', 'images/log.png');
 $favicon = getMediaUrl('site_favicon', 'images/log.png');
 
 if (!isset($pageSeo) || !is_array($pageSeo)) {
