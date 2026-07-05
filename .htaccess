@@ -99,6 +99,12 @@ Options -Indexes
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
+# Dynamic Pages from database (before 404 catch-all)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteRule ^([a-z0-9-]+)/?$ page.php?slug=$1 [L,QSA]
+
 # Custom error pages
 ErrorDocument 500 /500.php
 
@@ -107,6 +113,7 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !/404\.php
 RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{REQUEST_URI} !page\.php
 RewriteRule . 404.php [L]
 
 # Set default charset

@@ -52,6 +52,15 @@ try {
             'changefreq' => 'monthly',
         ];
     }
+    $dbPages = $db->fetchAll("SELECT slug, updated_at FROM pages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''");
+    foreach ($dbPages as $p) {
+        $pages[] = [
+            'loc' => $url . '/' . urlencode($p['slug']),
+            'lastmod' => !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : $today,
+            'priority' => '0.6',
+            'changefreq' => 'monthly',
+        ];
+    }
 } catch (Exception $e) {
     // DB not available, sitemap with static pages only
 }
