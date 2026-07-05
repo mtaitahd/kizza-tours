@@ -120,6 +120,14 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                 </a>
             </li>
             <hr class="sidebar-divider">
+            <div class="sidebar-heading">Tools</div>
+            <li class="nav-item">
+                <a class="nav-link" href="compress-images">
+                    <i class="fas fa-fw fa-compress-alt"></i>
+                    <span>Compress Images</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider">
             <div class="sidebar-heading">Account</div>
             <li class="nav-item">
                 <a class="nav-link" href="profile">
