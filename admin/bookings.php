@@ -328,7 +328,7 @@ if ($quotesTablesOk) {
         .item-row:hover { background: #f0f4ff; }
         .currency-symbol { font-weight: 600; }
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        #dataTable { table-layout: fixed; width: 100%; }
+        .table-responsive { overflow-x: auto; }
         #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
         #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
         #dataTable td.actions-cell .btn { white-space: nowrap; }
@@ -474,21 +474,9 @@ if ($quotesTablesOk) {
                                                 <?php endif; ?>
                                             </td>
                                             <td class="actions-cell">
-                                                <div class="d-flex">
-                                                    <button class="btn btn-sm btn-outline-secondary mr-1" data-toggle="modal" data-target="#viewModal<?php echo $b['id']; ?>">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <form method="POST" style="display:inline;">
-                                                        <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
-                                                        <input type="hidden" name="action" value="update_status">
-                                                        <select name="status" class="form-control form-control-sm" style="width:auto;display:inline-block;" onchange="this.form.submit()">
-                                                            <option value="pending" <?php echo $b['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                                            <option value="confirmed" <?php echo $b['status'] === 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
-                                                            <option value="completed" <?php echo $b['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                                                            <option value="cancelled" <?php echo $b['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
-                                                        </select>
-                                                    </form>
-                                                </div>
+                                                <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#viewModal<?php echo $b['id']; ?>">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
