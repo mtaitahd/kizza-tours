@@ -610,7 +610,8 @@ if ($quotesTablesOk) {
                                                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
                                                                                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                                                                                 </form>
-                                                                            <?php elseif ($quoteData['status'] === 'confirmed'): ?>
+                                                                            <?php elseif ($quoteData['status'] === 'confirmed' || $quoteData['status'] === 'sent'): ?>
+                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $item['_source_id']; ?>, <?php echo $quoteData['id']; ?>, '<?php echo $item['_type']; ?>')"><i class="fas fa-edit"></i> Edit</button>
                                                                                 <?php if (empty($quoteData['pdf_path'])): ?>
                                                                                     <form method="POST" style="display:inline;">
                                                                                         <input type="hidden" name="action" value="generate_pdf">
@@ -618,21 +619,18 @@ if ($quotesTablesOk) {
                                                                                         <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
                                                                                     </form>
                                                                                 <?php else: ?>
+                                                                                    <form method="POST" style="display:inline;">
+                                                                                        <input type="hidden" name="action" value="generate_pdf">
+                                                                                        <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
+                                                                                    </form>
                                                                                     <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
                                                                                     <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
-                                                                                    <form method="POST" style="display:inline;">
-                                                                                        <input type="hidden" name="action" value="send_quote_email">
-                                                                                        <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> Send via Email</button>
-                                                                                    </form>
                                                                                 <?php endif; ?>
-                                                                            <?php elseif ($quoteData['status'] === 'sent'): ?>
-                                                                                <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
-                                                                                <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
                                                                                 <form method="POST" style="display:inline;">
                                                                                     <input type="hidden" name="action" value="send_quote_email">
                                                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> Resend Email</button>
+                                                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> <?php echo $quoteData['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
                                                                                 </form>
                                                                             <?php endif; ?>
                                                                         </div>
