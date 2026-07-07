@@ -4,19 +4,39 @@ require_once '../includes/db.php';
 require_once '../includes/mail.php';
 session_start();
 
-if (!isset($_SESSION['admin_id'])) {
-    header('Location: ./');
-    exit;
+    if (!isset($_SESSION['admin_id'])) {
+        header('Location: ./');
+        exit;
+    }
+
+    $db = db();
+
+    if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
+        $row = $db->fetchOne("SELECT profile_image FROM admin_users WHERE id = ?", [$_SESSION['admin_id']]);
+        $_SESSION['admin_image'] = $row['profile_image'] ?? null;
+    }
+
+    require_once '../includes/pdf_quote.php';
+
+function ensureQuoteTables() {
+    try {
+        $db = db();
+        $db->fetchOne("SELECT 1 FROM quotes LIMIT 1");
+        return true;
+    } catch (\Throwable $e) {
+        try {
+            $schema = file_get_contents(__DIR__ . '/../database/quotes.sql');
+            $db->query("DROP TABLE IF EXISTS quote_items");
+            $db->query("DROP TABLE IF EXISTS quotes");
+            $db->getConnection()->exec($schema);
+            return true;
+        } catch (\Throwable $e2) {
+            error_log("ensureQuoteTables failed: " . $e2->getMessage());
+            return false;
+        }
+    }
 }
-
-$db = db();
-
-if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
-    $row = $db->fetchOne("SELECT profile_image FROM admin_users WHERE id = ?", [$_SESSION['admin_id']]);
-    $_SESSION['admin_image'] = $row['profile_image'] ?? null;
-}
-
-require_once '../includes/pdf_quote.php';
+$quotesTablesOk = ensureQuoteTables();
 
 function generateQuoteNumber($db) {
     $prefix = 'QTE-' . date('Y') . '-';
@@ -168,12 +188,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $inquiries = $db->fetchAll("SELECT * FROM inquiries ORDER BY created_at DESC");
 
 $quotesByInquiry = [];
-foreach ($inquiries as $inq) {
-    $q = $db->fetchOne("SELECT * FROM quotes WHERE inquiry_id = ? ORDER BY id DESC LIMIT 1", [$inq['id']]);
-    if ($q) {
-        $q['items'] = $db->fetchAll("SELECT * FROM quote_items WHERE quote_id = ? ORDER BY sort_order ASC", [$q['id']]);
+if ($quotesTablesOk) {
+    foreach ($inquiries as $inq) {
+        try {
+            $q = $db->fetchOne("SELECT * FROM quotes WHERE inquiry_id = ? ORDER BY id DESC LIMIT 1", [$inq['id']]);
+            if ($q) {
+                $q['items'] = $db->fetchAll("SELECT * FROM quote_items WHERE quote_id = ? ORDER BY sort_order ASC", [$q['id']]);
+            }
+            $quotesByInquiry[$inq['id']] = $q;
+        } catch (\Throwable $e) {
+            $quotesByInquiry[$inq['id']] = null;
+        }
     }
-    $quotesByInquiry[$inq['id']] = $q;
 }
 ?>
 <!DOCTYPE html>

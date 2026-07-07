@@ -30,6 +30,9 @@ try {
     $dompdfAvailable = false;
 }
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
 function generateQuotePdf($quoteId) {
     global $dompdfAvailable, $dompdfError;
     if (!$dompdfAvailable) {
