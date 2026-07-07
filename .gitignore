@@ -24,3 +24,6 @@ xampp/
 
 # Composer
 composer.phar
+
+# Generated files
+sitemap.xml

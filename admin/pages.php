@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $status, $sort_order]
             );
+            seoGenerateSitemap();
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully'];
         } else {
             if ($hasNewImage) {
@@ -59,13 +60,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $sort_order, $pageId]
                 );
             }
+            seoGenerateSitemap();
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page updated successfully'];
         }
+    } elseif ($action === 'generate_sitemap') {
+        $ok = seoGenerateSitemap();
+        $_SESSION['flash'] = ['type' => $ok ? 'success' : 'danger', 'message' => $ok ? 'Sitemap generated successfully' : 'Sitemap generation failed'];
     } elseif ($action === 'delete') {
         $pageId = intval($_POST['page_id'] ?? 0);
         $page = $db->fetchOne("SELECT image FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['image']) deleteFile($page['image']);
         $db->query("DELETE FROM pages WHERE id = ?", [$pageId]);
+        seoGenerateSitemap();
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page deleted successfully'];
     } elseif ($_POST['action'] === 'remove_image') {
         $pageId = intval($_POST['page_id'] ?? 0);
@@ -155,7 +161,13 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
             <div class="container-fluid" id="container-wrapper">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-file-alt mr-2"></i>Pages</h1>
-                    <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#pageModal" onclick="openAdd()"><i class="fas fa-plus mr-1"></i> Add Page</button>
+                    <div>
+                        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#pageModal" onclick="openAdd()"><i class="fas fa-plus mr-1"></i> Add Page</button>
+                        <form method="POST" action="" class="d-inline">
+                            <input type="hidden" name="action" value="generate_sitemap">
+                            <button type="submit" class="btn btn-primary btn-sm ml-1"><i class="fas fa-sitemap mr-1"></i> Generate Sitemap</button>
+                        </form>
+                    </div>
                 </div>
 
                 <?php if ($flash): ?>

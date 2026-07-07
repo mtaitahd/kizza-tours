@@ -17,9 +17,13 @@ if (!$page) {
     exit;
 }
 
-$page_title = $page['meta_title'] ?: $page['title'] . ' - Kizza Tours & Safaris';
-$page_desc = $page['meta_description'] ?: 'Learn more about ' . $page['title'] . ' with Kizza Tours & Safaris.';
-$page_keywords = $page['meta_keywords'] ?: '';
+$pageSeo = seoPageMeta('home');
+$pageSeo['title'] = htmlspecialchars($page['meta_title'] ?: $page['title'] . ' - Kizza Tours & Safaris');
+$pageSeo['description'] = htmlspecialchars(substr($page['meta_description'] ?: 'Learn more about ' . $page['title'] . ' with Kizza Tours & Safaris.', 0, 160));
+$pageSeo['canonical'] = SITE_URL . '/' . urlencode($page['slug']);
+$pageSeo['ogTitle'] = htmlspecialchars($page['meta_title'] ?: $page['title'] . ' - Kizza Tours');
+$pageSeo['ogDesc'] = htmlspecialchars(substr($page['meta_description'] ?: 'Learn more about ' . $page['title'] . ' with Kizza Tours & Safaris.', 0, 200));
+$pageSeo['h1'] = htmlspecialchars($page['title']);
 $og_image = $page['image'] ? SITE_URL . '/' . $page['image'] : '';
 
 require_once 'includes/header.php';
