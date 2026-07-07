@@ -499,7 +499,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 .destination-card {
     position: relative;
     height: 350px;
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     overflow: hidden;
     cursor: pointer;
     transition: var(--transition);
@@ -600,7 +600,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 /*===== STORYTELLING CARDS =====*/
 .story-card {
     background: var(--white);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     padding: 2.5rem;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
@@ -725,7 +725,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 /*===== VALUES SECTION =====*/
 .value-card {
     background: var(--white);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     padding: 2.5rem;
     text-align: center;
     box-shadow: var(--shadow-sm);
@@ -877,7 +877,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 /*===== PACKAGE CARDS =====*/
 .package-card {
     background: var(--white);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
@@ -1032,7 +1032,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 
 .pkg-modal {
     background: var(--white);
-    border-radius: 20px;
+    border-radius: 0;
     width: 100%;
     max-width: 900px;
     max-height: 90vh;
@@ -1083,7 +1083,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     position: relative;
     background: var(--off-white);
     overflow: hidden;
-    border-radius: 20px 0 0 20px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1312,7 +1312,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: var(--radius-xl);
+    border-radius: 0;
     padding: 3rem;
 }
 
@@ -1371,7 +1371,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     background: rgba(255,255,255,0.06);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: var(--radius-xl);
+    border-radius: 0;
     padding: 3.5rem 2.5rem;
     position: relative;
     overflow: hidden;
@@ -1473,7 +1473,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     background: linear-gradient(145deg, rgba(10,37,64,0.98), rgba(13,46,74,0.98));
     backdrop-filter: blur(30px);
     border: 1px solid rgba(212,175,55,0.2);
-    border-radius: 20px;
+    border-radius: 0;
     width: 100%;
     max-width: 780px;
     max-height: 90vh;
@@ -1641,7 +1641,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 
 .gallery-item {
     position: relative;
-    border-radius: var(--radius-md);
+    border-radius: 0;
     overflow: hidden;
     cursor: pointer;
     height: 300px;
@@ -1745,7 +1745,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 /*===== TESTIMONIALS =====*/
 .testimonial-card {
     background: var(--white);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     padding: 2.5rem;
     box-shadow: var(--shadow-sm);
     text-align: center;
@@ -2140,7 +2140,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     .navbar-collapse {
         background: rgba(10, 37, 64, 0.98);
         padding: 1rem;
-        border-radius: var(--radius-md);
+        border-radius: 0;
         margin-top: 0.5rem;
     }
 }
@@ -2175,7 +2175,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     }
     .booking-modal {
         max-height: 85vh;
-        border-radius: 16px;
+        border-radius: 0;
     }
     .booking-modal-header {
         padding: 1.5rem 1.5rem 0;
@@ -2197,7 +2197,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     }
     .pkg-modal-gallery {
         min-height: 240px;
-        border-radius: 20px 20px 0 0;
+        border-radius: 0;
     }
     .pkg-modal-info {
         padding: 1.5rem;
