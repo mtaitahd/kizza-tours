@@ -1,9 +1,15 @@
 {
     "require": {
-        "phpmailer/phpmailer": "^6.9"
+        "phpmailer/phpmailer": "^6.9",
+        "dompdf/dompdf": "^3.0"
     },
     "config": {
         "disable-tls": true,
         "secure-http": false
-    }
+    },
+    "repositories": [{
+        "name": "packagist",
+        "type": "composer",
+        "url": "http://repo.packagist.org"
+    }]
 }
