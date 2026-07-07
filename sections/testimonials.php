@@ -19,7 +19,7 @@ if (empty($testimonials)) {
         <div class="swiper testimonialSwiper" data-aos="fade-up">
             <div class="swiper-wrapper">
                 <?php foreach ($testimonials as $t): 
-                    $photo = !empty($t['customer_photo']) && file_exists(BASE_PATH . $t['customer_photo']) ? SITE_URL . '/' . $t['customer_photo'] : 'assets/images/placeholder.svg');
+                    $photo = !empty($t['customer_photo']) && file_exists(BASE_PATH . $t['customer_photo']) ? SITE_URL . '/' . $t['customer_photo'] : 'assets/images/placeholder.svg';
                     $title = htmlspecialchars($t['customer_title'] ?: '');
                     $rating = intval($t['rating'] ?? 5);
                 ?>

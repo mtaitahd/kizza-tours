@@ -128,7 +128,7 @@ $faqs = [
                             }
                             if (empty($rImg)) {
                                 $cs = strtolower($r['country'] ?? '');
-                                if ($cs) $rImg = ASSETS_PATH . 'images/destinations/' . $cs . '.jpg';
+                                if ($cs) $rImg = 'assets/images/placeholder.svg';
                             }
                             if (empty($rImg)) $rImg = 'assets/images/placeholder.svg';
                         ?>

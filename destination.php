@@ -49,7 +49,7 @@ if (empty($tours)) {
     });
 }
 
-$img = !empty($dest['image']) && file_exists(BASE_PATH . $dest['image']) ? SITE_URL . '/' . $dest['image'] : ASSETS_PATH . 'images/destinations/' . $dest['slug'] . '.jpg';
+$img = !empty($dest['image']) && file_exists(BASE_PATH . $dest['image']) ? SITE_URL . '/' . $dest['image'] : 'assets/images/placeholder.svg';
 if (!file_exists(BASE_PATH . ltrim(parse_url($img, PHP_URL_PATH), '/'))) {
     $img = 'assets/images/placeholder.svg';
 }

@@ -43,7 +43,7 @@ if (empty($packages)) {
                     elseif (stripos($pkgTitle, 'amboseli') !== false) $imgKey = 'amboseli_kilimanjaro_image';
                     if ($imgKey) $img = getMediaUrl($imgKey, '');
                 }
-                if (empty($img)) $img = ASSETS_PATH . 'images/destinations/' . $countrySlug . '.jpg';
+                if (empty($img)) $img = 'assets/images/placeholder.svg';
                 $highlightsArr = array_filter(array_map('trim', explode(',', $pkg['highlights'] ?? '')));
                 $rating = intval($pkg['rating'] ?? 5);
                 $pkgId = $pkg['id'] ?? 0;

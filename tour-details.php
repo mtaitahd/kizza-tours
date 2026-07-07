@@ -36,7 +36,7 @@ $relatedTours = getTourPackages([], 4);
 
 $img = !empty($tour['image']) && file_exists(BASE_PATH . $tour['image']) ? SITE_URL . '/' . $tour['image'] : '';
 if (empty($img)) {
-    $fallback = ASSETS_PATH . 'images/destinations/' . $countrySlug . '.jpg';
+    $fallback = 'assets/images/placeholder.svg';
     $img = file_exists(BASE_PATH . $fallback) ? SITE_URL . '/' . $fallback : 'assets/images/placeholder.svg';
 }
 

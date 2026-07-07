@@ -26,7 +26,7 @@ if (empty($destinations)) {
         </div>
         <div class="destination-grid">
             <?php $delay = 100; foreach ($destinations as $dest): 
-                $img = !empty($dest['image']) && file_exists(BASE_PATH . $dest['image']) ? SITE_URL . '/' . $dest['image'] : ASSETS_PATH . 'images/destinations/' . $dest['slug'] . '.jpg';
+                $img = !empty($dest['image']) && file_exists(BASE_PATH . $dest['image']) ? SITE_URL . '/' . $dest['image'] : 'assets/images/placeholder.svg';
                 $countryImg = strtolower($dest['country']);
             ?>
             <div class="destination-card" data-aos="fade-up" data-aos-delay="<?php echo $delay; ?>">
