@@ -160,13 +160,11 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     function topBarScroll(){var t=document.querySelector('.top-bar');if(!t)return;var s=window.scrollY>80;t.classList.toggle('scroll-hide',s);document.body.classList.toggle('topbar-hidden',s)}
     var _tick;document.addEventListener('scroll',function(){clearTimeout(_tick);_tick=setTimeout(topBarScroll,50)},{passive:true});topBarScroll()</script>
 
-    <!-- Bootstrap 5 (non-blocking — critical Bootstrap grid styles inlined above) -->
-    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"></noscript>
+    <!-- Bootstrap 5 (critical — load synchronously to prevent FOUC) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
-    <!-- Full Stylesheet (non-blocking — critical styles already inlined above) -->
-    <link rel="preload" as="style" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=2" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=2"></noscript>
+    <!-- Full Stylesheet (critical) -->
+    <link rel="stylesheet" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=2">
 
     <!-- Font Awesome (non-blocking) -->
     <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
