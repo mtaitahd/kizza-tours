@@ -30,7 +30,7 @@ $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
                 <h2 class="section-title"><?php echo __('book_form_title'); ?></h2>
                 <p style="color: var(--text-light); margin-bottom: 2rem;"><?php echo __('book_form_desc'); ?></p>
 
-                <div class="rounded-4 p-4 p-lg-5" style="background: var(--off-white);">
+                <div class="rounded-0 p-4 p-lg-5" style="background: var(--off-white);">
                     <form id="bookingFormPage" method="POST" action="api/submit-booking.php">
                         <div class="row g-3">
                             <div class="col-12">
@@ -159,7 +159,7 @@ $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
             </div>
 
             <div class="col-lg-5" data-aos="fade-left">
-                <div class="rounded-4 p-4" style="background: var(--primary); color: var(--white); position: sticky; top: 120px;">
+                <div class="rounded-0 p-4" style="background: var(--primary); color: var(--white); position: sticky; top: 120px;">
                     <h4 style="color: var(--secondary); font-family: var(--font-secondary);"><?php echo __('book_why_title'); ?></h4>
                     <ul class="list-unstyled mt-4">
                         <li class="mb-3 d-flex align-items-start gap-3">

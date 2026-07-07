@@ -237,7 +237,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
 }
 
 .glass-dark {
@@ -245,7 +245,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
 }
 
 .glass-gold {
@@ -253,7 +253,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(212,175,55,0.3);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
 }
 
 /*===== SCROLL INDICATOR =====*/
@@ -834,7 +834,7 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     flex: 1;
     background: var(--white);
     padding: 1.5rem;
-    border-radius: var(--radius-md);
+    border-radius: 0;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
 }

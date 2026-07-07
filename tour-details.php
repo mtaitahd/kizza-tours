@@ -140,7 +140,7 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
             </div>
 
             <div class="col-lg-4">
-                <div class="card shadow-sm border-0 rounded-4 p-4 sticky-top" style="top: 100px;">
+                <div class="card shadow-sm border-0 rounded-0 p-4 sticky-top" style="top: 100px;">
                     <h4 class="mb-3"><?php echo __('tour_details_price'); ?></h4>
                     <div class="mb-3">
                         <span style="font-size: 2rem; font-weight: 700; color: var(--secondary);">$<?php echo number_format($tour['price'] ?? 0, 0); ?></span>

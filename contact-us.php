@@ -64,7 +64,7 @@ $siteAddress = getSetting('site_address', SITE_ADDRESS);
                     </div>
                 </div>
 
-                <div class="mt-4 p-4 rounded-4" style="background: var(--off-white);">
+                <div class="mt-4 p-4 rounded-0" style="background: var(--off-white);">
                     <h5 style="font-family: var(--font-secondary);"><?php echo __('contact_hours_title'); ?></h5>
                     <table class="table table-borderless mb-0" style="font-size: 0.9rem;">
                         <tr><td><?php echo __('contact_hours_mon_sat'); ?></td><td style="text-align: right; font-weight: 600;"><?php echo __('contact_hours_weekday'); ?></td></tr>
@@ -81,7 +81,7 @@ $siteAddress = getSetting('site_address', SITE_ADDRESS);
             </div>
 
             <div class="col-lg-7" data-aos="fade-left">
-                <div class="rounded-4 p-4 p-lg-5" style="background: var(--off-white);">
+                <div class="rounded-0 p-4 p-lg-5" style="background: var(--off-white);">
                     <h4 class="mb-4"><?php echo __('contact_form_page_title'); ?></h4>
                     <form id="contactFormPage" method="POST" action="api/contact.php">
                         <div class="row g-3">
@@ -124,7 +124,7 @@ $siteAddress = getSetting('site_address', SITE_ADDRESS);
                     </form>
                 </div>
 
-                <div class="mt-4 rounded-4 overflow-hidden" style="height: 300px; border: 1px solid #e0e0e0;">
+                <div class="mt-4 rounded-0 overflow-hidden" style="height: 300px; border: 1px solid #e0e0e0;">
                     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d255198.3308948984!2d36.5805498554677!3d-3.373085676298425!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x18371c8d1c6e2f0f%3A0xb29b0a5a3e3c5e5f!2sArusha%2C%20Tanzania!5e0!3m2!1sen!2s!4v1" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Kizza Tours & Safaris - Arusha, Tanzania Office Location"></iframe>
                 </div>
             </div>

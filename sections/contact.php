@@ -31,7 +31,7 @@ $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
                 </div>
             </div>
             <div class="col-lg-7" data-aos="fade-left">
-                <div class="bg-light rounded-4 p-4 p-lg-5">
+                <div class="bg-light rounded-0 p-4 p-lg-5">
                     <h4 class="mb-4"><?php echo __('contact_form_title'); ?></h4>
                     <form id="contactForm" method="POST">
                         <div class="row g-3">

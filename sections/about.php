@@ -13,7 +13,7 @@ $statTravelersLabel = getSetting('about_stat_travelers_label', 'Happy Travelers'
         <div class="row align-items-center g-5">
             <div class="col-lg-6" data-aos="fade-right">
                 <img src="<?php echo $aboutImg; ?>" alt="Kizza Tours & Safaris" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
-                <div class="glass-gold rounded-4 p-4 mt-4 text-center">
+                <div class="glass-gold p-4 mt-4 text-center">
                     <div class="d-flex align-items-center justify-content-center gap-5">
                         <div>
                             <div class="counter-number"><?php echo htmlspecialchars($statYears); ?></div>
