@@ -254,6 +254,11 @@ if ($quotesTablesOk) {
         .item-row:hover { background: #f0f4ff; }
         .flash-error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
         .currency-symbol { font-weight: 600; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        #dataTable { table-layout: fixed; width: 100%; }
+        #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
+        #dataTable td.actions-cell .btn { white-space: nowrap; }
     </style>
 </head>
 <body id="page-top">
@@ -364,14 +369,14 @@ if ($quotesTablesOk) {
                                 <table class="table table-striped mb-0" id="dataTable">
                                     <thead>
                                         <tr>
-                                            <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
-                                            <th>Subject</th>
-                                            <th>Date</th>
-                                            <th>Status</th>
-                                            <th>Quote</th>
-                                            <th>Actions</th>
+                                            <th style="width:16%">Name</th>
+                                            <th style="width:18%">Email</th>
+                                            <th style="width:13%">Phone</th>
+                                            <th style="width:25%">Subject</th>
+                                            <th style="width:11%">Date</th>
+                                            <th style="width:8%">Status</th>
+                                            <th style="width:8%">Quote</th>
+                                            <th class="actions-cell">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -399,7 +404,7 @@ if ($quotesTablesOk) {
                                                     <span class="text-muted" style="font-size:0.8rem;">None</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
+                                            <td class="actions-cell">
                                                 <div class="d-flex">
                                                     <button class="btn btn-sm btn-outline-secondary mr-1" data-toggle="modal" data-target="#inqModal<?php echo $inq['id']; ?>">
                                                         <i class="fas fa-eye"></i>

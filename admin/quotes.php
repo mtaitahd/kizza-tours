@@ -234,6 +234,11 @@ if (!empty($quoteIds)) {
         .status-filter { max-width: 160px; }
         .empty-state { padding: 60px 20px; text-align: center; color: #adb5bd; }
         .empty-state i { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        #dataTable { table-layout: fixed; width: 100%; }
+        #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
+        #dataTable td.actions-cell .btn { white-space: nowrap; }
     </style>
 </head>
 <body id="page-top">
@@ -346,13 +351,13 @@ if (!empty($quoteIds)) {
                                 <table class="table table-striped mb-0" id="dataTable">
                                     <thead>
                                         <tr>
-                                            <th>Quote #</th>
-                                            <th>Customer</th>
-                                            <th>Source</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                            <th>Created</th>
-                                            <th>Actions</th>
+                                            <th style="width:16%">Quote #</th>
+                                            <th style="width:25%">Customer</th>
+                                            <th style="width:14%">Source</th>
+                                            <th style="width:10%">Amount</th>
+                                            <th style="width:10%">Status</th>
+                                            <th style="width:12%">Created</th>
+                                            <th class="actions-cell">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -380,7 +385,7 @@ if (!empty($quoteIds)) {
                                                 ?>"><?php echo ucfirst($q['status']); ?></span>
                                             </td>
                                             <td><?php echo date('M d, Y', strtotime($q['created_at'])); ?></td>
-                                            <td>
+                                            <td class="actions-cell">
                                                 <div class="btn-group btn-group-sm">
                                                     <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#quoteModal<?php echo $q['id']; ?>" title="View Details">
                                                         <i class="fas fa-eye"></i>

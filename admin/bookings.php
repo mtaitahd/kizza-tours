@@ -327,6 +327,11 @@ if ($quotesTablesOk) {
         .item-row { transition: background 0.2s; }
         .item-row:hover { background: #f0f4ff; }
         .currency-symbol { font-weight: 600; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        #dataTable { table-layout: fixed; width: 100%; }
+        #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
+        #dataTable td.actions-cell .btn { white-space: nowrap; }
     </style>
 </head>
 <body id="page-top">
@@ -425,16 +430,16 @@ if ($quotesTablesOk) {
                                 <table class="table table-striped mb-0" id="dataTable">
                                     <thead>
                                         <tr>
-                                            <th>Ref</th>
-                                            <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
-                                            <th>Date</th>
-                                            <th>Guests</th>
-                                            <th>Status</th>
-                                            <th>Payment</th>
-                                            <th>Quote</th>
-                                            <th>Actions</th>
+                                            <th style="width:10%">Ref</th>
+                                            <th style="width:16%">Name</th>
+                                            <th style="width:18%">Email</th>
+                                            <th style="width:13%">Phone</th>
+                                            <th style="width:11%">Date</th>
+                                            <th style="width:6%">Guests</th>
+                                            <th style="width:8%">Status</th>
+                                            <th style="width:8%">Payment</th>
+                                            <th style="width:8%">Quote</th>
+                                            <th class="actions-cell">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -468,7 +473,7 @@ if ($quotesTablesOk) {
                                                     <span class="text-muted" style="font-size:0.8rem;">None</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
+                                            <td class="actions-cell">
                                                 <div class="d-flex">
                                                     <button class="btn btn-sm btn-outline-secondary mr-1" data-toggle="modal" data-target="#viewModal<?php echo $b['id']; ?>">
                                                         <i class="fas fa-eye"></i>
