@@ -239,11 +239,11 @@ $(document).ready(function() {
     //==========================================
     if (typeof lightbox !== 'undefined') {
         lightbox.option({
-            'resizeDuration': 400,
+            'resizeDuration': 0,
             'wrapAround': true,
             'albumLabel': 'Image %1 of %2',
-            'fadeDuration': 300,
-            'imageFadeDuration': 400
+            'fadeDuration': 0,
+            'imageFadeDuration': 0
         });
     }
 
