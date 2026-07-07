@@ -64,7 +64,9 @@ function generateQuotePdf($quoteId) {
     $currencySymbols = ['USD' => '$', 'EUR' => '€', 'GBP' => '£', 'TZS' => 'TSh'];
     $currency = $currencySymbols[$quote['currency']] ?? '$';
 
-    $logoUrl = SITE_URL . '/assets/images/log.png';
+    $logoPath = __DIR__ . '/../assets/images/log.png';
+    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
+    $logoSrc = $logoData ? 'data:image/png;base64,' . $logoData : SITE_URL . '/assets/images/log.png';
 
     $html = '
     <!DOCTYPE html>
@@ -122,7 +124,7 @@ function generateQuotePdf($quoteId) {
     <body>
         <div class="header">
             <div class="header-left">
-                <img src="' . $logoUrl . '" alt="Logo">
+                <img src="' . $logoSrc . '" alt="Logo">
                 <h1>' . htmlspecialchars($siteName) . '</h1>
             </div>
             <div class="header-right">
