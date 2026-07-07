@@ -307,6 +307,19 @@ foreach ($inquiries as $inq) {
                         </div>
                     <?php endif; ?>
 
+                    <?php if (isset($dompdfError) && $dompdfError): ?>
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> <strong>PDF Library Unavailable:</strong> <?php echo htmlspecialchars($dompdfError); ?> — PDF generation and email will not work.
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (isset($phpmailerError) && $phpmailerError): ?>
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> <strong>Mail Library Unavailable:</strong> <?php echo htmlspecialchars($phpmailerError); ?> — email sending will not work.
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="card mb-4">
                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                             <input type="text" id="tableSearch" class="form-control form-control-sm" style="max-width: 300px;" placeholder="Filter inquiries..." onkeyup="filterTable(this.value)">

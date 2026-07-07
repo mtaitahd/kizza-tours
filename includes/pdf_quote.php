@@ -1,29 +1,40 @@
 <?php
-$dompdfAutoloadPaths = [
-    __DIR__ . '/../vendor/dompdf/autoload.inc.php',
-    __DIR__ . '/../vendor/dompdf/dompdf/autoload.inc.php',
-];
-$dompdfLoaded = false;
-foreach ($dompdfAutoloadPaths as $p) {
-    if (file_exists($p)) {
-        require_once $p;
-        $dompdfLoaded = true;
-        break;
+$dompdfAvailable = false;
+$dompdfError = null;
+try {
+    $dompdfAutoloadPaths = [
+        __DIR__ . '/../vendor/dompdf/autoload.inc.php',
+        __DIR__ . '/../vendor/dompdf/dompdf/autoload.inc.php',
+    ];
+    $dompdfLoaded = false;
+    foreach ($dompdfAutoloadPaths as $p) {
+        if (file_exists($p)) {
+            require_once $p;
+            $dompdfLoaded = true;
+            break;
+        }
     }
-}
-if (!$dompdfLoaded) {
-    $autoload = __DIR__ . '/../vendor/autoload.php';
-    if (file_exists($autoload)) {
-        require_once $autoload;
-    } else {
-        throw new \RuntimeException('Dompdf not found. Run: composer require dompdf/dompdf');
+    if (!$dompdfLoaded) {
+        $autoload = __DIR__ . '/../vendor/autoload.php';
+        if (file_exists($autoload)) {
+            require_once $autoload;
+        } else {
+            throw new \RuntimeException('Dompdf not found. Run: composer require dompdf/dompdf');
+        }
     }
+    if (class_exists('Dompdf\Dompdf')) {
+        $dompdfAvailable = true;
+    }
+} catch (\Throwable $e) {
+    $dompdfError = $e->getMessage();
+    $dompdfAvailable = false;
 }
-
-use Dompdf\Dompdf;
-use Dompdf\Options;
 
 function generateQuotePdf($quoteId) {
+    global $dompdfAvailable, $dompdfError;
+    if (!$dompdfAvailable) {
+        throw new \RuntimeException('Cannot generate PDF: Dompdf library not available' . ($dompdfError ? ': ' . $dompdfError : '') . '. Run: composer install --no-dev');
+    }
     $db = db();
 
     $quote = $db->fetchOne("
