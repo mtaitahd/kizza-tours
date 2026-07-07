@@ -221,6 +221,53 @@ function getTourPackages($filter = [], $limit = null) {
     }
 }
 
+function searchTourPackages($params = []) {
+    try {
+        $db = Database::getInstance();
+        $sql = "SELECT p.*, d.name as destination_name, d.country as destination_country 
+                FROM tour_packages p 
+                LEFT JOIN destinations d ON p.destination_id = d.id 
+                WHERE p.status = 'active'";
+        $bindings = [];
+
+        if (!empty($params['q'])) {
+            $sql .= " AND (p.title LIKE ? OR p.description LIKE ? OR p.country LIKE ? OR p.duration LIKE ? OR p.highlights LIKE ?)";
+            $like = '%' . $params['q'] . '%';
+            $bindings = array_merge($bindings, [$like, $like, $like, $like, $like]);
+        }
+        if (!empty($params['location'])) {
+            $sql .= " AND (p.country = ? OR p.country LIKE ?)";
+            $bindings[] = $params['location'];
+            $bindings[] = '%' . $params['location'] . '%';
+        }
+        if (!empty($params['budget_min'])) {
+            $sql .= " AND p.price >= ?";
+            $bindings[] = floatval($params['budget_min']);
+        }
+        if (!empty($params['budget_max'])) {
+            $sql .= " AND p.price <= ?";
+            $bindings[] = floatval($params['budget_max']);
+        }
+        if (!empty($params['duration'])) {
+            $days = intval($params['duration']);
+            if ($days === 1) {
+                $sql .= " AND p.duration REGEXP '^[0-3]'";
+            } elseif ($days === 4) {
+                $sql .= " AND p.duration REGEXP '^[4-7]'";
+            } elseif ($days === 8) {
+                $sql .= " AND p.duration REGEXP '^[8-9]|^1[0-4]'";
+            } elseif ($days === 15) {
+                $sql .= " AND p.duration REGEXP '^1[5-9]|^[2-9][0-9]'";
+            }
+        }
+
+        $sql .= " ORDER BY p.sort_order ASC, p.created_at DESC";
+        return $db->fetchAll($sql, $bindings);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
 function getGalleryItems($category = null, $limit = null) {
     try {
         $db = Database::getInstance();

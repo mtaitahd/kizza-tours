@@ -145,7 +145,14 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         body{font-family:var(--font-body);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;background:var(--primary)}
         img{max-width:100%;height:auto}
         a{color:var(--secondary);text-decoration:none;transition:var(--transition)}
-        h1{font-size:clamp(2.5rem,6vw,5rem);font-family:var(--font-primary);font-weight:600;line-height:1.2;color:var(--primary)}'; 
+        h1{font-size:clamp(2.5rem,6vw,5rem);font-family:var(--font-primary);font-weight:600;line-height:1.2;color:var(--primary)}
+        .top-bar{position:fixed;top:0;left:0;width:100%;height:44px;background:var(--primary);border-bottom:1px solid rgba(255,255,255,0.08);z-index:1031;font-size:.78rem}
+        .top-bar .container{height:100%;display:flex;align-items:center;justify-content:space-between}
+        .top-bar-info{display:flex;align-items:center;gap:1.2rem}
+        .top-bar-link{color:rgba(255,255,255,0.7);white-space:nowrap;font-size:.78rem}
+        .top-bar-link i{margin-right:.4rem;font-size:.72rem;color:var(--secondary);}
+        .top-bar-select{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);padding:.25rem .6rem;border-radius:0;font-size:.75rem;cursor:pointer;outline:none;max-width:130px}
+        .top-bar-search-btn{background:var(--secondary);border:none;color:var(--primary);width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem}'; 
     ?></style>
 
     <script>function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
@@ -188,6 +195,43 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 
 <!-- Toast Container (Bootstrap) -->
 <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index: 99999;"></div>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="container d-flex align-items-center justify-content-between">
+        <div class="top-bar-info d-flex align-items-center gap-3">
+            <a href="mailto:<?php echo $siteEmail; ?>" class="top-bar-link">
+                <i class="fas fa-envelope"></i> <span><?php echo $siteEmail; ?></span>
+            </a>
+            <a href="tel:<?php echo $sitePhone; ?>" class="top-bar-link">
+                <i class="fas fa-phone-alt"></i> <span><?php echo $sitePhone; ?></span>
+            </a>
+        </div>
+        <form class="top-bar-search d-flex align-items-center gap-2" action="<?php echo SITE_URL; ?>/search" method="GET">
+            <select name="location" class="top-bar-select">
+                <option value=""><?php echo __('all_destinations') ?: 'All Destinations'; ?></option>
+                <option value="Tanzania">Tanzania</option>
+                <option value="Kenya">Kenya</option>
+                <option value="Uganda">Uganda</option>
+                <option value="Rwanda">Rwanda</option>
+                <option value="Zanzibar">Zanzibar</option>
+                <option value="Burundi">Burundi</option>
+                <option value="Kenya-Tanzania">Kenya & Tanzania</option>
+            </select>
+            <select name="budget" class="top-bar-select">
+                <option value=""><?php echo __('any_budget') ?: 'Any Budget'; ?></option>
+                <option value="0-1000">Under $1,000</option>
+                <option value="1000-3000">$1,000 - $3,000</option>
+                <option value="3000-5000">$3,000 - $5,000</option>
+                <option value="5000-10000">$5,000 - $10,000</option>
+                <option value="10000">$10,000+</option>
+            </select>
+            <button type="submit" class="top-bar-search-btn" aria-label="Search tours">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
 
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
