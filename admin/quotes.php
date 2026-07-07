@@ -419,130 +419,6 @@ if (!empty($quoteIds)) {
                                                 </div>
                                             </td>
                                         </tr>
-
-                                        <!-- View Modal -->
-                                        <div class="modal fade" id="quoteModal<?php echo $q['id']; ?>" tabindex="-1">
-                                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Quote #<?php echo htmlspecialchars($q['quote_number']); ?></h5>
-                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <p><strong>Customer:</strong> <?php echo htmlspecialchars($q['customer_name'] ?? 'N/A'); ?></p>
-                                                                <p><strong>Email:</strong> <a href="mailto:<?php echo $q['customer_email']; ?>" style="color:#0A2540;"><?php echo htmlspecialchars($q['customer_email'] ?? 'N/A'); ?></a></p>
-                                                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($q['customer_phone'] ?? 'N/A'); ?></p>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <p><strong>Source:</strong> <?php echo $q['source_type']; ?> (<?php echo htmlspecialchars($q['source_ref'] ?? 'N/A'); ?>)</p>
-                                                                <p><strong>Status:</strong> <span class="badge badge-<?php
-                                                                    $s = $q['status'];
-                                                                    echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
-                                                                ?>"><?php echo ucfirst($s); ?></span></p>
-                                                                <p><strong>Created By:</strong> <?php echo htmlspecialchars($q['created_by_name'] ?? 'N/A'); ?></p>
-                                                            </div>
-                                                        </div>
-
-                                                        <?php if (!empty($items)): ?>
-                                                        <hr>
-                                                        <h6 class="text-muted mb-3">Quote Items</h6>
-                                                        <table class="table table-sm quote-items-table">
-                                                            <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-                                                            <tbody>
-                                                            <?php $i = 1; foreach ($items as $item): ?>
-                                                                <tr>
-                                                                    <td><?php echo $i++; ?></td>
-                                                                    <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                                                    <td><?php echo (int)$item['quantity']; ?></td>
-                                                                    <td>$<?php echo number_format($item['unit_price'], 2); ?></td>
-                                                                    <td>$<?php echo number_format($item['total'], 2); ?></td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                            </tbody>
-                                                        </table>
-                                                        <div class="row">
-                                                            <div class="col-md-6"></div>
-                                                            <div class="col-md-6">
-                                                                <div class="d-flex justify-content-between"><span>Subtotal:</span><span>$<?php echo number_format($q['subtotal'], 2); ?></span></div>
-                                                                <?php if ($q['tax_percent'] > 0): ?>
-                                                                <div class="d-flex justify-content-between"><span>Tax (<?php echo $q['tax_percent']; ?>%):</span><span>$<?php echo number_format($q['tax_amount'], 2); ?></span></div>
-                                                                <?php endif; ?>
-                                                                <?php if ($q['discount'] > 0): ?>
-                                                                <div class="d-flex justify-content-between"><span>Discount:</span><span>-$<?php echo number_format($q['discount'], 2); ?></span></div>
-                                                                <?php endif; ?>
-                                                                <div class="d-flex justify-content-between font-weight-bold" style="border-top:2px solid #D4AF37;padding-top:8px;margin-top:8px;">
-                                                                    <span>Total:</span><span>$<?php echo number_format($q['total'], 2); ?></span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <?php else: ?>
-                                                        <p class="text-muted text-center py-3">No items in this quote.</p>
-                                                        <?php endif; ?>
-
-                                                        <?php if ($q['notes'] || $q['terms']): ?>
-                                                        <hr>
-                                                        <div class="row">
-                                                            <?php if ($q['notes']): ?>
-                                                            <div class="col-md-6">
-                                                                <h6 class="text-muted">Notes</h6>
-                                                                <p style="background:#f8f9fa;padding:0.75rem;border-radius:6px;font-size:0.9rem;"><?php echo nl2br(htmlspecialchars($q['notes'])); ?></p>
-                                                            </div>
-                                                            <?php endif; ?>
-                                                            <?php if ($q['terms']): ?>
-                                                            <div class="col-md-6">
-                                                                <h6 class="text-muted">Terms &amp; Conditions</h6>
-                                                                <p style="background:#f8f9fa;padding:0.75rem;border-radius:6px;font-size:0.9rem;"><?php echo nl2br(htmlspecialchars($q['terms'])); ?></p>
-                                                            </div>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <?php endif; ?>
-
-                                                        <?php if ($q['valid_until']): ?>
-                                                        <p class="text-muted small mt-2"><i class="far fa-calendar-alt mr-1"></i> Valid until <?php echo date('F d, Y', strtotime($q['valid_until'])); ?></p>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                        <button type="button" class="btn btn-outline-primary" onclick="openQuoteEditor(<?php echo $q['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
-                                                        <?php if ($q['status'] === 'draft'): ?>
-                                                            <form method="POST" style="display:inline;">
-                                                                <input type="hidden" name="action" value="prepare_quote">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
-                                                                <button type="submit" class="btn btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
-                                                            </form>
-                                                        <?php elseif ($q['status'] === 'prepared'): ?>
-                                                            <form method="POST" style="display:inline;">
-                                                                <input type="hidden" name="action" value="confirm_quote">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
-                                                                <button type="submit" class="btn btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
-                                                            </form>
-                                                        <?php elseif (in_array($q['status'], ['confirmed', 'sent'])): ?>
-                                                            <?php if (empty($q['pdf_path'])): ?>
-                                                                <form method="POST" style="display:inline;">
-                                                                    <input type="hidden" name="action" value="generate_pdf">
-                                                                    <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
-                                                                    <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
-                                                                </form>
-                                                            <?php else: ?>
-                                                                <form method="POST" style="display:inline;">
-                                                                    <input type="hidden" name="action" value="generate_pdf">
-                                                                    <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
-                                                                    <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
-                                                                </form>
-                                                                <a href="../<?php echo $q['pdf_path']; ?>" class="btn btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
-                                                            <?php endif; ?>
-                                                            <form method="POST" style="display:inline;">
-                                                                <input type="hidden" name="action" value="send_quote_email">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
-                                                                <button type="submit" class="btn btn-success"><i class="fas fa-envelope"></i> <?php echo $q['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
-                                                            </form>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                         <?php endforeach; ?>
                                         <?php if (empty($quotes)): ?>
                                         <tr>
@@ -562,6 +438,75 @@ if (!empty($quoteIds)) {
                             </div>
                         </div>
                     </div>
+
+                    <!-- View Modals (outside table) -->
+                    <?php foreach ($quotes as $q): ?>
+                    <div class="modal fade" id="quoteModal<?php echo $q['id']; ?>" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Quote #<?php echo htmlspecialchars($q['quote_number']); ?></h5>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Customer:</strong> <?php echo htmlspecialchars($q['customer_name'] ?? 'N/A'); ?></p>
+                                            <p><strong>Email:</strong> <a href="mailto:<?php echo $q['customer_email']; ?>" style="color:#0A2540;"><?php echo htmlspecialchars($q['customer_email'] ?? 'N/A'); ?></a></p>
+                                            <p><strong>Phone:</strong> <?php echo htmlspecialchars($q['customer_phone'] ?? 'N/A'); ?></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Source:</strong> <?php echo $q['source_type']; ?> (<?php echo htmlspecialchars($q['source_ref'] ?? 'N/A'); ?>)</p>
+                                            <p><strong>Status:</strong> <span class="badge badge-<?php
+                                                $s = $q['status'];
+                                                echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
+                                            ?>"><?php echo ucfirst($s); ?></span></p>
+                                            <p><strong>Amount:</strong> <strong>$<?php echo number_format($q['total'], 2); ?></strong></p>
+                                            <p><strong>Created By:</strong> <?php echo htmlspecialchars($q['created_by_name'] ?? 'N/A'); ?></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="openQuoteEditor(<?php echo $q['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                    <?php if ($q['status'] === 'draft'): ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="prepare_quote">
+                                            <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
+                                            <button type="submit" class="btn btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
+                                        </form>
+                                    <?php elseif ($q['status'] === 'prepared'): ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="confirm_quote">
+                                            <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
+                                            <button type="submit" class="btn btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
+                                        </form>
+                                    <?php elseif (in_array($q['status'], ['confirmed', 'sent'])): ?>
+                                        <?php if (empty($q['pdf_path'])): ?>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="generate_pdf">
+                                                <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
+                                                <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
+                                            </form>
+                                        <?php else: ?>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="generate_pdf">
+                                                <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
+                                                <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
+                                            </form>
+                                            <a href="../<?php echo $q['pdf_path']; ?>" class="btn btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
+                                        <?php endif; ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="send_quote_email">
+                                            <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
+                                            <button type="submit" class="btn btn-success"><i class="fas fa-envelope"></i> <?php echo $q['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
