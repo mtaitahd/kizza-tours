@@ -2046,6 +2046,10 @@ body.topbar-hidden .navbar {
     z-index: 1000;
 }
 
+.navbar.scroll-hide {
+    transform: translateY(-100%);
+}
+
 .navbar.scrolled {
     background: rgba(10, 37, 64, 0.95);
     backdrop-filter: blur(20px);
