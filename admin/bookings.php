@@ -334,6 +334,7 @@ if ($quotesTablesOk) {
         #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
         #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
         #dataTable td.actions-cell .btn { white-space: nowrap; }
+        #dataTable thead th { writing-mode: vertical-lr; text-orientation: mixed; vertical-align: bottom; padding: 4px 8px; }
     </style>
 </head>
 <body id="page-top">
