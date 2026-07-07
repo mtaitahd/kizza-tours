@@ -430,15 +430,15 @@ if ($quotesTablesOk) {
                                 <table class="table table-striped mb-0" id="dataTable">
                                     <thead>
                                         <tr>
-                                            <th>Ref</th>
-                                            <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
-                                            <th>Date</th>
-                                            <th>Guests</th>
-                                            <th>Status</th>
-                                            <th>Payment</th>
-                                            <th>Quote</th>
+                                            <th style="width:10%">Ref</th>
+                                            <th style="width:14%">Name</th>
+                                            <th style="width:16%">Email</th>
+                                            <th style="width:11%">Phone</th>
+                                            <th style="width:10%">Date</th>
+                                            <th style="width:6%">Guests</th>
+                                            <th style="width:8%">Status</th>
+                                            <th style="width:8%">Payment</th>
+                                            <th style="width:7%">Quote</th>
                                             <th class="actions-cell">Actions</th>
                                         </tr>
                                     </thead>
