@@ -2,6 +2,7 @@
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once '../includes/mail.php';
+require_once '../includes/pdf_quote.php';
 session_start();
 
 if (!isset($_SESSION['admin_id'])) {
@@ -18,6 +19,58 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
 }
 
 $currentPage = 'bookings';
+
+function ensureQuoteTables() {
+    try {
+        $db = db();
+        $db->fetchOne("SELECT 1 FROM quotes LIMIT 1");
+        try {
+            $db->query("ALTER TABLE quotes ADD COLUMN booking_id INT DEFAULT NULL AFTER inquiry_id");
+        } catch (\Throwable $e) {
+        }
+        try {
+            $db->query("ALTER TABLE quotes MODIFY COLUMN inquiry_id INT DEFAULT NULL");
+        } catch (\Throwable $e) {
+        }
+        return true;
+    } catch (\Throwable $e) {
+        try {
+            $schema = file_get_contents(__DIR__ . '/../database/quotes.sql');
+            $db->query("DROP TABLE IF EXISTS quote_items");
+            $db->query("DROP TABLE IF EXISTS quotes");
+            $db->getConnection()->exec($schema);
+            return true;
+        } catch (\Throwable $e2) {
+            error_log("ensureQuoteTables failed: " . $e2->getMessage());
+            return false;
+        }
+    }
+}
+
+function generateQuoteNumber($db) {
+    $prefix = 'QTE-' . date('Y') . '-';
+    $last = $db->fetchOne("SELECT quote_number FROM quotes WHERE quote_number LIKE ? ORDER BY id DESC LIMIT 1", [$prefix . '%']);
+    if ($last) {
+        $num = intval(substr($last['quote_number'], strlen($prefix))) + 1;
+    } else {
+        $num = 1;
+    }
+    return $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+}
+
+function recalcQuote(&$db, $quoteId) {
+    $items = $db->fetchAll("SELECT SUM(total) as subtotal FROM quote_items WHERE quote_id = ?", [$quoteId]);
+    $subtotal = floatval($items[0]['subtotal'] ?? 0);
+    $quote = $db->fetchOne("SELECT tax_percent, discount FROM quotes WHERE id = ?", [$quoteId]);
+    $taxPercent = floatval($quote['tax_percent'] ?? 0);
+    $discount = floatval($quote['discount'] ?? 0);
+    $taxAmount = round($subtotal * $taxPercent / 100, 2);
+    $total = $subtotal + $taxAmount - $discount;
+    if ($total < 0) $total = 0;
+    $db->query("UPDATE quotes SET subtotal = ?, tax_amount = ?, total = ? WHERE id = ?", [$subtotal, $taxAmount, $total, $quoteId]);
+}
+
+$quotesTablesOk = ensureQuoteTables();
 
 // Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -98,6 +151,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } else {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to send reply. Subject and message are required.'];
         }
+    } elseif ($_POST['action'] === 'save_quote') {
+        $bookingId = intval($_POST['booking_id'] ?? 0);
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        $itemsJson = $_POST['items_json'] ?? '[]';
+        $items = json_decode($itemsJson, true);
+        if (!is_array($items)) $items = [];
+
+        $taxPercent = floatval($_POST['tax_percent'] ?? 0);
+        $discount = floatval($_POST['discount'] ?? 0);
+        $notes = trim($_POST['notes'] ?? '');
+        $terms = trim($_POST['terms'] ?? '');
+        $validUntil = !empty($_POST['valid_until']) ? $_POST['valid_until'] : null;
+
+        if ($quoteId) {
+            $db->query("UPDATE quotes SET tax_percent = ?, discount = ?, notes = ?, terms = ?, valid_until = ? WHERE id = ?",
+                [$taxPercent, $discount, $notes, $terms, $validUntil, $quoteId]);
+            $db->query("DELETE FROM quote_items WHERE quote_id = ?", [$quoteId]);
+        } else {
+            $quoteNumber = generateQuoteNumber($db);
+            $quoteId = $db->insert("INSERT INTO quotes (booking_id, quote_number, status, tax_percent, discount, notes, terms, valid_until, created_by) VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)",
+                [$bookingId, $quoteNumber, $taxPercent, $discount, $notes, $terms, $validUntil, $_SESSION['admin_id']]);
+        }
+
+        $sortOrder = 0;
+        foreach ($items as $item) {
+            $desc = trim($item['description'] ?? '');
+            if (empty($desc)) continue;
+            $qty = max(1, intval($item['quantity'] ?? 1));
+            $unitPrice = floatval($item['unit_price'] ?? 0);
+            $total = round($qty * $unitPrice, 2);
+            $db->query("INSERT INTO quote_items (quote_id, description, quantity, unit_price, total, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                [$quoteId, $desc, $qty, $unitPrice, $total, $sortOrder++]);
+        }
+
+        recalcQuote($db, $quoteId);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote saved as draft'];
+
+    } elseif ($_POST['action'] === 'prepare_quote') {
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        $db->query("UPDATE quotes SET status = 'prepared' WHERE id = ?", [$quoteId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote marked as prepared'];
+
+    } elseif ($_POST['action'] === 'confirm_quote') {
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        $db->query("UPDATE quotes SET status = 'confirmed' WHERE id = ?", [$quoteId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote confirmed'];
+
+    } elseif ($_POST['action'] === 'delete_quote') {
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        $quote = $db->fetchOne("SELECT pdf_path FROM quotes WHERE id = ?", [$quoteId]);
+        if ($quote && !empty($quote['pdf_path'])) {
+            $pdfFile = __DIR__ . '/../' . $quote['pdf_path'];
+            if (file_exists($pdfFile)) @unlink($pdfFile);
+        }
+        $db->query("DELETE FROM quotes WHERE id = ?", [$quoteId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote deleted'];
+
+    } elseif ($_POST['action'] === 'generate_pdf') {
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        try {
+            $pdf = generateQuotePdf($quoteId);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'PDF generated successfully'];
+        } catch (Exception $e) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'PDF generation failed: ' . $e->getMessage()];
+        }
+
+    } elseif ($_POST['action'] === 'send_quote_email') {
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        try {
+            $sent = sendQuoteEmail($quoteId);
+            if ($sent) {
+                $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote sent via email successfully'];
+            } else {
+                $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to send quote email'];
+            }
+        } catch (Exception $e) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
     header('Location: bookings');
     exit;
@@ -128,6 +259,22 @@ if (!empty($bookingIds)) {
     );
     foreach ($rows as $r) {
         $replies[$r['booking_id']][] = $r;
+    }
+}
+
+// Fetch quotes per booking
+$quotesByBooking = [];
+if ($quotesTablesOk) {
+    foreach ($bookings as $b) {
+        try {
+            $q = $db->fetchOne("SELECT * FROM quotes WHERE booking_id = ? ORDER BY id DESC LIMIT 1", [$b['id']]);
+            if ($q) {
+                $q['items'] = $db->fetchAll("SELECT * FROM quote_items WHERE quote_id = ? ORDER BY sort_order ASC", [$q['id']]);
+            }
+            $quotesByBooking[$b['id']] = $q;
+        } catch (\Throwable $e) {
+            $quotesByBooking[$b['id']] = null;
+        }
     }
 }
 ?>
@@ -166,6 +313,20 @@ if (!empty($bookingIds)) {
             .topbar { left: 0; }
             body.sidebar-toggled .topbar { left: 0; }
         }
+        .quote-section { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid #e9ecef; }
+        .quote-section h6 { color: #0A2540; font-weight: 700; margin-bottom: 10px; }
+        .quote-badge { font-size: 0.75rem; padding: 3px 8px; }
+        .quote-items-table td, .quote-items-table th { vertical-align: middle; font-size: 0.85rem; }
+        .quote-items-table .form-control-sm { font-size: 0.8rem; padding: 2px 6px; height: auto; }
+        .quote-summary { background: #fff; border-radius: 6px; padding: 12px; margin-top: 10px; }
+        .quote-summary .row { margin-bottom: 5px; }
+        .quote-summary .total-row { font-size: 1.1rem; font-weight: 700; color: #0A2540; border-top: 2px solid #D4AF37; padding-top: 8px; }
+        .quote-actions { margin-top: 12px; }
+        .quote-actions .btn { font-size: 0.8rem; }
+        .modal-xl .modal-dialog { max-width: 90%; }
+        .item-row { transition: background 0.2s; }
+        .item-row:hover { background: #f0f4ff; }
+        .currency-symbol { font-weight: 600; }
     </style>
 </head>
 <body id="page-top">
@@ -271,11 +432,14 @@ if (!empty($bookingIds)) {
                                             <th>Guests</th>
                                             <th>Status</th>
                                             <th>Payment</th>
+                                            <th>Quote</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($bookings as $b): ?>
+                                        <?php foreach ($bookings as $b):
+                                            $quoteData = $quotesByBooking[$b['id']] ?? null;
+                                        ?>
                                         <tr>
                                             <td><strong><?php echo htmlspecialchars($b['booking_reference']); ?></strong></td>
                                             <td><?php echo htmlspecialchars($b['full_name']); ?></td>
@@ -292,6 +456,16 @@ if (!empty($bookingIds)) {
                                                 <span class="badge badge-<?php echo $b['payment_status'] === 'paid' ? 'success' : ($b['payment_status'] === 'partial' ? 'info' : 'secondary'); ?>">
                                                     <?php echo ucfirst(str_replace('_', ' ', $b['payment_status'])); ?>
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <?php if ($quoteData): ?>
+                                                    <span class="badge badge-<?php
+                                                        $s = $quoteData['status'];
+                                                        echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
+                                                    ?> quote-badge"><?php echo ucfirst($quoteData['status']); ?></span>
+                                                <?php else: ?>
+                                                    <span class="text-muted" style="font-size:0.8rem;">None</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <div class="d-flex">
@@ -314,7 +488,7 @@ if (!empty($bookingIds)) {
 
                                         <!-- View Modal -->
                                         <div class="modal fade" id="viewModal<?php echo $b['id']; ?>" tabindex="-1">
-                                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                            <div class="modal-dialog modal-xl modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
                                                         <h5 class="modal-title">Booking - <?php echo htmlspecialchars($b['booking_reference']); ?></h5>
@@ -345,29 +519,127 @@ if (!empty($bookingIds)) {
                                                             </div>
                                                         </div>
 
-                                                        <?php if (!empty($replies[$b['id']])): ?>
                                                         <hr>
-                                                        <h6 class="text-muted mb-3"><i class="fas fa-reply-all mr-1"></i> Reply History</h6>
-                                                        <?php foreach ($replies[$b['id']] as $r): ?>
-                                                        <div class="reply-entry">
-                                                            <div class="reply-header">
-                                                                <span class="reply-admin"><?php echo htmlspecialchars($r['admin_name'] ?? 'Admin'); ?></span>
-                                                                <span class="reply-date"><?php echo date('M d, Y \a\t h:i A', strtotime($r['created_at'])); ?></span>
-                                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this reply?');">
-                                                                    <input type="hidden" name="action" value="delete_reply">
-                                                                    <input type="hidden" name="reply_id" value="<?php echo $r['id']; ?>">
-                                                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Delete reply"><i class="fas fa-trash-alt"></i></button>
-                                                                </form>
+
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <h6 class="text-muted mb-3"><i class="fas fa-reply-all mr-1"></i> Reply History</h6>
+                                                                <?php if (!empty($replies[$b['id']])): ?>
+                                                                <?php foreach ($replies[$b['id']] as $r): ?>
+                                                                <div class="reply-entry">
+                                                                    <div class="reply-header">
+                                                                        <span class="reply-admin"><?php echo htmlspecialchars($r['admin_name'] ?? 'Admin'); ?></span>
+                                                                        <span class="reply-date"><?php echo date('M d, Y \a\t h:i A', strtotime($r['created_at'])); ?></span>
+                                                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this reply?');">
+                                                                            <input type="hidden" name="action" value="delete_reply">
+                                                                            <input type="hidden" name="reply_id" value="<?php echo $r['id']; ?>">
+                                                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Delete reply"><i class="fas fa-trash-alt"></i></button>
+                                                                        </form>
+                                                                    </div>
+                                                                    <div class="reply-subject"><?php echo htmlspecialchars($r['subject']); ?></div>
+                                                                    <div class="reply-message"><?php echo nl2br(htmlspecialchars($r['message'])); ?></div>
+                                                                </div>
+                                                                <?php endforeach; ?>
+                                                                <?php else: ?>
+                                                                <p class="text-muted">No replies yet.</p>
+                                                                <?php endif; ?>
+                                                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-toggle="modal" data-target="#replyModal<?php echo $b['id']; ?>"><i class="fas fa-reply"></i> Reply</button>
                                                             </div>
-                                                            <div class="reply-subject"><?php echo htmlspecialchars($r['subject']); ?></div>
-                                                            <div class="reply-message"><?php echo nl2br(htmlspecialchars($r['message'])); ?></div>
+
+                                                            <div class="col-md-6">
+                                                                <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Quote Management</h6>
+                                                                <?php if ($quoteData): ?>
+                                                                    <div class="quote-section">
+                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                            <strong>#<?php echo htmlspecialchars($quoteData['quote_number']); ?></strong>
+                                                                            <span class="badge badge-<?php
+                                                                                $s = $quoteData['status'];
+                                                                                echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
+                                                                            ?>"><?php echo ucfirst($s); ?></span>
+                                                                        </div>
+                                                                        <?php if (!empty($quoteData['items'])): ?>
+                                                                            <table class="table table-sm quote-items-table mb-2">
+                                                                                <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                                                                                <tbody>
+                                                                                <?php $i = 1; foreach ($quoteData['items'] as $item): ?>
+                                                                                    <tr>
+                                                                                        <td><?php echo $i++; ?></td>
+                                                                                        <td><?php echo htmlspecialchars($item['description']); ?></td>
+                                                                                        <td><?php echo (int)$item['quantity']; ?></td>
+                                                                                        <td><?php echo '$' . number_format($item['unit_price'], 2); ?></td>
+                                                                                        <td><?php echo '$' . number_format($item['total'], 2); ?></td>
+                                                                                    </tr>
+                                                                                <?php endforeach; ?>
+                                                                                </tbody>
+                                                                            </table>
+                                                                            <div class="text-right" style="font-size:0.85rem;">
+                                                                                <strong>Total: $<?php echo number_format($quoteData['total'], 2); ?></strong>
+                                                                            </div>
+                                                                        <?php else: ?>
+                                                                            <p class="text-muted mb-2">No items added yet.</p>
+                                                                        <?php endif; ?>
+
+                                                                        <div class="quote-actions">
+                                                                            <?php if ($quoteData['status'] === 'draft'): ?>
+                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit Quote</button>
+                                                                                <form method="POST" style="display:inline;">
+                                                                                    <input type="hidden" name="action" value="prepare_quote">
+                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
+                                                                                </form>
+                                                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
+                                                                                    <input type="hidden" name="action" value="delete_quote">
+                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                                                </form>
+                                                                            <?php elseif ($quoteData['status'] === 'prepared'): ?>
+                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                                                                <form method="POST" style="display:inline;">
+                                                                                    <input type="hidden" name="action" value="confirm_quote">
+                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
+                                                                                </form>
+                                                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
+                                                                                    <input type="hidden" name="action" value="delete_quote">
+                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                                                </form>
+                                                                            <?php elseif ($quoteData['status'] === 'confirmed' || $quoteData['status'] === 'sent'): ?>
+                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                                                                <?php if (empty($quoteData['pdf_path'])): ?>
+                                                                                    <form method="POST" style="display:inline;">
+                                                                                        <input type="hidden" name="action" value="generate_pdf">
+                                                                                        <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
+                                                                                    </form>
+                                                                                <?php else: ?>
+                                                                                    <form method="POST" style="display:inline;">
+                                                                                        <input type="hidden" name="action" value="generate_pdf">
+                                                                                        <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
+                                                                                    </form>
+                                                                                    <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
+                                                                                    <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
+                                                                                <?php endif; ?>
+                                                                                <form method="POST" style="display:inline;">
+                                                                                    <input type="hidden" name="action" value="send_quote_email">
+                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> <?php echo $quoteData['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
+                                                                                </form>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php else: ?>
+                                                                    <div class="quote-section text-center py-3">
+                                                                        <p class="text-muted mb-2">No quote has been prepared for this booking yet.</p>
+                                                                        <button class="btn btn-sm btn-success" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, 0)"><i class="fas fa-plus"></i> Prepare Quote</button>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </div>
                                                         </div>
-                                                        <?php endforeach; ?>
-                                                        <?php endif; ?>
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                        <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#replyModal<?php echo $b['id']; ?>"><i class="fas fa-reply"></i> Reply</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -419,7 +691,7 @@ if (!empty($bookingIds)) {
                                         </div>
                                         <?php endforeach; ?>
                                         <?php if (empty($bookings)): ?>
-                                        <tr><td colspan="9" class="text-center py-4 text-muted">No bookings found</td></tr>
+                                        <tr><td colspan="10" class="text-center py-4 text-muted">No bookings found</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
@@ -457,6 +729,92 @@ if (!empty($bookingIds)) {
         </div>
     </div>
 
+    <!-- Quote Editor Modal -->
+    <div class="modal fade" id="bookingQuoteEditorModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-invoice text-success mr-2"></i>Prepare Quote</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <form method="POST" id="bookingQuoteForm">
+                    <input type="hidden" name="action" value="save_quote">
+                    <input type="hidden" name="booking_id" id="qBookingId" value="0">
+                    <input type="hidden" name="quote_id" id="qQuoteId" value="0">
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">Add items, set pricing, and prepare a professional quote for this booking.</p>
+
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered quote-items-table mb-0" id="itemsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width:5%;">#</th>
+                                        <th style="width:50%;">Description</th>
+                                        <th style="width:12%;">Qty</th>
+                                        <th style="width:16%;">Unit Price ($)</th>
+                                        <th style="width:12%;">Total</th>
+                                        <th style="width:5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-success mb-3" onclick="addItemRow()"><i class="fas fa-plus"></i> Add Item</button>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Tax (%)</label>
+                                    <input type="number" class="form-control form-control-sm" name="tax_percent" id="qTaxPercent" value="0" min="0" max="100" step="0.1" onchange="calcTotals()" onkeyup="calcTotals()">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Discount ($)</label>
+                                    <input type="number" class="form-control form-control-sm" name="discount" id="qDiscount" value="0" min="0" step="0.01" onchange="calcTotals()" onkeyup="calcTotals()">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Valid Until</label>
+                                    <input type="date" class="form-control form-control-sm" name="valid_until" id="qValidUntil">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Notes (optional)</label>
+                                    <textarea class="form-control" name="notes" id="qNotes" rows="3" placeholder="Additional notes for the customer..."></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Terms &amp; Conditions (optional)</label>
+                                    <textarea class="form-control" name="terms" id="qTerms" rows="3" placeholder="Payment terms, cancellation policy, etc..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quote-summary">
+                            <div class="row"><div class="col-md-8 text-right">Subtotal:</div><div class="col-md-4 text-right"><span id="qSubtotal">$0.00</span></div></div>
+                            <div class="row"><div class="col-md-8 text-right">Tax:</div><div class="col-md-4 text-right"><span id="qTaxAmount">$0.00</span></div></div>
+                            <div class="row"><div class="col-md-8 text-right">Discount:</div><div class="col-md-4 text-right">-<span id="qDiscountAmount">$0.00</span></div></div>
+                            <div class="row total-row"><div class="col-md-8 text-right">Total:</div><div class="col-md-4 text-right"><span id="qTotal">$0.00</span></div></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Quote as Draft</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
@@ -488,6 +846,132 @@ if (!empty($bookingIds)) {
             var rows = document.querySelectorAll('#dataTable tbody tr');
             rows.forEach(function(row) { row.style.display = row.textContent.toLowerCase().indexOf(val.toLowerCase()) > -1 ? '' : 'none'; });
         }
+
+        var itemRowIndex = 0;
+        var savedItems = [];
+
+        function addItemRow(desc, qty, price) {
+            var tbody = document.getElementById('itemsBody');
+            var index = itemRowIndex++;
+            var tr = document.createElement('tr');
+            tr.className = 'item-row';
+            tr.id = 'itemRow_' + index;
+            tr.innerHTML = `
+                <td class="text-center item-num">${tbody.children.length + 1}</td>
+                <td><input type="text" class="form-control form-control-sm item-desc" placeholder="e.g. Safari Package - 3 Days" value="${desc || ''}" required></td>
+                <td><input type="number" class="form-control form-control-sm item-qty" value="${qty || 1}" min="1" onchange="calcRowTotal(this)" onkeyup="calcRowTotal(this)"></td>
+                <td><input type="number" class="form-control form-control-sm item-price" value="${price || 0}" min="0" step="0.01" onchange="calcRowTotal(this)" onkeyup="calcRowTotal(this)"></td>
+                <td class="text-right"><span class="item-total">$${(parseFloat(qty) * parseFloat(price)).toFixed(2)}</span></td>
+                <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(this)"><i class="fas fa-times"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+            updateItemNumbers();
+            calcTotals();
+        }
+
+        function removeItemRow(btn) {
+            $(btn).closest('tr').remove();
+            updateItemNumbers();
+            calcTotals();
+        }
+
+        function updateItemNumbers() {
+            var rows = document.querySelectorAll('#itemsBody .item-row');
+            rows.forEach(function(row, idx) {
+                row.querySelector('.item-num').textContent = idx + 1;
+            });
+        }
+
+        function calcRowTotal(el) {
+            var tr = el.closest('tr');
+            var qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
+            var price = parseFloat(tr.querySelector('.item-price').value) || 0;
+            tr.querySelector('.item-total').textContent = '$' + (qty * price).toFixed(2);
+            calcTotals();
+        }
+
+        function calcTotals() {
+            var totals = document.querySelectorAll('#itemsBody .item-total');
+            var subtotal = 0;
+            totals.forEach(function(el) {
+                subtotal += parseFloat(el.textContent.replace('$', '')) || 0;
+            });
+
+            var taxPercent = parseFloat(document.getElementById('qTaxPercent').value) || 0;
+            var discount = parseFloat(document.getElementById('qDiscount').value) || 0;
+            var taxAmount = subtotal * taxPercent / 100;
+            var total = subtotal + taxAmount - discount;
+            if (total < 0) total = 0;
+
+            document.getElementById('qSubtotal').textContent = '$' + subtotal.toFixed(2);
+            document.getElementById('qTaxAmount').textContent = '$' + taxAmount.toFixed(2);
+            document.getElementById('qDiscountAmount').textContent = discount.toFixed(2);
+            document.getElementById('qTotal').textContent = '$' + total.toFixed(2);
+        }
+
+        function openBookingQuoteEditor(bookingId, quoteId) {
+            document.getElementById('qBookingId').value = bookingId;
+            document.getElementById('qQuoteId').value = quoteId;
+            document.getElementById('itemsBody').innerHTML = '';
+            itemRowIndex = 0;
+
+            document.getElementById('qTaxPercent').value = '0';
+            document.getElementById('qDiscount').value = '0';
+            document.getElementById('qValidUntil').value = '';
+            document.getElementById('qNotes').value = '';
+            document.getElementById('qTerms').value = '';
+            calcTotals();
+
+            if (quoteId > 0) {
+                var modal = document.getElementById('viewModal' + bookingId);
+                var quoteSection = modal.querySelector('.quote-section');
+                if (quoteSection) {
+                    var items = quoteSection.querySelectorAll('.quote-items-table tbody tr');
+                    items.forEach(function(row) {
+                        var cells = row.querySelectorAll('td');
+                        if (cells.length >= 5) {
+                            var desc = cells[1].textContent.trim();
+                            var qty = cells[2].textContent.trim();
+                            var price = cells[3].textContent.replace('$', '').trim();
+                            addItemRow(desc, qty, price);
+                        }
+                    });
+                }
+                if (document.querySelectorAll('#itemsBody .item-row').length === 0) {
+                    addItemRow('', 1, 0);
+                }
+            } else {
+                addItemRow('', 1, 0);
+            }
+
+            $('#bookingQuoteEditorModal').modal('show');
+        }
+
+        $('#bookingQuoteForm').on('submit', function() {
+            var items = [];
+            document.querySelectorAll('#itemsBody .item-row').forEach(function(row) {
+                var desc = row.querySelector('.item-desc').value.trim();
+                var qty = row.querySelector('.item-qty').value;
+                var price = row.querySelector('.item-price').value;
+                if (desc) {
+                    items.push({ description: desc, quantity: qty, unit_price: price });
+                }
+            });
+            if (items.length === 0) {
+                alert('Please add at least one item to the quote.');
+                return false;
+            }
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'items_json';
+            input.value = JSON.stringify(items);
+            this.appendChild(input);
+            return true;
+        });
+
+        $('#bookingQuoteEditorModal').on('hidden.bs.modal', function() {
+            location.reload();
+        });
     </script>
 </body>
 </html>
