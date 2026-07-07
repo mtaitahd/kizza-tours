@@ -1908,6 +1908,11 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     border-bottom: 1px solid rgba(255,255,255,0.08);
     z-index: 1031;
     font-size: 0.78rem;
+    transition: transform 0.35s ease;
+}
+
+.top-bar.scroll-hide {
+    transform: translateY(-100%);
 }
 
 .top-bar .container {
@@ -2027,6 +2032,10 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 .search-form .search-input:focus {
     box-shadow: none;
     border-color: var(--secondary);
+}
+
+body.topbar-hidden .navbar {
+    top: 0 !important;
 }
 
 /*===== NAVBAR =====*/

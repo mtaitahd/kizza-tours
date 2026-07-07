@@ -146,7 +146,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         img{max-width:100%;height:auto}
         a{color:var(--secondary);text-decoration:none;transition:var(--transition)}
         h1{font-size:clamp(2.5rem,6vw,5rem);font-family:var(--font-primary);font-weight:600;line-height:1.2;color:var(--primary)}
-        .top-bar{position:fixed;top:0;left:0;width:100%;height:44px;background:var(--primary);border-bottom:1px solid rgba(255,255,255,0.08);z-index:1031;font-size:.78rem}
+        .top-bar{position:fixed;top:0;left:0;width:100%;height:44px;background:var(--primary);border-bottom:1px solid rgba(255,255,255,0.08);z-index:1031;font-size:.78rem;transition:transform .35s ease}.top-bar.scroll-hide{transform:translateY(-100%)}
         .top-bar .container{height:100%;display:flex;align-items:center;justify-content:space-between}
         .top-bar-info{display:flex;align-items:center;gap:1.2rem}
         .top-bar-link{color:rgba(255,255,255,0.7);white-space:nowrap;font-size:.78rem}
@@ -156,7 +156,9 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     ?></style>
 
     <script>function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
-    if(document.readyState==='complete'||document.readyState==='interactive'){aosInit()}else{document.addEventListener('DOMContentLoaded',aosInit)}</script>
+    if(document.readyState==='complete'||document.readyState==='interactive'){aosInit()}else{document.addEventListener('DOMContentLoaded',aosInit)}
+    function topBarScroll(){var t=document.querySelector('.top-bar');if(!t)return;var s=window.scrollY>80;t.classList.toggle('scroll-hide',s);document.body.classList.toggle('topbar-hidden',s)}
+    var _tick;document.addEventListener('scroll',function(){clearTimeout(_tick);_tick=setTimeout(topBarScroll,50)},{passive:true});topBarScroll()</script>
 
     <!-- Bootstrap 5 (non-blocking — critical Bootstrap grid styles inlined above) -->
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" onload="this.onload=null;this.rel='stylesheet'">
