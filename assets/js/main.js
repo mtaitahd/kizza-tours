@@ -8,13 +8,6 @@ $(document).ready(function() {
     'use strict';
 
     //==========================================
-    // PRELOADER (hidden inline already; just safety)
-    //==========================================
-    $(window).on('load', function() {
-        $('#preloader').addClass('hidden');
-    });
-
-    //==========================================
     // SMOOTH SCROLL FOR NAV LINKS
     //==========================================
     $('a[href*="#"]').not('[href="#"]').not('[data-bs-toggle]').on('click', function(e) {

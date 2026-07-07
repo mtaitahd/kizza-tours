@@ -2099,59 +2099,6 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     color: var(--secondary);
 }
 
-/*===== PRELOADER =====*/
-#preloader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-}
-
-#preloader.hidden {
-    opacity: 0;
-    visibility: hidden;
-}
-
-.preloader-content {
-    text-align: center;
-}
-
-.preloader-logo {
-    font-family: var(--font-primary);
-    font-size: 2.5rem;
-    color: var(--secondary);
-    margin-bottom: 1.5rem;
-    font-weight: 700;
-}
-
-.preloader-bar {
-    width: 200px;
-    height: 2px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 0 auto;
-}
-
-.preloader-bar-inner {
-    width: 0%;
-    height: 100%;
-    background: var(--secondary);
-    animation: preloaderLoad 2s ease-in-out forwards;
-}
-
-@keyframes preloaderLoad {
-    0% { width: 0%; }
-    100% { width: 100%; }
-}
-
 /*===== COUNTER =====*/
 .counter-number {
     font-family: var(--font-primary);

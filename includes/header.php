@@ -145,14 +145,10 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         body{font-family:var(--font-body);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;background:var(--primary)}
         img{max-width:100%;height:auto}
         a{color:var(--secondary);text-decoration:none;transition:var(--transition)}
-        h1{font-size:clamp(2.5rem,6vw,5rem);font-family:var(--font-primary);font-weight:600;line-height:1.2;color:var(--primary)}
-        #preloader{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--primary);display:flex;align-items:center;justify-content:center;z-index:99999;transition:opacity .5s ease,visibility .5s ease;opacity:1}
-        #preloader.hidden{opacity:0;visibility:hidden}
-        .preloader-content{text-align:center}
-        .preloader-logo{font-family:var(--font-primary);font-size:2.5rem;color:var(--secondary);margin-bottom:1.5rem;font-weight:700}'; 
+        h1{font-size:clamp(2.5rem,6vw,5rem);font-family:var(--font-primary);font-weight:600;line-height:1.2;color:var(--primary)}'; 
     ?></style>
 
-    <script>(function(){var p=document.getElementById('preloader');if(p){document.addEventListener('DOMContentLoaded',function(){p.classList.add('hidden')});setTimeout(function(){p.classList.add('hidden')},2000)}})();function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
+    <script>function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
     if(document.readyState==='complete'||document.readyState==='interactive'){aosInit()}else{document.addEventListener('DOMContentLoaded',aosInit)}</script>
 
     <!-- Bootstrap 5 (non-blocking — critical Bootstrap grid styles inlined above) -->
@@ -184,14 +180,6 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css"></noscript>
 </head>
 <body>
-
-<!-- Preloader -->
-<div id="preloader">
-    <div class="preloader-content">
-        <div class="preloader-logo"><?php echo $siteName; ?></div>
-        <div class="preloader-bar"><div class="preloader-bar-inner"></div></div>
-    </div>
-</div>
 
 <!-- WhatsApp Float -->
 <a href="https://wa.me/<?php echo $siteWhatsapp; ?>" class="whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
