@@ -85,25 +85,41 @@ $allowedExts = env('ALLOWED_EXTENSIONS', 'jpg,jpeg,png,webp,gif,svg,avif,bmp,tif
 define('ALLOWED_EXTENSIONS', array_map('trim', explode(',', $allowedExts)));
 
 // ===========================================
-// DYNAMIC SETTINGS HELPER
+// DYNAMIC SETTINGS HELPER (with file cache)
 // ===========================================
 $settings_cache = null;
+$settings_cache_file = dirname(__DIR__) . '/cache/settings.php';
+$settings_cache_ttl = 3600;
 
-function getSetting($key, $default = '') {
-    global $settings_cache;
-    if ($settings_cache === null) {
-        try {
-            $db = Database::getInstance();
-            $results = $db->fetchAll("SELECT setting_key, setting_value FROM settings");
-            $settings_cache = [];
-            foreach ($results as $row) {
-                $settings_cache[$row['setting_key']] = $row['setting_value'];
-            }
-        } catch (Exception $e) {
-            $settings_cache = [];
+function loadSettingsCache() {
+    global $settings_cache, $settings_cache_file, $settings_cache_ttl;
+    if ($settings_cache !== null) return $settings_cache;
+    if (file_exists($settings_cache_file) && (time() - filemtime($settings_cache_file)) < $settings_cache_ttl) {
+        $data = @include $settings_cache_file;
+        if (is_array($data)) {
+            $settings_cache = $data;
+            return $settings_cache;
         }
     }
-    $value = $settings_cache[$key] ?? null;
+    try {
+        $db = Database::getInstance();
+        $results = $db->fetchAll("SELECT setting_key, setting_value FROM settings");
+        $settings_cache = [];
+        foreach ($results as $row) {
+            $settings_cache[$row['setting_key']] = $row['setting_value'];
+        }
+        $dir = dirname($settings_cache_file);
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        file_put_contents($settings_cache_file, '<?php return ' . var_export($settings_cache, true) . ';');
+    } catch (Exception $e) {
+        $settings_cache = [];
+    }
+    return $settings_cache;
+}
+
+function getSetting($key, $default = '') {
+    $cache = loadSettingsCache();
+    $value = $cache[$key] ?? null;
     return ($value !== null && $value !== '') ? $value : $default;
 }
 
@@ -125,8 +141,9 @@ function updateSetting($key, $value) {
         } else {
             $db->query("INSERT INTO settings (setting_key, setting_value, setting_group) VALUES (?, ?, 'general')", [$key, $value]);
         }
-        global $settings_cache;
+        global $settings_cache, $settings_cache_file;
         $settings_cache = null;
+        if (file_exists($settings_cache_file)) @unlink($settings_cache_file);
         return true;
     } catch (Exception $e) {
         error_log("Settings Update Error: " . $e->getMessage());

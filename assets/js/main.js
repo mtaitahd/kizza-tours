@@ -8,12 +8,10 @@ $(document).ready(function() {
     'use strict';
 
     //==========================================
-    // PRELOADER
+    // PRELOADER (hidden inline already; just safety)
     //==========================================
     $(window).on('load', function() {
-        setTimeout(function() {
-            $('#preloader').addClass('hidden');
-        }, 300);
+        $('#preloader').addClass('hidden');
     });
 
     //==========================================

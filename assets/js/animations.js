@@ -16,7 +16,7 @@ AOS.init({
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
-    // Wait for preloader
+    // Short delay for layout settle
     setTimeout(() => {
         // Hero Animations
         gsap.from('.hero-title', {
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create floating particles
         createParticles();
 
-    }, 2500); // Wait for preloader
+    }, 300);
 
     // Create floating particles in hero
     function createParticles() {
