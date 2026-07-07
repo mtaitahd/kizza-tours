@@ -491,216 +491,222 @@ if ($quotesTablesOk) {
                                                 </div>
                                             </td>
                                         </tr>
-
-                                        <!-- View Modal -->
-                                        <div class="modal fade" id="viewModal<?php echo $b['id']; ?>" tabindex="-1">
-                                            <div class="modal-dialog modal-xl modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Booking - <?php echo htmlspecialchars($b['booking_reference']); ?></h5>
-                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <p><strong>Name:</strong> <?php echo htmlspecialchars($b['full_name']); ?></p>
-                                                                <p><strong>Email:</strong> <a href="mailto:<?php echo $b['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($b['email']); ?></a></p>
-                                                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($b['phone']); ?></p>
-                                                                <p><strong>Travel Date:</strong> <?php echo $b['travel_date'] ? date('F d, Y', strtotime($b['travel_date'])) : 'N/A'; ?></p>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <p><strong>Destination:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('-', ' ', $b['destination_id'] ?? 'N/A'))); ?></p>
-                                                                <p><strong>Guests:</strong> <?php echo $b['guests']; ?></p>
-                                                                <p><strong>Budget:</strong> <?php echo htmlspecialchars($b['budget'] ?: 'N/A'); ?></p>
-                                                                <p><strong>Accommodation:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $b['accommodation'] ?? 'N/A'))); ?></p>
-                                                            </div>
-                                                            <?php if ($b['message']): ?>
-                                                            <div class="col-12">
-                                                                <p><strong>Message:</strong></p>
-                                                                <p style="background: #f8f9fa; padding: 1rem; border-radius: 8px;"><?php echo nl2br(htmlspecialchars($b['message'])); ?></p>
-                                                            </div>
-                                                            <?php endif; ?>
-                                                            <div class="col-12">
-                                                                <p><strong>Booked On:</strong> <?php echo date('F d, Y \a\t h:i A', strtotime($b['created_at'])); ?></p>
-                                                            </div>
-                                                        </div>
-
-                                                        <hr>
-
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <h6 class="text-muted mb-3"><i class="fas fa-reply-all mr-1"></i> Reply History</h6>
-                                                                <?php if (!empty($replies[$b['id']])): ?>
-                                                                <?php foreach ($replies[$b['id']] as $r): ?>
-                                                                <div class="reply-entry">
-                                                                    <div class="reply-header">
-                                                                        <span class="reply-admin"><?php echo htmlspecialchars($r['admin_name'] ?? 'Admin'); ?></span>
-                                                                        <span class="reply-date"><?php echo date('M d, Y \a\t h:i A', strtotime($r['created_at'])); ?></span>
-                                                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this reply?');">
-                                                                            <input type="hidden" name="action" value="delete_reply">
-                                                                            <input type="hidden" name="reply_id" value="<?php echo $r['id']; ?>">
-                                                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Delete reply"><i class="fas fa-trash-alt"></i></button>
-                                                                        </form>
-                                                                    </div>
-                                                                    <div class="reply-subject"><?php echo htmlspecialchars($r['subject']); ?></div>
-                                                                    <div class="reply-message"><?php echo nl2br(htmlspecialchars($r['message'])); ?></div>
-                                                                </div>
-                                                                <?php endforeach; ?>
-                                                                <?php else: ?>
-                                                                <p class="text-muted">No replies yet.</p>
-                                                                <?php endif; ?>
-                                                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-toggle="modal" data-target="#replyModal<?php echo $b['id']; ?>"><i class="fas fa-reply"></i> Reply</button>
-                                                            </div>
-
-                                                            <div class="col-md-6">
-                                                                <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Quote Management</h6>
-                                                                <?php if ($quoteData): ?>
-                                                                    <div class="quote-section">
-                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                            <strong>#<?php echo htmlspecialchars($quoteData['quote_number']); ?></strong>
-                                                                            <span class="badge badge-<?php
-                                                                                $s = $quoteData['status'];
-                                                                                echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
-                                                                            ?>"><?php echo ucfirst($s); ?></span>
-                                                                        </div>
-                                                                        <?php if (!empty($quoteData['items'])): ?>
-                                                                            <table class="table table-sm quote-items-table mb-2">
-                                                                                <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
-                                                                                <tbody>
-                                                                                <?php $i = 1; foreach ($quoteData['items'] as $item): ?>
-                                                                                    <tr>
-                                                                                        <td><?php echo $i++; ?></td>
-                                                                                        <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                                                                        <td><?php echo (int)$item['quantity']; ?></td>
-                                                                                        <td><?php echo '$' . number_format($item['unit_price'], 2); ?></td>
-                                                                                        <td><?php echo '$' . number_format($item['total'], 2); ?></td>
-                                                                                    </tr>
-                                                                                <?php endforeach; ?>
-                                                                                </tbody>
-                                                                            </table>
-                                                                            <div class="text-right" style="font-size:0.85rem;">
-                                                                                <strong>Total: $<?php echo number_format($quoteData['total'], 2); ?></strong>
-                                                                            </div>
-                                                                        <?php else: ?>
-                                                                            <p class="text-muted mb-2">No items added yet.</p>
-                                                                        <?php endif; ?>
-
-                                                                        <div class="quote-actions">
-                                                                            <?php if ($quoteData['status'] === 'draft'): ?>
-                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit Quote</button>
-                                                                                <form method="POST" style="display:inline;">
-                                                                                    <input type="hidden" name="action" value="prepare_quote">
-                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
-                                                                                </form>
-                                                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
-                                                                                    <input type="hidden" name="action" value="delete_quote">
-                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                                                                </form>
-                                                                            <?php elseif ($quoteData['status'] === 'prepared'): ?>
-                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
-                                                                                <form method="POST" style="display:inline;">
-                                                                                    <input type="hidden" name="action" value="confirm_quote">
-                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
-                                                                                </form>
-                                                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
-                                                                                    <input type="hidden" name="action" value="delete_quote">
-                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                                                                </form>
-                                                                            <?php elseif ($quoteData['status'] === 'confirmed' || $quoteData['status'] === 'sent'): ?>
-                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
-                                                                                <?php if (empty($quoteData['pdf_path'])): ?>
-                                                                                    <form method="POST" style="display:inline;">
-                                                                                        <input type="hidden" name="action" value="generate_pdf">
-                                                                                        <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
-                                                                                    </form>
-                                                                                <?php else: ?>
-                                                                                    <form method="POST" style="display:inline;">
-                                                                                        <input type="hidden" name="action" value="generate_pdf">
-                                                                                        <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
-                                                                                    </form>
-                                                                                    <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
-                                                                                    <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
-                                                                                <?php endif; ?>
-                                                                                <form method="POST" style="display:inline;">
-                                                                                    <input type="hidden" name="action" value="send_quote_email">
-                                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> <?php echo $quoteData['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
-                                                                                </form>
-                                                                            <?php endif; ?>
-                                                                        </div>
-                                                                    </div>
-                                                                <?php else: ?>
-                                                                    <div class="quote-section text-center py-3">
-                                                                        <p class="text-muted mb-2">No quote has been prepared for this booking yet.</p>
-                                                                        <button class="btn btn-sm btn-success" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, 0)"><i class="fas fa-plus"></i> Prepare Quote</button>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Reply Modal -->
-                                        <div class="modal fade" id="replyModal<?php echo $b['id']; ?>" tabindex="-1">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Reply to <?php echo htmlspecialchars($b['full_name']); ?></h5>
-                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                                    </div>
-                                                    <form method="POST">
-                                                        <div class="modal-body">
-                                                            <input type="hidden" name="action" value="send_booking_reply">
-                                                            <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
-                                                            <div class="form-group">
-                                                                <label class="font-weight-bold">To</label>
-                                                                <p class="form-control-static"><?php echo htmlspecialchars($b['full_name']); ?> &lt;<?php echo htmlspecialchars($b['email']); ?>&gt;</p>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label for="reply_subject_<?php echo $b['id']; ?>">Subject <span class="text-danger">*</span></label>
-                                                                <input type="text" name="reply_subject" id="reply_subject_<?php echo $b['id']; ?>" class="form-control" required>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label for="reply_message_<?php echo $b['id']; ?>">Message <span class="text-danger">*</span></label>
-                                                                <textarea name="reply_message" id="reply_message_<?php echo $b['id']; ?>" rows="6" class="form-control" required></textarea>
-                                                            </div>
-                                                            <div class="form-group mb-0">
-                                                                <label>Quick Templates</label>
-                                                                <select class="form-control form-control-sm" onchange="fillTemplate(this, <?php echo $b['id']; ?>)">
-                                                                    <option value="">-- Select Template --</option>
-                                                                    <option value="thank_you">Thank You - Getting Back Soon</option>
-                                                                    <option value="more_info">Request More Information</option>
-                                                                    <option value="quote_sent">Quote / Itinerary Sent</option>
-                                                                    <option value="booking_confirmed">Booking Confirmed</option>
-                                                                    <option value="custom">Custom (Blank)</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                                            <button type="submit" class="btn btn-primary" style="background-color:#0A2540;border-color:#0A2540;"><i class="fas fa-paper-plane"></i> Send Reply</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
                                         <?php endforeach; ?>
                                         <?php if (empty($bookings)): ?>
                                         <tr><td colspan="10" class="text-center py-4 text-muted">No bookings found</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View & Reply Modals (outside table) -->
+                    <?php foreach ($bookings as $b):
+                        $quoteData = $quotesByBooking[$b['id']] ?? null;
+                    ?>
+                    <div class="modal fade" id="viewModal<?php echo $b['id']; ?>" tabindex="-1">
+                        <div class="modal-dialog modal-xl modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Booking - <?php echo htmlspecialchars($b['booking_reference']); ?></h5>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Name:</strong> <?php echo htmlspecialchars($b['full_name']); ?></p>
+                                            <p><strong>Email:</strong> <a href="mailto:<?php echo $b['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($b['email']); ?></a></p>
+                                            <p><strong>Phone:</strong> <?php echo htmlspecialchars($b['phone']); ?></p>
+                                            <p><strong>Travel Date:</strong> <?php echo $b['travel_date'] ? date('F d, Y', strtotime($b['travel_date'])) : 'N/A'; ?></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Destination:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('-', ' ', $b['destination_id'] ?? 'N/A'))); ?></p>
+                                            <p><strong>Guests:</strong> <?php echo $b['guests']; ?></p>
+                                            <p><strong>Budget:</strong> <?php echo htmlspecialchars($b['budget'] ?: 'N/A'); ?></p>
+                                            <p><strong>Accommodation:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $b['accommodation'] ?? 'N/A'))); ?></p>
+                                        </div>
+                                        <?php if ($b['message']): ?>
+                                        <div class="col-12">
+                                            <p><strong>Message:</strong></p>
+                                            <p style="background: #f8f9fa; padding: 1rem; border-radius: 8px;"><?php echo nl2br(htmlspecialchars($b['message'])); ?></p>
+                                        </div>
+                                        <?php endif; ?>
+                                        <div class="col-12">
+                                            <p><strong>Booked On:</strong> <?php echo date('F d, Y \a\t h:i A', strtotime($b['created_at'])); ?></p>
+                                        </div>
+                                    </div>
+
+                                    <hr>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="text-muted mb-3"><i class="fas fa-reply-all mr-1"></i> Reply History</h6>
+                                            <?php if (!empty($replies[$b['id']])): ?>
+                                            <?php foreach ($replies[$b['id']] as $r): ?>
+                                            <div class="reply-entry">
+                                                <div class="reply-header">
+                                                    <span class="reply-admin"><?php echo htmlspecialchars($r['admin_name'] ?? 'Admin'); ?></span>
+                                                    <span class="reply-date"><?php echo date('M d, Y \a\t h:i A', strtotime($r['created_at'])); ?></span>
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this reply?');">
+                                                        <input type="hidden" name="action" value="delete_reply">
+                                                        <input type="hidden" name="reply_id" value="<?php echo $r['id']; ?>">
+                                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Delete reply"><i class="fas fa-trash-alt"></i></button>
+                                                    </form>
+                                                </div>
+                                                <div class="reply-subject"><?php echo htmlspecialchars($r['subject']); ?></div>
+                                                <div class="reply-message"><?php echo nl2br(htmlspecialchars($r['message'])); ?></div>
+                                            </div>
+                                            <?php endforeach; ?>
+                                            <?php else: ?>
+                                            <p class="text-muted">No replies yet.</p>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-toggle="modal" data-target="#replyModal<?php echo $b['id']; ?>"><i class="fas fa-reply"></i> Reply</button>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Quote Management</h6>
+                                            <?php if ($quoteData): ?>
+                                                <div class="quote-section">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <strong>#<?php echo htmlspecialchars($quoteData['quote_number']); ?></strong>
+                                                        <span class="badge badge-<?php
+                                                            $s = $quoteData['status'];
+                                                            echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
+                                                        ?>"><?php echo ucfirst($s); ?></span>
+                                                    </div>
+                                                    <?php if (!empty($quoteData['items'])): ?>
+                                                        <table class="table table-sm quote-items-table mb-2">
+                                                            <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                                                            <tbody>
+                                                            <?php $i = 1; foreach ($quoteData['items'] as $item): ?>
+                                                                <tr>
+                                                                    <td><?php echo $i++; ?></td>
+                                                                    <td><?php echo htmlspecialchars($item['description']); ?></td>
+                                                                    <td><?php echo (int)$item['quantity']; ?></td>
+                                                                    <td><?php echo '$' . number_format($item['unit_price'], 2); ?></td>
+                                                                    <td><?php echo '$' . number_format($item['total'], 2); ?></td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                            </tbody>
+                                                        </table>
+                                                        <div class="text-right" style="font-size:0.85rem;">
+                                                            <strong>Total: $<?php echo number_format($quoteData['total'], 2); ?></strong>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <p class="text-muted mb-2">No items added yet.</p>
+                                                    <?php endif; ?>
+
+                                                    <div class="quote-actions">
+                                                        <?php if ($quoteData['status'] === 'draft'): ?>
+                                                            <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit Quote</button>
+                                                            <form method="POST" style="display:inline;">
+                                                                <input type="hidden" name="action" value="prepare_quote">
+                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
+                                                            </form>
+                                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
+                                                                <input type="hidden" name="action" value="delete_quote">
+                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                            </form>
+                                                        <?php elseif ($quoteData['status'] === 'prepared'): ?>
+                                                            <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                                            <form method="POST" style="display:inline;">
+                                                                <input type="hidden" name="action" value="confirm_quote">
+                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
+                                                            </form>
+                                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
+                                                                <input type="hidden" name="action" value="delete_quote">
+                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                                            </form>
+                                                        <?php elseif ($quoteData['status'] === 'confirmed' || $quoteData['status'] === 'sent'): ?>
+                                                            <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                                            <?php if (empty($quoteData['pdf_path'])): ?>
+                                                                <form method="POST" style="display:inline;">
+                                                                    <input type="hidden" name="action" value="generate_pdf">
+                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
+                                                                </form>
+                                                            <?php else: ?>
+                                                                <form method="POST" style="display:inline;">
+                                                                    <input type="hidden" name="action" value="generate_pdf">
+                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
+                                                                </form>
+                                                                <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
+                                                                <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
+                                                            <?php endif; ?>
+                                                            <form method="POST" style="display:inline;">
+                                                                <input type="hidden" name="action" value="send_quote_email">
+                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> <?php echo $quoteData['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
+                                                            </form>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="quote-section text-center py-3">
+                                                    <p class="text-muted mb-2">No quote has been prepared for this booking yet.</p>
+                                                    <button class="btn btn-sm btn-success" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, 0)"><i class="fas fa-plus"></i> Prepare Quote</button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="replyModal<?php echo $b['id']; ?>" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Reply to <?php echo htmlspecialchars($b['full_name']); ?></h5>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+                                <form method="POST">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="action" value="send_booking_reply">
+                                        <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                        <div class="form-group">
+                                            <label class="font-weight-bold">To</label>
+                                            <p class="form-control-static"><?php echo htmlspecialchars($b['full_name']); ?> &lt;<?php echo htmlspecialchars($b['email']); ?>&gt;</p>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="reply_subject_<?php echo $b['id']; ?>">Subject <span class="text-danger">*</span></label>
+                                            <input type="text" name="reply_subject" id="reply_subject_<?php echo $b['id']; ?>" class="form-control" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="reply_message_<?php echo $b['id']; ?>">Message <span class="text-danger">*</span></label>
+                                            <textarea name="reply_message" id="reply_message_<?php echo $b['id']; ?>" rows="6" class="form-control" required></textarea>
+                                        </div>
+                                        <div class="form-group mb-0">
+                                            <label>Quick Templates</label>
+                                            <select class="form-control form-control-sm" onchange="fillTemplate(this, <?php echo $b['id']; ?>)">
+                                                <option value="">-- Select Template --</option>
+                                                <option value="thank_you">Thank You - Getting Back Soon</option>
+                                                <option value="more_info">Request More Information</option>
+                                                <option value="quote_sent">Quote / Itinerary Sent</option>
+                                                <option value="booking_confirmed">Booking Confirmed</option>
+                                                <option value="custom">Custom (Blank)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary" style="background-color:#0A2540;border-color:#0A2540;"><i class="fas fa-paper-plane"></i> Send Reply</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                             </div>
                         </div>
                     </div>
