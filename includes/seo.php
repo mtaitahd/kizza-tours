@@ -7,7 +7,7 @@ function seoPageData($pageKey) {
     $sitePhone = getSetting('site_phone', SITE_PHONE);
     $siteEmail = getSetting('site_email', SITE_EMAIL);
     $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
-    $ogImage = getMediaUrl('og_image', 'images/og-image.jpg');
+    $ogImage = getMediaUrl('og_image', 'images/log.png');
     $url = SITE_URL;
     $suffix = ' | Kizza Tours';
 
@@ -158,7 +158,7 @@ function seoOrganizationSchema() {
     $siteName = getSetting('site_name', SITE_NAME);
     $sitePhone = getSetting('site_phone', SITE_PHONE);
     $siteEmail = getSetting('site_email', SITE_EMAIL);
-    $ogImage = getMediaUrl('og_image', 'images/og-image.jpg');
+    $ogImage = getMediaUrl('og_image', 'images/log.png');
     return [
         '@context' => 'https://schema.org',
         '@type' => 'Organization',
@@ -187,7 +187,7 @@ function seoLocalBusinessSchema() {
     $sitePhone = getSetting('site_phone', SITE_PHONE);
     $siteEmail = getSetting('site_email', SITE_EMAIL);
     $addr = getSetting('site_address', SITE_ADDRESS);
-    $ogImage = getMediaUrl('og_image', 'images/og-image.jpg');
+    $ogImage = getMediaUrl('og_image', 'images/log.png');
     return [
         '@context' => 'https://schema.org',
         '@type' => 'LocalBusiness',
