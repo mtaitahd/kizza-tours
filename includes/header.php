@@ -152,7 +152,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         .preloader-logo{font-family:var(--font-primary);font-size:2.5rem;color:var(--secondary);margin-bottom:1.5rem;font-weight:700}'; 
     ?></style>
 
-    <script>(function(){var p=document.getElementById('preloader');if(p){document.addEventListener('DOMContentLoaded',function(){p.classList.add('hidden')});setTimeout(function(){p.classList.add('hidden')},2000)}})();</script>
+    <script>(function(){var p=document.getElementById('preloader');if(p){document.addEventListener('DOMContentLoaded',function(){p.classList.add('hidden')});setTimeout(function(){p.classList.add('hidden')},2000)}})();function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
+    if(document.readyState==='complete'||document.readyState==='interactive'){aosInit()}else{document.addEventListener('DOMContentLoaded',aosInit)}</script>
 
     <!-- Bootstrap 5 (non-blocking — critical Bootstrap grid styles inlined above) -->
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" onload="this.onload=null;this.rel='stylesheet'">

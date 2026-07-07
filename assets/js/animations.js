@@ -4,14 +4,6 @@
  * GSAP, AOS, ScrollTrigger Animations
  */
 
-// Initialize AOS
-AOS.init({
-    duration: 1000,
-    once: true,
-    offset: 100,
-    easing: 'ease-out-cubic'
-});
-
 // GSAP Animations
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
