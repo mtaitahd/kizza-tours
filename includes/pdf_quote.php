@@ -41,9 +41,13 @@ function generateQuotePdf($quoteId) {
     $db = db();
 
     $quote = $db->fetchOne("
-        SELECT q.*, i.full_name, i.email, i.phone 
-        FROM quotes q 
-        JOIN inquiries i ON q.inquiry_id = i.id 
+        SELECT q.*,
+            COALESCE(i.full_name, b.full_name) AS full_name,
+            COALESCE(i.email, b.email) AS email,
+            COALESCE(i.phone, b.phone) AS phone
+        FROM quotes q
+        LEFT JOIN inquiries i ON q.inquiry_id = i.id
+        LEFT JOIN bookings b ON q.booking_id = b.id
         WHERE q.id = ?
     ", [$quoteId]);
 
@@ -244,9 +248,13 @@ function sendQuoteEmail($quoteId) {
     $db = db();
 
     $quote = $db->fetchOne("
-        SELECT q.*, i.full_name, i.email, i.phone 
-        FROM quotes q 
-        JOIN inquiries i ON q.inquiry_id = i.id 
+        SELECT q.*,
+            COALESCE(i.full_name, b.full_name) AS full_name,
+            COALESCE(i.email, b.email) AS email,
+            COALESCE(i.phone, b.phone) AS phone
+        FROM quotes q
+        LEFT JOIN inquiries i ON q.inquiry_id = i.id
+        LEFT JOIN bookings b ON q.booking_id = b.id
         WHERE q.id = ?
     ", [$quoteId]);
 

@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS quotes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    inquiry_id INT NOT NULL,
+    inquiry_id INT DEFAULT NULL,
+    booking_id INT DEFAULT NULL,
     quote_number VARCHAR(30) NOT NULL UNIQUE,
     status ENUM('draft', 'prepared', 'confirmed', 'sent') DEFAULT 'draft',
     subtotal DECIMAL(12,2) DEFAULT 0.00,
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS quotes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (inquiry_id) REFERENCES inquiries(id) ON DELETE CASCADE,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES admin_users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

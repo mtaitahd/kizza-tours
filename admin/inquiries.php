@@ -22,6 +22,14 @@ function ensureQuoteTables() {
     try {
         $db = db();
         $db->fetchOne("SELECT 1 FROM quotes LIMIT 1");
+        try {
+            $db->query("ALTER TABLE quotes ADD COLUMN booking_id INT DEFAULT NULL AFTER inquiry_id");
+        } catch (\Throwable $e) {
+        }
+        try {
+            $db->query("ALTER TABLE quotes MODIFY COLUMN inquiry_id INT DEFAULT NULL");
+        } catch (\Throwable $e) {
+        }
         return true;
     } catch (\Throwable $e) {
         try {
@@ -63,39 +71,62 @@ function recalcQuote(&$db, $quoteId) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $id = intval($_POST['id'] ?? 0);
+    $type = $_POST['type'] ?? 'inquiry';
 
     if ($_POST['action'] === 'mark_read') {
-        $db->query("UPDATE inquiries SET status = 'read' WHERE id = ?", [$id]);
+        if ($type === 'inquiry') {
+            $db->query("UPDATE inquiries SET status = 'read' WHERE id = ?", [$id]);
+        }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Marked as read'];
 
     } elseif ($_POST['action'] === 'mark_replied') {
-        $db->query("UPDATE inquiries SET status = 'replied' WHERE id = ?", [$id]);
+        if ($type === 'inquiry') {
+            $db->query("UPDATE inquiries SET status = 'replied' WHERE id = ?", [$id]);
+        }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Updated successfully'];
 
     } elseif ($_POST['action'] === 'delete') {
-        $db->query("DELETE FROM inquiries WHERE id = ?", [$id]);
+        if ($type === 'inquiry') {
+            $db->query("DELETE FROM inquiries WHERE id = ?", [$id]);
+        }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Deleted successfully'];
 
     } elseif ($_POST['action'] === 'send_reply') {
-        $inqId = intval($_POST['inq_id'] ?? 0);
+        $replyType = $_POST['reply_type'] ?? 'inquiry';
+        $replyId = intval($_POST['reply_id'] ?? 0);
         $replySubject = trim($_POST['reply_subject'] ?? '');
         $replyMessage = trim($_POST['reply_message'] ?? '');
-        $inq = $db->fetchOne("SELECT * FROM inquiries WHERE id = ?", [$inqId]);
-        if ($inq && !empty($replySubject) && !empty($replyMessage)) {
+
+        if ($replyType === 'inquiry') {
+            $inq = $db->fetchOne("SELECT * FROM inquiries WHERE id = ?", [$replyId]);
+            $customerEmail = $inq['email'] ?? '';
+            $customerName = $inq['full_name'] ?? '';
+            $origMsg = $inq['message'] ?? '';
+        } else {
+            $booking = $db->fetchOne("SELECT * FROM bookings WHERE id = ?", [$replyId]);
+            $customerEmail = $booking['email'] ?? '';
+            $customerName = $booking['full_name'] ?? '';
+            $origMsg = $booking['message'] ?? '';
+        }
+
+        if (!empty($customerEmail) && !empty($replySubject) && !empty($replyMessage)) {
             $body = "
             <html>
             <body style='font-family: Arial, sans-serif; padding: 20px;'>
                 <h2 style='color: #D4AF37;'>" . htmlspecialchars($replySubject) . "</h2>
                 <p>" . nl2br(htmlspecialchars($replyMessage)) . "</p>
                 <hr>
-                <p><small>Original message from " . htmlspecialchars($inq['full_name']) . ":</small></p>
-                <blockquote style='border-left: 3px solid #D4AF37; padding-left: 15px; color: #666; font-size: 0.9em;'>" . nl2br(htmlspecialchars($inq['message'])) . "</blockquote>
+                <p><small>Original message from " . htmlspecialchars($customerName) . ":</small></p>
+                <blockquote style='border-left: 3px solid #D4AF37; padding-left: 15px; color: #666; font-size: 0.9em;'>" . nl2br(htmlspecialchars($origMsg)) . "</blockquote>
                 <hr>
                 <p style='font-size: 0.85em; color: #888;'>Kizza Tours &amp; Safaris</p>
             </body>
             </html>";
-            sendMail($inq['email'], $replySubject, $body);
-            $db->query("UPDATE inquiries SET status = 'replied' WHERE id = ?", [$inqId]);
+            sendMail($customerEmail, $replySubject, $body);
+            if ($replyType === 'booking') {
+                $db->query("INSERT INTO booking_replies (booking_id, admin_id, subject, message) VALUES (?, ?, ?, ?)",
+                    [$replyId, $_SESSION['admin_id'], $replySubject, $replyMessage]);
+            }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reply sent successfully'];
         } else {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to send reply'];
@@ -103,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     } elseif ($_POST['action'] === 'save_quote') {
         $inqId = intval($_POST['inq_id'] ?? 0);
+        $bookingId = intval($_POST['booking_id'] ?? 0);
         $quoteId = intval($_POST['quote_id'] ?? 0);
         $itemsJson = $_POST['items_json'] ?? '[]';
         $items = json_decode($itemsJson, true);
@@ -120,8 +152,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $db->query("DELETE FROM quote_items WHERE quote_id = ?", [$quoteId]);
         } else {
             $quoteNumber = generateQuoteNumber($db);
-            $quoteId = $db->insert("INSERT INTO quotes (inquiry_id, quote_number, status, tax_percent, discount, notes, terms, valid_until, created_by) VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)",
-                [$inqId, $quoteNumber, $taxPercent, $discount, $notes, $terms, $validUntil, $_SESSION['admin_id']]);
+            if ($inqId) {
+                $quoteId = $db->insert("INSERT INTO quotes (inquiry_id, quote_number, status, tax_percent, discount, notes, terms, valid_until, created_by) VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)",
+                    [$inqId, $quoteNumber, $taxPercent, $discount, $notes, $terms, $validUntil, $_SESSION['admin_id']]);
+            } else {
+                $quoteId = $db->insert("INSERT INTO quotes (booking_id, quote_number, status, tax_percent, discount, notes, terms, valid_until, created_by) VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)",
+                    [$bookingId, $quoteNumber, $taxPercent, $discount, $notes, $terms, $validUntil, $_SESSION['admin_id']]);
+            }
         }
 
         $sortOrder = 0;
@@ -187,17 +224,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 $inquiries = $db->fetchAll("SELECT * FROM inquiries ORDER BY created_at DESC");
 
-$quotesByInquiry = [];
+$bookings = $db->fetchAll("SELECT * FROM bookings ORDER BY created_at DESC");
+
+$allItems = [];
+foreach ($inquiries as $item) {
+    $item['_type'] = 'inquiry';
+    $item['_source_id'] = $item['id'];
+    $item['_display_status'] = ucfirst($item['status']);
+    $allItems[] = $item;
+}
+foreach ($bookings as $item) {
+    $item['_type'] = 'booking';
+    $item['_source_id'] = $item['id'];
+    $item['_display_status'] = $item['status'] === 'pending' ? 'New' : ucfirst($item['status']);
+    $allItems[] = $item;
+}
+usort($allItems, function($a, $b) {
+    return strtotime($b['created_at']) - strtotime($a['created_at']);
+});
+
+$quotesByItem = [];
 if ($quotesTablesOk) {
-    foreach ($inquiries as $inq) {
+    foreach ($allItems as $item) {
+        $sourceId = $item['_source_id'];
         try {
-            $q = $db->fetchOne("SELECT * FROM quotes WHERE inquiry_id = ? ORDER BY id DESC LIMIT 1", [$inq['id']]);
+            if ($item['_type'] === 'inquiry') {
+                $q = $db->fetchOne("SELECT * FROM quotes WHERE inquiry_id = ? ORDER BY id DESC LIMIT 1", [$sourceId]);
+            } else {
+                $q = $db->fetchOne("SELECT * FROM quotes WHERE booking_id = ? ORDER BY id DESC LIMIT 1", [$sourceId]);
+            }
             if ($q) {
                 $q['items'] = $db->fetchAll("SELECT * FROM quote_items WHERE quote_id = ? ORDER BY sort_order ASC", [$q['id']]);
             }
-            $quotesByInquiry[$inq['id']] = $q;
+            $quotesByItem[$item['_type'] . '_' . $sourceId] = $q;
         } catch (\Throwable $e) {
-            $quotesByInquiry[$inq['id']] = null;
+            $quotesByItem[$item['_type'] . '_' . $sourceId] = null;
         }
     }
 }
@@ -366,19 +427,35 @@ if ($quotesTablesOk) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($inquiries as $inq):
-                                            $quoteData = $quotesByInquiry[$inq['id']] ?? null;
+                                        <?php foreach ($allItems as $item):
+                                            $itemKey = $item['_type'] . '_' . $item['_source_id'];
+                                            $quoteData = $quotesByItem[$itemKey] ?? null;
+                                            $isBooking = $item['_type'] === 'booking';
                                         ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($inq['full_name']); ?></td>
-                                            <td><a href="mailto:<?php echo $inq['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($inq['email']); ?></a></td>
-                                            <td><?php echo htmlspecialchars($inq['phone'] ?: '-'); ?></td>
-                                            <td><?php echo htmlspecialchars($inq['subject'] ?: '-'); ?></td>
-                                            <td><?php echo date('M d, Y', strtotime($inq['created_at'])); ?></td>
+                                            <td><?php echo htmlspecialchars($item['full_name']); ?></td>
+                                            <td><a href="mailto:<?php echo $item['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($item['email']); ?></a></td>
+                                            <td><?php echo htmlspecialchars($item['phone'] ?: '-'); ?></td>
                                             <td>
-                                                <span class="badge badge-<?php echo $inq['status'] === 'new' ? 'warning' : ($inq['status'] === 'read' ? 'info' : 'success'); ?>">
-                                                    <?php echo ucfirst($inq['status']); ?>
-                                                </span>
+                                                <?php if ($isBooking): ?>
+                                                    <span class="text-info"><i class="fas fa-calendar-check mr-1"></i></span>
+                                                    <span class="badge badge-info">BOOKING</span>
+                                                    <code><?php echo htmlspecialchars($item['booking_reference']); ?></code>
+                                                <?php else: ?>
+                                                    <?php echo htmlspecialchars($item['subject'] ?: '-'); ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo date('M d, Y', strtotime($item['created_at'])); ?></td>
+                                            <td>
+                                                <?php if ($isBooking): ?>
+                                                    <span class="badge badge-<?php echo $item['status'] === 'pending' ? 'warning' : ($item['status'] === 'confirmed' ? 'success' : ($item['status'] === 'completed' ? 'info' : 'secondary')); ?>">
+                                                        <?php echo ucfirst($item['status']); ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-<?php echo $item['status'] === 'new' ? 'warning' : ($item['status'] === 'read' ? 'info' : 'success'); ?>">
+                                                        <?php echo ucfirst($item['status']); ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?php if ($quoteData): ?>
@@ -392,42 +469,54 @@ if ($quotesTablesOk) {
                                             </td>
                                             <td>
                                                 <div class="d-flex">
-                                                    <button class="btn btn-sm btn-outline-secondary mr-1" data-toggle="modal" data-target="#inqModal<?php echo $inq['id']; ?>">
+                                                    <button class="btn btn-sm btn-outline-secondary mr-1" data-toggle="modal" data-target="#itemModal<?php echo $item['_source_id']; ?>">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
+                                                    <?php if (!$isBooking): ?>
                                                     <form method="POST" style="display:inline;" class="mr-1">
-                                                        <input type="hidden" name="id" value="<?php echo $inq['id']; ?>">
+                                                        <input type="hidden" name="id" value="<?php echo $item['_source_id']; ?>">
+                                                        <input type="hidden" name="type" value="inquiry">
                                                         <input type="hidden" name="action" value="mark_read">
                                                         <button type="submit" class="btn btn-sm btn-outline-info" title="Mark as read"><i class="fas fa-check"></i></button>
                                                     </form>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this inquiry?');">
-                                                        <input type="hidden" name="id" value="<?php echo $inq['id']; ?>">
+                                                        <input type="hidden" name="id" value="<?php echo $item['_source_id']; ?>">
+                                                        <input type="hidden" name="type" value="inquiry">
                                                         <input type="hidden" name="action" value="delete">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                                                     </form>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>
 
                                         <!-- View Modal -->
-                                        <div class="modal fade" id="inqModal<?php echo $inq['id']; ?>" tabindex="-1">
+                                        <div class="modal fade" id="itemModal<?php echo $item['_source_id']; ?>" tabindex="-1">
                                             <div class="modal-dialog modal-xl modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title">Inquiry from <?php echo htmlspecialchars($inq['full_name']); ?></h5>
+                                                        <h5 class="modal-title"><?php echo $isBooking ? 'Booking' : 'Inquiry'; ?> from <?php echo htmlspecialchars($item['full_name']); ?></h5>
                                                         <button type="button" class="close" data-dismiss="modal">&times;</button>
                                                     </div>
                                                     <div class="modal-body">
                                                         <div class="row">
                                                             <div class="col-md-6">
-                                                                <p><strong>Email:</strong> <a href="mailto:<?php echo $inq['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($inq['email']); ?></a></p>
-                                                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($inq['phone'] ?: 'N/A'); ?></p>
-                                                                <p><strong>Subject:</strong> <?php echo htmlspecialchars($inq['subject'] ?: 'N/A'); ?></p>
-                                                                <p><strong>Date:</strong> <?php echo date('F d, Y \a\t h:i A', strtotime($inq['created_at'])); ?></p>
+                                                                <p><strong>Email:</strong> <a href="mailto:<?php echo $item['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($item['email']); ?></a></p>
+                                                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($item['phone'] ?: 'N/A'); ?></p>
+                                                                <?php if ($isBooking): ?>
+                                                                    <p><strong>Reference:</strong> <code><?php echo htmlspecialchars($item['booking_reference']); ?></code></p>
+                                                                    <p><strong>Travel Date:</strong> <?php echo htmlspecialchars($item['travel_date'] ?: 'N/A'); ?></p>
+                                                                    <p><strong>Guests:</strong> <?php echo (int)($item['guests'] ?? 1); ?></p>
+                                                                    <p><strong>Budget:</strong> <?php echo htmlspecialchars($item['budget'] ?: 'N/A'); ?></p>
+                                                                    <p><strong>Accommodation:</strong> <?php echo htmlspecialchars($item['accommodation'] ?: 'N/A'); ?></p>
+                                                                <?php else: ?>
+                                                                    <p><strong>Subject:</strong> <?php echo htmlspecialchars($item['subject'] ?: 'N/A'); ?></p>
+                                                                <?php endif; ?>
+                                                                <p><strong>Date:</strong> <?php echo date('F d, Y \a\t h:i A', strtotime($item['created_at'])); ?></p>
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <p><strong>Message:</strong></p>
-                                                                <p style="background: #f8f9fa; padding: 1rem; border-radius: 8px;"><?php echo nl2br(htmlspecialchars($inq['message'])); ?></p>
+                                                                <p style="background: #f8f9fa; padding: 1rem; border-radius: 8px;"><?php echo nl2br(htmlspecialchars($item['message'])); ?></p>
                                                             </div>
                                                         </div>
 
@@ -438,10 +527,11 @@ if ($quotesTablesOk) {
                                                                 <h6 class="text-primary"><i class="fas fa-reply mr-2"></i>Send Email Reply</h6>
                                                                 <form method="POST">
                                                                     <input type="hidden" name="action" value="send_reply">
-                                                                    <input type="hidden" name="inq_id" value="<?php echo $inq['id']; ?>">
+                                                                    <input type="hidden" name="reply_type" value="<?php echo $item['_type']; ?>">
+                                                                    <input type="hidden" name="reply_id" value="<?php echo $item['_source_id']; ?>">
                                                                     <div class="form-group">
                                                                         <label><strong>Template</strong></label>
-                                                                        <select class="form-control" onchange="fillTemplate(this, <?php echo $inq['id']; ?>)">
+                                                                        <select class="form-control" onchange="fillTemplate(this, <?php echo $item['_source_id']; ?>)">
                                                                             <option value="">-- Select a template --</option>
                                                                             <option value="thank_you">Thank You - Getting back soon</option>
                                                                             <option value="more_info">Request More Information</option>
@@ -452,11 +542,11 @@ if ($quotesTablesOk) {
                                                                     </div>
                                                                     <div class="form-group">
                                                                         <label><strong>Reply Subject</strong></label>
-                                                                        <input type="text" class="form-control" name="reply_subject" id="reply_subject_<?php echo $inq['id']; ?>" value="Re: <?php echo htmlspecialchars($inq['subject'] ?: 'Your Inquiry'); ?>" required>
+                                                                        <input type="text" class="form-control" name="reply_subject" id="reply_subject_<?php echo $item['_source_id']; ?>" value="Re: <?php echo $isBooking ? htmlspecialchars($item['booking_reference']) : htmlspecialchars($item['subject'] ?: 'Your Inquiry'); ?>" required>
                                                                     </div>
                                                                     <div class="form-group">
                                                                         <label><strong>Reply Message</strong></label>
-                                                                        <textarea class="form-control" name="reply_message" id="reply_message_<?php echo $inq['id']; ?>" rows="6" placeholder="Type your reply..." required></textarea>
+                                                                        <textarea class="form-control" name="reply_message" id="reply_message_<?php echo $item['_source_id']; ?>" rows="6" placeholder="Type your reply..." required></textarea>
                                                                     </div>
                                                                     <button type="submit" class="btn btn-gold text-white" style="background-color: #D4AF37; border: none;"><i class="fas fa-paper-plane"></i> Send Reply via Email</button>
                                                                 </form>
@@ -477,13 +567,13 @@ if ($quotesTablesOk) {
                                                                             <table class="table table-sm quote-items-table mb-2">
                                                                                 <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
                                                                                 <tbody>
-                                                                                <?php $i = 1; foreach ($quoteData['items'] as $item): ?>
+                                                                                <?php $i = 1; foreach ($quoteData['items'] as $qi): ?>
                                                                                     <tr>
                                                                                         <td><?php echo $i++; ?></td>
-                                                                                        <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                                                                        <td><?php echo (int)$item['quantity']; ?></td>
-                                                                                        <td><?php echo '$' . number_format($item['unit_price'], 2); ?></td>
-                                                                                        <td><?php echo '$' . number_format($item['total'], 2); ?></td>
+                                                                                        <td><?php echo htmlspecialchars($qi['description']); ?></td>
+                                                                                        <td><?php echo (int)$qi['quantity']; ?></td>
+                                                                                        <td><?php echo '$' . number_format($qi['unit_price'], 2); ?></td>
+                                                                                        <td><?php echo '$' . number_format($qi['total'], 2); ?></td>
                                                                                     </tr>
                                                                                 <?php endforeach; ?>
                                                                                 </tbody>
@@ -497,7 +587,7 @@ if ($quotesTablesOk) {
 
                                                                         <div class="quote-actions">
                                                                             <?php if ($quoteData['status'] === 'draft'): ?>
-                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $inq['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit Quote</button>
+                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $item['_source_id']; ?>, <?php echo $quoteData['id']; ?>, '<?php echo $item['_type']; ?>')"><i class="fas fa-edit"></i> Edit Quote</button>
                                                                                 <form method="POST" style="display:inline;">
                                                                                     <input type="hidden" name="action" value="prepare_quote">
                                                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
@@ -509,7 +599,7 @@ if ($quotesTablesOk) {
                                                                                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                                                                                 </form>
                                                                             <?php elseif ($quoteData['status'] === 'prepared'): ?>
-                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $inq['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                                                                <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $item['_source_id']; ?>, <?php echo $quoteData['id']; ?>, '<?php echo $item['_type']; ?>')"><i class="fas fa-edit"></i> Edit</button>
                                                                                 <form method="POST" style="display:inline;">
                                                                                     <input type="hidden" name="action" value="confirm_quote">
                                                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
@@ -549,8 +639,8 @@ if ($quotesTablesOk) {
                                                                     </div>
                                                                 <?php else: ?>
                                                                     <div class="quote-section text-center py-3">
-                                                                        <p class="text-muted mb-2">No quote has been prepared for this inquiry yet.</p>
-                                                                        <button class="btn btn-sm btn-success" onclick="openQuoteEditor(<?php echo $inq['id']; ?>, 0)"><i class="fas fa-plus"></i> Prepare Quote</button>
+                                                                        <p class="text-muted mb-2">No quote has been prepared yet.</p>
+                                                                        <button class="btn btn-sm btn-success" onclick="openQuoteEditor(<?php echo $item['_source_id']; ?>, 0, '<?php echo $item['_type']; ?>')"><i class="fas fa-plus"></i> Prepare Quote</button>
                                                                     </div>
                                                                 <?php endif; ?>
                                                             </div>
@@ -563,8 +653,8 @@ if ($quotesTablesOk) {
                                             </div>
                                         </div>
                                         <?php endforeach; ?>
-                                        <?php if (empty($inquiries)): ?>
-                                        <tr><td colspan="8" class="text-center py-4 text-muted">No inquiries yet</td></tr>
+                                        <?php if (empty($allItems)): ?>
+                                        <tr><td colspan="8" class="text-center py-4 text-muted">No inquiries or bookings yet</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
@@ -595,6 +685,7 @@ if ($quotesTablesOk) {
                 <form method="POST" id="quoteForm">
                     <input type="hidden" name="action" value="save_quote">
                     <input type="hidden" name="inq_id" id="qInqId" value="0">
+                    <input type="hidden" name="booking_id" id="qBookingId" value="0">
                     <input type="hidden" name="quote_id" id="qQuoteId" value="0">
                     <div class="modal-body">
                         <p class="text-muted mb-3">Add items, set pricing, and prepare a professional quote for this inquiry.</p>
@@ -706,7 +797,8 @@ if ($quotesTablesOk) {
         function fillTemplate(sel, id) {
             var val = sel.value;
             if (!val || !templates[val]) return;
-            var inquirerName = sel.closest('.modal').querySelector('.modal-title').textContent.replace('Inquiry from ', '').trim();
+            var title = sel.closest('.modal').querySelector('.modal-title').textContent.trim();
+            var inquirerName = title.replace(/^(Inquiry|Booking) from /, '').trim();
             var tpl = templates[val];
             if (tpl.subject) document.getElementById('reply_subject_' + id).value = tpl.subject;
             if (tpl.message) document.getElementById('reply_message_' + id).value = tpl.message.replace(/\[Name\]/g, inquirerName);
@@ -774,8 +866,10 @@ if ($quotesTablesOk) {
             document.getElementById('qTotal').textContent = '$' + total.toFixed(2);
         }
 
-        function openQuoteEditor(inqId, quoteId) {
-            document.getElementById('qInqId').value = inqId;
+        function openQuoteEditor(sourceId, quoteId, type) {
+            type = type || 'inquiry';
+            document.getElementById('qInqId').value = type === 'inquiry' ? sourceId : 0;
+            document.getElementById('qBookingId').value = type === 'booking' ? sourceId : 0;
             document.getElementById('qQuoteId').value = quoteId;
             document.getElementById('itemsBody').innerHTML = '';
             itemRowIndex = 0;
@@ -788,7 +882,7 @@ if ($quotesTablesOk) {
             calcTotals();
 
             if (quoteId > 0) {
-                var modal = document.getElementById('inqModal' + inqId);
+                var modal = document.getElementById('itemModal' + sourceId);
                 var quoteSection = modal.querySelector('.quote-section');
                 if (quoteSection) {
                     var items = quoteSection.querySelectorAll('.quote-items-table tbody tr');
