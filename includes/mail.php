@@ -1,7 +1,31 @@
 <?php
-require_once __DIR__ . '/phpmailer/PHPMailer.php';
-require_once __DIR__ . '/phpmailer/SMTP.php';
-require_once __DIR__ . '/phpmailer/Exception.php';
+$phpmailerPaths = [
+    __DIR__ . '/phpmailer/PHPMailer.php',
+    __DIR__ . '/../vendor/phpmailer/PHPMailer.php',
+    __DIR__ . '/../vendor/phpmailer/phpmailer/src/PHPMailer.php',
+];
+$loaded = false;
+foreach ($phpmailerPaths as $p) {
+    if (file_exists($p)) {
+        require_once $p;
+        $dir = dirname($p);
+        foreach (['SMTP.php', 'Exception.php'] as $dep) {
+            $depPath = $dir . '/' . $dep;
+            if (!file_exists($depPath)) $depPath = $dir . '/../' . $dep;
+            if (file_exists($depPath)) require_once $depPath;
+        }
+        $loaded = true;
+        break;
+    }
+}
+if (!$loaded) {
+    $autoload = __DIR__ . '/../vendor/autoload.php';
+    if (file_exists($autoload)) {
+        require_once $autoload;
+    } else {
+        throw new \RuntimeException('PHPMailer not found. Run: composer require phpmailer/phpmailer');
+    }
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 

@@ -1,5 +1,24 @@
 <?php
-require_once __DIR__ . '/../vendor/dompdf/autoload.inc.php';
+$dompdfAutoloadPaths = [
+    __DIR__ . '/../vendor/dompdf/autoload.inc.php',
+    __DIR__ . '/../vendor/dompdf/dompdf/autoload.inc.php',
+];
+$dompdfLoaded = false;
+foreach ($dompdfAutoloadPaths as $p) {
+    if (file_exists($p)) {
+        require_once $p;
+        $dompdfLoaded = true;
+        break;
+    }
+}
+if (!$dompdfLoaded) {
+    $autoload = __DIR__ . '/../vendor/autoload.php';
+    if (file_exists($autoload)) {
+        require_once $autoload;
+    } else {
+        throw new \RuntimeException('Dompdf not found. Run: composer require dompdf/dompdf');
+    }
+}
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
