@@ -330,10 +330,8 @@ if ($quotesTablesOk) {
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .empty-state { padding: 60px 20px; text-align: center; color: #adb5bd; }
         .empty-state i { font-size: 3rem; margin-bottom: 15px; display: block; }
-        #dataTable { table-layout: fixed; width: 100%; }
-        #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
-        #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
-        #dataTable td.actions-cell .btn { white-space: nowrap; }
+        #dataTable td, #dataTable th { white-space: nowrap; }
+        #dataTable td.actions-cell, #dataTable th.actions-cell { width: 1%; }
     </style>
 </head>
 <body id="page-top">
@@ -432,15 +430,15 @@ if ($quotesTablesOk) {
                                 <table class="table table-striped mb-0" id="dataTable">
                                     <thead>
                                         <tr>
-                                            <th style="width:16%">Ref</th>
-                                            <th style="width:18%">Name</th>
-                                            <th style="width:13%">Email</th>
-                                            <th style="width:12%">Phone</th>
-                                            <th style="width:12%">Date</th>
-                                            <th style="width:7%">Guests</th>
-                                            <th style="width:8%">Status</th>
-                                            <th style="width:8%">Payment</th>
-                                            <th style="width:6%">Quote</th>
+                                            <th>Ref</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                            <th>Date</th>
+                                            <th>Guests</th>
+                                            <th>Status</th>
+                                            <th>Payment</th>
+                                            <th>Quote</th>
                                             <th class="actions-cell">Actions</th>
                                         </tr>
                                     </thead>
