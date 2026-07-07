@@ -328,6 +328,8 @@ if ($quotesTablesOk) {
         .item-row:hover { background: #f0f4ff; }
         .currency-symbol { font-weight: 600; }
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .empty-state { padding: 60px 20px; text-align: center; color: #adb5bd; }
+        .empty-state i { font-size: 3rem; margin-bottom: 15px; display: block; }
         #dataTable { table-layout: fixed; width: 100%; }
         #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
         #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; width: 1%; }
@@ -474,42 +476,42 @@ if ($quotesTablesOk) {
                                                 <?php endif; ?>
                                             </td>
                                             <td class="actions-cell">
-                                                <div class="d-flex">
-                                                    <button class="btn btn-sm btn-outline-secondary mr-1" data-toggle="modal" data-target="#viewModal<?php echo $b['id']; ?>">
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#viewModal<?php echo $b['id']; ?>" title="View">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <?php if ($b['status'] === 'pending'): ?>
-                                                    <form method="POST" style="display:inline;" class="mr-1">
+                                                    <form method="POST" style="display:inline;">
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="confirmed">
-                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Confirm"><i class="fas fa-check"></i></button>
+                                                        <button type="submit" class="btn btn-outline-success" title="Confirm"><i class="fas fa-check"></i></button>
                                                     </form>
                                                     <form method="POST" style="display:inline;">
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="cancelled">
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel"><i class="fas fa-times"></i></button>
+                                                        <button type="submit" class="btn btn-outline-danger" title="Cancel"><i class="fas fa-times"></i></button>
                                                     </form>
                                                     <?php elseif ($b['status'] === 'confirmed'): ?>
-                                                    <form method="POST" style="display:inline;" class="mr-1">
+                                                    <form method="POST" style="display:inline;">
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="completed">
-                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Mark Complete"><i class="fas fa-check-double"></i></button>
+                                                        <button type="submit" class="btn btn-outline-success" title="Complete"><i class="fas fa-check-double"></i></button>
                                                     </form>
                                                     <form method="POST" style="display:inline;">
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="cancelled">
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel"><i class="fas fa-times"></i></button>
+                                                        <button type="submit" class="btn btn-outline-danger" title="Cancel"><i class="fas fa-times"></i></button>
                                                     </form>
                                                     <?php elseif (in_array($b['status'], ['completed', 'cancelled'])): ?>
                                                     <form method="POST" style="display:inline;">
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="pending">
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Reopen"><i class="fas fa-undo"></i></button>
+                                                        <button type="submit" class="btn btn-outline-warning" title="Reopen"><i class="fas fa-undo"></i></button>
                                                     </form>
                                                     <?php endif; ?>
                                                 </div>
@@ -517,7 +519,15 @@ if ($quotesTablesOk) {
                                         </tr>
                                         <?php endforeach; ?>
                                         <?php if (empty($bookings)): ?>
-                                        <tr><td colspan="10" class="text-center py-4 text-muted">No bookings found</td></tr>
+                                        <tr>
+                                            <td colspan="10">
+                                                <div class="empty-state">
+                                                    <i class="fas fa-calendar-check text-muted"></i>
+                                                    <h5 class="text-muted">No bookings yet</h5>
+                                                    <p class="text-muted">Bookings will appear here once customers make bookings.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
