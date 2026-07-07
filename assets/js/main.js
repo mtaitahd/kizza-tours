@@ -13,7 +13,7 @@ $(document).ready(function() {
     $(window).on('load', function() {
         setTimeout(function() {
             $('#preloader').addClass('hidden');
-        }, 2000);
+        }, 300);
     });
 
     //==========================================
@@ -264,7 +264,7 @@ $(document).ready(function() {
     let pkgModalOpen = false;
 
     function renderPackageModal(pkg) {
-        const img = pkg.image || 'https://placehold.co/800x600/0A2540/D4AF37?text=' + encodeURIComponent(pkg.title);
+        const img = pkg.image || 'assets/images/placeholder.svg' + encodeURIComponent(pkg.title);
         const galleryImages = pkg.gallery && typeof pkg.gallery === 'string' && pkg.gallery.trim()
             ? pkg.gallery.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
             : [img];
@@ -281,7 +281,7 @@ $(document).ready(function() {
 
         var html = '<div class="pkg-modal-gallery" id="pkgGallery">';
         galleryImages.forEach(function(url, idx) {
-            html += '<img src="' + url + '" alt="' + pkg.title + '" style="display:' + (idx === 0 ? 'block' : 'none') + '; position:absolute;" onerror="this.src=\'https://placehold.co/800x600/0A2540/D4AF37?text=' + encodeURIComponent(pkg.title) + '\'">';
+            html += '<img src="' + url + '" alt="' + pkg.title + '" style="display:' + (idx === 0 ? 'block' : 'none') + '; position:absolute;" onerror="this.src=\'assets/images/placeholder.svg' + encodeURIComponent(pkg.title) + '\'">';
         });
         if (galleryImages.length > 1) {
             html += '<button type="button" class="pkg-modal-gallery-nav prev" id="pkgGalleryPrev"><i class="fas fa-chevron-left"></i></button>';

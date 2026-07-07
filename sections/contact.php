@@ -50,7 +50,7 @@ $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
 </section>
 
 <section class="cta-section" id="final-cta">
-    <img src="<?php echo $ctaBg; ?>" alt="African Sunset" class="cta-bg" loading="lazy" onerror="this.src='https://placehold.co/1920x1080/0A2540/D4AF37?text=Your+Adventure+Starts+Here'">
+    <img src="<?php echo $ctaBg; ?>" alt="African Sunset" class="cta-bg" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
     <div class="cta-overlay"></div>
     <div class="cta-content" data-aos="zoom-in">
         <span class="section-subtitle"><?php echo __('cta_subtitle'); ?></span>

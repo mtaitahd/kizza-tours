@@ -27,7 +27,7 @@ $aboutImg = getMediaUrl('about_image', 'images/about-hero.jpg');
     <div class="container">
         <div class="row align-items-center g-5">
             <div class="col-lg-6" data-aos="fade-right">
-                <img src="<?php echo $aboutImg; ?>" alt="About Kizza Tours & Safaris - East Africa Tour Operator" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='https://placehold.co/800x600/0A2540/D4AF37?text=About+Kizza+Tours'">
+                <img src="<?php echo $aboutImg; ?>" alt="About Kizza Tours & Safaris - East Africa Tour Operator" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
             </div>
             <div class="col-lg-6" data-aos="fade-left">
                 <h2><?php echo __('about_story_title'); ?></h2>

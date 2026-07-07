@@ -51,7 +51,7 @@ if (empty($packages)) {
             <div class="col-lg-4 col-md-6 package-item" data-category="<?php echo $countrySlug; ?>" data-aos="fade-up" data-aos-delay="<?php echo 100 + ($i * 100); ?>">
                 <div class="package-card" data-package-id="<?php echo $pkgId; ?>">
                     <div class="package-card-image">
-                        <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($pkg['title']); ?>'">
+                        <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                         <?php if ($i === 0): ?><span class="package-card-badge"><?php echo __('pkg_badge_bestseller'); ?></span><?php endif; ?>
                         <?php if ($i === 2): ?><span class="package-card-badge"><?php echo __('pkg_badge_premium'); ?></span><?php endif; ?>
                     </div>

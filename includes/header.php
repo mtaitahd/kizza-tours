@@ -117,8 +117,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     </script>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://kizzatoursandsafaris.com/assets/images/log.png">
-    <link rel="apple-touch-icon" href="https://kizzatoursandsafaris.com/assets/images/log.png">
+    <link rel="icon" type="image/png" href="<?php echo ASSETS_PATH; ?>images/log.png">
+    <link rel="apple-touch-icon" href="<?php echo ASSETS_PATH; ?>images/log.png">
 
     <!-- Preconnect (limited to 4 most critical) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -219,8 +219,9 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 
     <script>function _cssLoaded(){var el=document.getElementById('preloader');if(el)el.classList.add('hidden')}setTimeout(function(){var el=document.getElementById('preloader');if(el)el.classList.add('hidden')},5000);</script>
 
-    <!-- Bootstrap 5 (render-blocking — needed for grid/layout) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <!-- Bootstrap 5 (non-blocking — critical Bootstrap grid styles inlined above) -->
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"></noscript>
 
     <!-- Full Stylesheet (non-blocking — critical styles already inlined above) -->
     <link rel="preload" as="style" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=2" onload="this.onload=null;this.rel='stylesheet';_cssLoaded()">
@@ -268,7 +269,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
     <div class="container">
         <a class="navbar-brand" href="index.php">
-            <img src="https://kizzatoursandsafaris.com/assets/images/log.png" alt="Kizza Tours &amp; Safaris">
+            <img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

@@ -50,7 +50,7 @@ $faqs = [
                 </div>
             </div>
             <div class="col-lg-6" data-aos="fade-left">
-                <img src="<?php echo getMediaUrl('tanzania_safari_image', 'https://placehold.co/800x600/0A2540/D4AF37?text=Tanzania+Safari'); ?>" alt="Tanzania Safari - Serengeti Wildlife Experience" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%27600%27%3E%3Crect width=%27800%27 height=%27600%27 fill=%27%230A2540%27/%3E%3Ctext x=%27400%27 y=%27300%27 text-anchor=%27middle%27 fill=%27%23D4AF37%27 font-size=%2724%27 font-family=%27sans-serif%27%3ETanzania+Safari%3C/text%3E%3C/svg%3E'">
+                <img src="<?php echo getMediaUrl('tanzania_safari_image', 'assets/images/placeholder.svg'); ?>" alt="Tanzania Safari - Serengeti Wildlife Experience" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%27600%27%3E%3Crect width=%27800%27 height=%27600%27 fill=%27%230A2540%27/%3E%3Ctext x=%27400%27 y=%27300%27 text-anchor=%27middle%27 fill=%27%23D4AF37%27 font-size=%2724%27 font-family=%27sans-serif%27%3ETanzania+Safari%3C/text%3E%3C/svg%3E'">
             </div>
         </div>
 
@@ -82,9 +82,9 @@ $faqs = [
                                 $cs = strtolower($pkg['country'] ?? '');
                                 if ($cs) $pkgImg = ASSETS_PATH . 'images/destinations/' . $cs . '.jpg';
                             }
-                            if (empty($pkgImg)) $pkgImg = 'https://placehold.co/600x400/0A2540/D4AF37?text=' . urlencode($pt);
+                            if (empty($pkgImg)) $pkgImg = 'assets/images/placeholder.svg';
                         ?>
-                            <img src="<?php echo $pkgImg; ?>" alt="<?php echo htmlspecialchars($pt); ?>" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($pt); ?>'">
+                            <img src="<?php echo $pkgImg; ?>" alt="<?php echo htmlspecialchars($pt); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                         </div>
                         <div class="package-card-body">
                             <div class="package-card-meta">
@@ -104,7 +104,7 @@ $faqs = [
             <?php else: ?>
                 <div class="col-md-4" data-aos="fade-up">
                     <div class="package-card">
-                        <div class="package-card-image"><img src="https://placehold.co/600x400/0A2540/D4AF37?text=Serengeti+Luxury+Safari" alt="<?php echo __('tour_tz_fallback_1_title'); ?>" loading="lazy"></div>
+                        <div class="package-card-image"><img src="assets/images/placeholder.svg" alt="<?php echo __('tour_tz_fallback_1_title'); ?>" loading="lazy"></div>
                         <div class="package-card-body">
                             <div class="package-card-meta"><span><i class="fas fa-clock"></i> <?php echo __('tour_tz_fallback_1_duration'); ?></span><span><i class="fas fa-map-marker-alt"></i> <?php echo __('tour_tz_fallback_1_country'); ?></span></div>
                             <h3 class="package-card-title"><?php echo __('tour_tz_fallback_1_title'); ?></h3>
@@ -115,7 +115,7 @@ $faqs = [
                 </div>
                 <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
                     <div class="package-card">
-                        <div class="package-card-image"><img src="https://placehold.co/600x400/0A2540/D4AF37?text=Ngorongoro+Safari" alt="<?php echo __('tour_tz_fallback_2_title'); ?>" loading="lazy"></div>
+                        <div class="package-card-image"><img src="assets/images/placeholder.svg" alt="<?php echo __('tour_tz_fallback_2_title'); ?>" loading="lazy"></div>
                         <div class="package-card-body">
                             <div class="package-card-meta"><span><i class="fas fa-clock"></i> <?php echo __('tour_tz_fallback_2_duration'); ?></span><span><i class="fas fa-map-marker-alt"></i> <?php echo __('tour_tz_fallback_2_country'); ?></span></div>
                             <h3 class="package-card-title"><?php echo __('tour_tz_fallback_2_title'); ?></h3>
@@ -126,7 +126,7 @@ $faqs = [
                 </div>
                 <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
                     <div class="package-card">
-                        <div class="package-card-image"><img src="https://placehold.co/600x400/0A2540/D4AF37?text=Tanzania+Private+Safari" alt="<?php echo __('tour_tz_fallback_3_title'); ?>" loading="lazy"></div>
+                        <div class="package-card-image"><img src="assets/images/placeholder.svg" alt="<?php echo __('tour_tz_fallback_3_title'); ?>" loading="lazy"></div>
                         <div class="package-card-body">
                             <div class="package-card-meta"><span><i class="fas fa-clock"></i> <?php echo __('tour_tz_fallback_3_duration'); ?></span><span><i class="fas fa-map-marker-alt"></i> <?php echo __('tour_tz_fallback_3_country'); ?></span></div>
                             <h3 class="package-card-title"><?php echo __('tour_tz_fallback_3_title'); ?></h3>
@@ -248,9 +248,9 @@ $faqs = [
                                 $cs = strtolower($r['country'] ?? '');
                                 if ($cs) $rImg = ASSETS_PATH . 'images/destinations/' . $cs . '.jpg';
                             }
-                            if (empty($rImg)) $rImg = 'https://placehold.co/600x400/0A2540/D4AF37?text=' . urlencode($rt);
+                            if (empty($rImg)) $rImg = 'assets/images/placeholder.svg';
                         ?>
-                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($rt); ?>'">
+                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                     </div>
                     <div class="package-card-body">
                         <h3 class="package-card-title" style="font-size: 1.1rem;"><?php echo htmlspecialchars($r['title']); ?></h3>

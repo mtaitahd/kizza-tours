@@ -30,7 +30,7 @@ if (empty($destinations)) {
                 $countryImg = strtolower($dest['country']);
             ?>
             <div class="destination-card" data-aos="fade-up" data-aos-delay="<?php echo $delay; ?>">
-                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($dest['name']); ?>" class="destination-card-image" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($dest['name']); ?>'">
+                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($dest['name']); ?>" class="destination-card-image" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                 <div class="destination-card-overlay">
                     <h3 class="destination-card-title"><?php echo htmlspecialchars($dest['name']); ?></h3>
                     <span class="destination-card-country"><?php echo htmlspecialchars($dest['country']); ?></span>

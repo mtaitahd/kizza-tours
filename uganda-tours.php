@@ -43,7 +43,7 @@ $faqs = [
                 </div>
             </div>
             <div class="col-lg-6" data-aos="fade-left">
-                <img src="<?php echo getMediaUrl('uganda_tours_image', 'https://placehold.co/800x600/0A2540/D4AF37?text=Uganda+Tours'); ?>" alt="Uganda Tours - Gorilla Trekking and Wildlife Safaris" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%27600%27%3E%3Crect width=%27800%27 height=%27600%27 fill=%27%230A2540%27/%3E%3Ctext x=%27400%27 y=%27300%27 text-anchor=%27middle%27 fill=%27%23D4AF37%27 font-size=%2724%27 font-family=%27sans-serif%27%3EUganda+Tours%3C/text%3E%3C/svg%3E'">
+                <img src="<?php echo getMediaUrl('uganda_tours_image', 'assets/images/placeholder.svg'); ?>" alt="Uganda Tours - Gorilla Trekking and Wildlife Safaris" class="img-fluid rounded-4 shadow-lg" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%27600%27%3E%3Crect width=%27800%27 height=%27600%27 fill=%27%230A2540%27/%3E%3Ctext x=%27400%27 y=%27300%27 text-anchor=%27middle%27 fill=%27%23D4AF37%27 font-size=%2724%27 font-family=%27sans-serif%27%3EUganda+Tours%3C/text%3E%3C/svg%3E'">
             </div>
         </div>
 
@@ -128,9 +128,9 @@ $faqs = [
                                 $cs = strtolower($r['country'] ?? '');
                                 if ($cs) $rImg = ASSETS_PATH . 'images/destinations/' . $cs . '.jpg';
                             }
-                            if (empty($rImg)) $rImg = 'https://placehold.co/600x400/0A2540/D4AF37?text=' . urlencode($rt);
+                            if (empty($rImg)) $rImg = 'assets/images/placeholder.svg';
                         ?>
-                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($rt); ?>'"></div>
+                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'"></div>
                     <div class="package-card-body">
                         <h3 class="package-card-title" style="font-size: 1.1rem;"><?php echo htmlspecialchars($r['title']); ?></h3>
                         <p style="color: var(--text-light); font-size: 0.85rem;"><?php echo htmlspecialchars(substr($r['description'] ?? '', 0, 80)) . '...'; ?></p>

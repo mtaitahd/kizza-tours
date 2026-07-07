@@ -37,7 +37,7 @@ $relatedTours = getTourPackages([], 4);
 $img = !empty($tour['image']) && file_exists(BASE_PATH . $tour['image']) ? SITE_URL . '/' . $tour['image'] : '';
 if (empty($img)) {
     $fallback = ASSETS_PATH . 'images/destinations/' . $countrySlug . '.jpg';
-    $img = file_exists(BASE_PATH . $fallback) ? SITE_URL . '/' . $fallback : 'https://placehold.co/800x600/0A2540/D4AF37?text=' . urlencode($tour['title']);
+    $img = file_exists(BASE_PATH . $fallback) ? SITE_URL . '/' . $fallback : 'assets/images/placeholder.svg';
 }
 
 $highlightsArr = array_filter(array_map('trim', explode(',', $tour['highlights'] ?? '')));
@@ -84,7 +84,7 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
     <div class="container">
         <div class="row g-5">
             <div class="col-lg-8">
-                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($tour['title']); ?>" class="img-fluid rounded-4 shadow-lg mb-4 w-100" style="max-height: 450px; object-fit: cover;" onerror="this.src='https://placehold.co/800x600/0A2540/D4AF37?text=<?php echo urlencode($tour['title']); ?>'">
+                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($tour['title']); ?>" class="img-fluid rounded-4 shadow-lg mb-4 w-100" style="max-height: 450px; object-fit: cover;" onerror="this.src='assets/images/placeholder.svg'">
                 
                 <?php
                 $galleryImages = array_filter(array_map('trim', explode(',', $tour['gallery'] ?? '')));
@@ -195,9 +195,9 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
                 <div class="package-card" style="height: 100%;">
                     <div class="package-card-image">
                         <?php 
-                        $rImg = !empty($rt['image']) && file_exists(BASE_PATH . $rt['image']) ? SITE_URL . '/' . $rt['image'] : 'https://placehold.co/600x400/0A2540/D4AF37?text=' . urlencode($rt['title'] ?? 'Safari');
+                        $rImg = !empty($rt['image']) && file_exists(BASE_PATH . $rt['image']) ? SITE_URL . '/' . $rt['image'] : 'assets/images/placeholder.svg';
                         ?>
-                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt['title'] ?? ''); ?>" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($rt['title'] ?? 'Safari'); ?>'">
+                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt['title'] ?? ''); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                     </div>
                     <div class="package-card-body">
                         <h3 class="package-card-title" style="font-size: 1rem;"><?php echo htmlspecialchars($rt['title'] ?? ''); ?></h3>

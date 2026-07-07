@@ -213,7 +213,7 @@ $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
                 <div class="col-md-4" data-aos="fade-up">
                     <div class="package-card">
                         <div class="package-card-image">
-                            <img src="<?php echo !empty($pkg['image']) && file_exists(BASE_PATH . $pkg['image']) ? SITE_URL . '/' . $pkg['image'] : 'https://placehold.co/600x400/0A2540/D4AF37?text=' . urlencode($pkg['title']); ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy">
+                            <img src="<?php echo !empty($pkg['image']) && file_exists(BASE_PATH . $pkg['image']) ? SITE_URL . '/' . $pkg['image'] : 'assets/images/placeholder.svg'; ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy">
                         </div>
                         <div class="package-card-body">
                             <div class="package-card-meta">

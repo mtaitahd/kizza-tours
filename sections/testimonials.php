@@ -19,7 +19,7 @@ if (empty($testimonials)) {
         <div class="swiper testimonialSwiper" data-aos="fade-up">
             <div class="swiper-wrapper">
                 <?php foreach ($testimonials as $t): 
-                    $photo = !empty($t['customer_photo']) && file_exists(BASE_PATH . $t['customer_photo']) ? SITE_URL . '/' . $t['customer_photo'] : 'https://placehold.co/100x100/0A2540/D4AF37?text=' . urlencode(substr($t['customer_name'], 0, 1));
+                    $photo = !empty($t['customer_photo']) && file_exists(BASE_PATH . $t['customer_photo']) ? SITE_URL . '/' . $t['customer_photo'] : 'assets/images/placeholder.svg');
                     $title = htmlspecialchars($t['customer_title'] ?: '');
                     $rating = intval($t['rating'] ?? 5);
                 ?>
@@ -32,7 +32,7 @@ if (empty($testimonials)) {
                         </div>
                         <div class="testimonial-text"><?php echo $t['review']; ?></div>
                         <div class="testimonial-author">
-                            <img src="<?php echo $photo; ?>" alt="<?php echo htmlspecialchars($t['customer_name']); ?>" onerror="this.src='https://placehold.co/100x100/0A2540/D4AF37?text=<?php echo urlencode(substr($t['customer_name'], 0, 1)); ?>'">
+                            <img src="<?php echo $photo; ?>" alt="<?php echo htmlspecialchars($t['customer_name']); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                             <div class="testimonial-author-info">
                                 <h6><?php echo htmlspecialchars($t['customer_name']); ?></h6>
                                 <span><?php echo $title; ?></span>

@@ -51,7 +51,7 @@ if (empty($tours)) {
 
 $img = !empty($dest['image']) && file_exists(BASE_PATH . $dest['image']) ? SITE_URL . '/' . $dest['image'] : ASSETS_PATH . 'images/destinations/' . $dest['slug'] . '.jpg';
 if (!file_exists(BASE_PATH . ltrim(parse_url($img, PHP_URL_PATH), '/'))) {
-    $img = 'https://placehold.co/800x600/0A2540/D4AF37?text=' . urlencode($dest['name']);
+    $img = 'assets/images/placeholder.svg';
 }
 
 $countryPageMap = [
@@ -89,7 +89,7 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
     <div class="container">
         <div class="row align-items-center g-5 mb-5">
             <div class="col-lg-6" data-aos="fade-right">
-                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($dest['name']); ?>" class="img-fluid rounded-4 shadow-lg" onerror="this.src='https://placehold.co/800x600/0A2540/D4AF37?text=<?php echo urlencode($dest['name']); ?>'">
+                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($dest['name']); ?>" class="img-fluid rounded-4 shadow-lg" onerror="this.src='assets/images/placeholder.svg'">
             </div>
             <div class="col-lg-6" data-aos="fade-left">
                 <span class="section-subtitle"><?php echo __('dest_about_subtitle'); ?></span>
@@ -116,12 +116,12 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
         </div>
         <div class="row g-4">
             <?php foreach ($tours as $tour): 
-                $tImg = !empty($tour['image']) && file_exists(BASE_PATH . $tour['image']) ? SITE_URL . '/' . $tour['image'] : 'https://placehold.co/600x400/0A2540/D4AF37?text=' . urlencode($tour['title'] ?? '');
+                $tImg = !empty($tour['image']) && file_exists(BASE_PATH . $tour['image']) ? SITE_URL . '/' . $tour['image'] : 'assets/images/placeholder.svg';
             ?>
             <div class="col-lg-4 col-md-6">
                 <div class="package-card" style="height: 100%;">
                     <div class="package-card-image">
-                        <img src="<?php echo $tImg; ?>" alt="<?php echo htmlspecialchars($tour['title'] ?? ''); ?>" loading="lazy" onerror="this.src='https://placehold.co/600x400/0A2540/D4AF37?text=<?php echo urlencode($tour['title'] ?? 'Safari'); ?>'">
+                        <img src="<?php echo $tImg; ?>" alt="<?php echo htmlspecialchars($tour['title'] ?? ''); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                     </div>
                     <div class="package-card-body">
                         <div class="package-card-meta">
