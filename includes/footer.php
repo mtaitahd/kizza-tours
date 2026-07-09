@@ -55,7 +55,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; <?php echo date('Y'); ?> <?php echo __('footer_brand'); ?>. <?php echo __('footer_copyright'); ?>. Developed by <a href="https://mtaitatech.online" target="_blank" rel="noopener">Mtaita Tech</a>.</p>
+            <p>&copy; <?php echo date('Y'); ?> <?php echo __('footer_brand'); ?>. <?php echo __('footer_copyright'); ?>.</p>
         </div>
     </div>
 </footer>
