@@ -276,7 +276,7 @@ function sendQuoteEmail($quoteId) {
     <body style='font-family: Arial, sans-serif; padding: 20px;'>
         <div style='max-width: 600px; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);'>
             <div style='background: #0A2540; padding: 25px; text-align: center;'>
-                <img src='" . SITE_URL . "/assets/images/log.png' alt='Logo' height='50' style='border-radius: 50%;'>
+                <img src='" . SITE_URL . "/assets/images/log.png' alt='Logo' height='50'>
                 <h2 style='color: #D4AF37; margin: 10px 0 0;'>Your Personalized Quotation</h2>
             </div>
             <div style='padding: 30px;'>

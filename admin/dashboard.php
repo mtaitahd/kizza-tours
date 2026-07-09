@@ -42,7 +42,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .sidebar-brand { background-color: #0A2540 !important; }
+        .sidebar-brand { background: none !important; }
         .bg-navbar { background-color: #0A2540 !important; }
 
         .card { border-radius: 12px; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
@@ -68,9 +68,9 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
     <div id="wrapper">
         <!-- Sidebar -->
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#" style="background-color: #0A2540;">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
                 <div class="sidebar-brand-icon">
-                    <img src="../assets/images/log.png" alt="Kizza Tours" height="35" style="border-radius: 50%;">
+                    <img src="../assets/images/log.png" alt="Kizza Tours" height="35">
                 </div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
@@ -217,7 +217,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                 <!-- Main Content -->
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2" style="border-radius:6px;"> Dashboard</h4>
+                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2"> Dashboard</h4>
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="dashboard">Home</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
