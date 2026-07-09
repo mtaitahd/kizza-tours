@@ -13,7 +13,11 @@ if (php_sapi_name() !== 'cli') {
     }
 }
 
-$rootDir = __DIR__ . '/../uploads';
+$scanDirs = [
+    __DIR__ . '/../uploads',
+    __DIR__ . '/../assets/images',
+    __DIR__ . '/../templates/assets/img',
+];
 $quality = 70;
 $maxWidth = 1920;
 
@@ -131,19 +135,24 @@ function scanDir($dir, &$results = []) {
     return $results;
 }
 
-$files = scanDir($rootDir);
+$files = [];
+foreach ($scanDirs as $dir) {
+    if (is_dir($dir)) {
+        scanDir($dir, $files);
+    }
+}
 echo "Found " . count($files) . " images to process\n\n";
 $totalSaved = 0;
 
 foreach ($files as $file) {
     $result = compressImage($file, $quality, $maxWidth, $useImagick);
     if ($result === null) {
-        echo "  SKIP: " . str_replace($rootDir . '/', '', $file) . " (unsupported format)\n";
+        echo "  SKIP: " . str_replace([__DIR__ . '/../', '\\'], ['', '/'], $file) . " (unsupported)\n";
         continue;
     }
     $savings = (1 - $result['new'] / $result['orig']) * 100;
     $totalSaved += ($result['orig'] - $result['new']);
-    $rel = str_replace($rootDir . '/', '', $file);
+    $rel = str_replace([__DIR__ . '/../', '\\'], ['', '/'], $file);
     if ($result['new'] < $result['orig']) {
         echo "  OK:   {$rel} - " . round($result['orig']/1024) . "KB -> " . round($result['new']/1024) . "KB (" . round($savings) . "% saved)\n";
     } else {
