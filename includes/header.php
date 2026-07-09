@@ -240,7 +240,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
     <div class="container">
         <a class="navbar-brand" href="index.php">
-            <img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high" style="border-radius: 50%;">
+            <img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
