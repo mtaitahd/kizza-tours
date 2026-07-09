@@ -105,7 +105,7 @@ try {
     </body>
     </html>";
 
-    try { sendMail(SITE_EMAIL, "New Booking Inquiry - {$reference}", $emailBody, $email, $full_name); } catch (\Throwable $e) {}
+    try { sendMail('kizzaadventures@gmail.com', "New Booking Inquiry - {$reference}", $emailBody, $email, $full_name); } catch (\Throwable $e) {}
 
     // Send confirmation email to customer
     $customerSubject = "Booking Received - {$reference} - Kizza Tours & Safaris";

@@ -61,7 +61,7 @@ try {
     </body>
     </html>";
 
-    sendMail(SITE_EMAIL, "New Inquiry from {$full_name}", $emailBody, $email, $full_name);
+    sendMail('kizzaadventures@gmail.com', "New Inquiry from {$full_name}", $emailBody, $email, $full_name);
 
     echo json_encode([
         'success' => true,
