@@ -2178,7 +2178,7 @@ body.topbar-hidden .navbar {
 }
 
 .footer::after {
-    content: 'Kizza Tours';
+    content: 'Kizza Tours & Safaris';
     position: absolute;
     inset: 0;
     display: flex;

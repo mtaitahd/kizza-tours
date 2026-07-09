@@ -13,7 +13,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
     <div class="container">
         <div class="row g-4">
             <div class="col-lg-4">
-                <h5 class="footer-brand"><img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris" height="32" style="vertical-align:middle;margin-right:8px;"> <?php echo __('footer_brand'); ?></h5>
+                <div class="brand-footer"><?php echo __('footer_brand'); ?></div>
                 <p class="mt-3" style="color: rgba(255,255,255,0.6);"><?php echo __('footer_desc'); ?></p>
                 <div class="social-links mt-4">
                     <a href="<?php echo $fbUrl; ?>" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
