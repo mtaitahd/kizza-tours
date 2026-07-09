@@ -13,7 +13,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
     <div class="container">
         <div class="row g-4">
             <div class="col-lg-4">
-                <div class="brand-footer"><?php echo __('footer_brand'); ?></div>
+                <h5 class="footer-brand"><img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris" height="32" style="vertical-align:middle;margin-right:8px;"> <?php echo __('footer_brand'); ?></h5>
                 <p class="mt-3" style="color: rgba(255,255,255,0.6);"><?php echo __('footer_desc'); ?></p>
                 <div class="social-links mt-4">
                     <a href="<?php echo $fbUrl; ?>" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
@@ -55,14 +55,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
             </div>
         </div>
         <div class="footer-bottom">
-            <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start">&copy; <?php echo date('Y'); ?> <?php echo __('footer_brand'); ?>. <?php echo __('footer_copyright'); ?></div>
-                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
-                    <a href="<?php echo SITE_URL; ?>/about-us" class="me-3"><?php echo __('footer_about'); ?></a>
-                    <a href="<?php echo SITE_URL; ?>/contact-us" class="me-3"><?php echo __('footer_contact'); ?></a>
-                    <a href="<?php echo SITE_URL; ?>/book-tour"><?php echo __('footer_book'); ?></a>
-                </div>
-            </div>
+            <p>&copy; <?php echo date('Y'); ?> <?php echo __('footer_brand'); ?>. <?php echo __('footer_copyright'); ?>. Developed by <a href="https://mtaitatech.online" target="_blank" rel="noopener">Mtaita Tech</a>.</p>
         </div>
     </div>
 </footer>
