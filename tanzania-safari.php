@@ -18,6 +18,8 @@ $faqs = [
     ['question' => __('tour_tz_faq_q5'), 'answer' => __('tour_tz_faq_a5')],
     ['question' => __('tour_tz_faq_q6'), 'answer' => __('tour_tz_faq_a6')],
 ];
+$heroImg = getMediaUrl('tanzania_safari_image', '');
+$heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%, rgba(13,46,74,0.7) 100%), url('{$heroImg}') center/cover no-repeat; padding: 140px 0 80px;" : "background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;";
 ?>
 <?php include 'includes/header.php'; ?>
 <script type="application/ld+json"><?php echo json_encode(seoBreadcrumbSchema([
@@ -26,7 +28,7 @@ $faqs = [
 ]), JSON_UNESCAPED_SLASHES); ?></script>
 <script type="application/ld+json"><?php echo json_encode(seoFaqSchema($faqs), JSON_UNESCAPED_SLASHES); ?></script>
 
-<section class="inner-hero" style="background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;">
+<section class="inner-hero" style="<?= $heroBg ?>">
     <div class="container text-center">
         <span class="section-subtitle"><?php echo __('tour_tz_subtitle'); ?></span>
         <h1 style="color: var(--white); font-size: clamp(2.5rem, 5vw, 4rem);"><?php echo __('tour_tz_title'); ?></h1>
