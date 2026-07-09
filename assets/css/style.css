@@ -2043,7 +2043,7 @@ body.topbar-hidden .navbar {
     top: 44px;
     padding: 1rem 0;
     transition: var(--transition);
-    z-index: 1000;
+    z-index: 1030;
 }
 
 .navbar.scrolled {
