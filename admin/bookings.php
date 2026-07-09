@@ -298,7 +298,7 @@ if ($quotesTablesOk) {
         .reply-entry .reply-date { font-size: 0.75rem; color: #adb5bd; }
         .reply-entry .reply-subject { font-weight: 600; font-size: 0.9rem; color: #495057; margin-bottom: 0.25rem; }
         .reply-entry .reply-message { font-size: 0.85rem; color: #6c757d; line-height: 1.5; }
-        .sidebar-brand { background-color: #0A2540 !important; }
+        .sidebar-brand { background: none !important; }
         .bg-navbar { background-color: #0A2540 !important; }
         #accordionSidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 1030; overflow-y: auto; }
         #content-wrapper { margin-left: 14rem; transition: margin-left 0.3s ease-in-out; }
@@ -358,7 +358,7 @@ if ($quotesTablesOk) {
     <div id="wrapper">
         <!-- Sidebar -->
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#" style="background-color: #0A2540;">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
                 <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35"></div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
