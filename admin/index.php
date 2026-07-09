@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <div class="login-card">
             <div class="login-logo">
-                <img src="../assets/images/log.png" alt="Kizza Tours &amp; Safaris" height="50">
+                <img src="../assets/images/log.png" alt="Kizza Tours &amp; Safaris" height="50" style="border-radius: 50%;">
             </div>
             <div class="login-title">Admin Portal</div>
             
