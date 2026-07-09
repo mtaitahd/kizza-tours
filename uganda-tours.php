@@ -145,12 +145,15 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
     </div>
 </section>
 
-<section class="cta-section" style="position: relative; padding: 100px 0; background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); text-align: center;">
-    <div class="container">
+<?php $ctaBg = getMediaUrl('cta_background', 'images/african-sunset.jpg'); ?>
+<section class="cta-section">
+    <img src="<?php echo $ctaBg; ?>" alt="" class="cta-bg" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+    <div class="cta-overlay"></div>
+    <div class="cta-content" data-aos="zoom-in">
         <span class="section-subtitle"><?php echo __('tour_ug_cta_subtitle'); ?></span>
         <h2 style="color: var(--white);"><?php echo __('tour_ug_cta_title'); ?></h2>
         <p style="color: rgba(255,255,255,0.8); max-width: 600px; margin: 1rem auto 2rem;"><?php echo __('tour_ug_cta_desc'); ?></p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <div class="cta-buttons">
             <a href="<?php echo SITE_URL; ?>/book-tour" class="btn btn-premium btn-gold btn-lg"><i class="fas fa-calendar-check"></i> <?php echo __('tour_ug_cta_book'); ?></a>
             <a href="<?php echo SITE_URL; ?>/contact-us" class="btn btn-premium btn-outline btn-lg"><i class="fas fa-envelope"></i> <?php echo __('tour_ug_cta_quote'); ?></a>
             <a href="https://wa.me/<?php echo $siteWhatsapp; ?>" class="btn btn-premium btn-whatsapp btn-lg"><i class="fab fa-whatsapp"></i> <?php echo __('tour_ug_cta_whatsapp'); ?></a>
