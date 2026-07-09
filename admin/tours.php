@@ -121,7 +121,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .sidebar-brand { background: none !important; }
+        .sidebar-light .sidebar-brand { background: none !important; }
         .bg-navbar { background-color: #0A2540 !important; }
         #accordionSidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 1030; overflow-y: auto; }
         #content-wrapper { margin-left: 14rem; transition: margin-left 0.3s ease-in-out; }
