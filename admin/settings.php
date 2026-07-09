@@ -555,7 +555,7 @@ foreach ($textSettings as $key) {
 
                                     <!-- Tour Pages Settings -->
                                     <div class="tab-pane fade" id="tourpages">
-                                        <p class="text-muted mb-4">Upload hero background images for each tour page. Recommended size: 1920x600px. Accepted formats: JPG, PNG, WebP, GIF, SVG, AVIF.</p>
+                                        <p class="text-muted mb-4">Upload hero background images for each tour page. Recommended size: 1920x600px. Accepted formats: JPG, PNG, WebP, GIF, SVG, AVIF. <span class="text-warning"><i class="fas fa-info-circle"></i> Max upload size: <?= ini_get('upload_max_filesize') ?>B</span></p>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
@@ -894,6 +894,14 @@ foreach ($textSettings as $key) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
+    var PHP_UPLOAD_MAX = <?= (int)(ini_get('upload_max_filesize')) * 1024 * 1024; ?>; // bytes
+    
+    function formatBytes(bytes) {
+        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+        if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return bytes + ' B';
+    }
+    
     $(function() {
         $('.upload-btn').on('click', function() {
             var key = $(this).data('key');
@@ -905,14 +913,20 @@ foreach ($textSettings as $key) {
                 return;
             }
             
+            var file = fileInput.files[0];
+            if (file.size > PHP_UPLOAD_MAX) {
+                statusEl.html('<span class="text-danger"><i class="fas fa-times"></i> File too large (' + formatBytes(file.size) + '). Max allowed: ' + formatBytes(PHP_UPLOAD_MAX) + '. Resize image and try again.</span>');
+                return;
+            }
+            
             var btn = $(this);
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
-            statusEl.html('<span class="text-info">Uploading, please wait...</span>');
+            statusEl.html('<span class="text-info">Uploading ' + formatBytes(file.size) + ', please wait...</span>');
             
             var formData = new FormData();
             formData.append('ajax_upload', '1');
             formData.append('field_key', key);
-            formData.append(key, fileInput.files[0]);
+            formData.append(key, file);
             
             $.ajax({
                 url: '',
