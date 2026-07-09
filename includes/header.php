@@ -212,7 +212,6 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         </div>
         <form class="top-bar-search d-flex align-items-center gap-2" action="<?php echo SITE_URL; ?>/search" method="GET">
             <select name="location" class="top-bar-select">
-                <option value=""><?php echo __('all_destinations') ?: 'All Destinations'; ?></option>
                 <option value="Tanzania">Tanzania</option>
                 <option value="Kenya">Kenya</option>
                 <option value="Uganda">Uganda</option>
@@ -222,7 +221,6 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                 <option value="Kenya-Tanzania">Kenya & Tanzania</option>
             </select>
             <select name="budget" class="top-bar-select">
-                <option value=""><?php echo __('any_budget') ?: 'Any Budget'; ?></option>
                 <option value="0-1000">Under $1,000</option>
                 <option value="1000-3000">$1,000 - $3,000</option>
                 <option value="3000-5000">$3,000 - $5,000</option>

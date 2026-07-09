@@ -45,7 +45,6 @@ $pageSeo['description'] = 'Search and filter our premium East Africa tour packag
                             </div>
                             <div class="col-md-3">
                                 <select name="location" class="form-select search-input">
-                                    <option value=""><?php echo __('all_destinations') ?: 'All Destinations'; ?></option>
                                     <option value="Tanzania" <?php echo $location === 'Tanzania' ? 'selected' : ''; ?>>Tanzania</option>
                                     <option value="Kenya" <?php echo $location === 'Kenya' ? 'selected' : ''; ?>>Kenya</option>
                                     <option value="Uganda" <?php echo $location === 'Uganda' ? 'selected' : ''; ?>>Uganda</option>
@@ -57,7 +56,6 @@ $pageSeo['description'] = 'Search and filter our premium East Africa tour packag
                             </div>
                             <div class="col-md-2">
                                 <select name="budget" class="form-select search-input">
-                                    <option value=""><?php echo __('any_budget') ?: 'Any Budget'; ?></option>
                                     <option value="0-1000" <?php echo $budget === '0-1000' ? 'selected' : ''; ?>>Under $1,000</option>
                                     <option value="1000-3000" <?php echo $budget === '1000-3000' ? 'selected' : ''; ?>>$1,000 - $3,000</option>
                                     <option value="3000-5000" <?php echo $budget === '3000-5000' ? 'selected' : ''; ?>>$3,000 - $5,000</option>
