@@ -125,11 +125,11 @@ function scanDir($dir, &$results = []) {
             scanDir($path, $results);
         } else {
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                if (filesize($path) > 10240) {
-                    $results[] = $path;
-                }
-            }
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+        if (filesize($path) > 10240 && basename($path) !== 'log.png') {
+            $results[] = $path;
+        }
+    }
         }
     }
     return $results;
