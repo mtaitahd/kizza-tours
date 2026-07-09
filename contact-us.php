@@ -6,6 +6,8 @@ $sitePhone = getSetting('site_phone', SITE_PHONE);
 $siteEmail = getSetting('site_email', SITE_EMAIL);
 $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
 $siteAddress = getSetting('site_address', SITE_ADDRESS);
+$heroBgImg = getMediaUrl('hero_poster', '');
+$heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%, rgba(13,46,74,0.7) 100%), url('{$heroBgImg}') center/cover no-repeat; padding: 140px 0 80px;" : "background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;";
 ?>
 <?php include 'includes/header.php'; ?>
 <script type="application/ld+json"><?php echo json_encode(seoBreadcrumbSchema([
@@ -13,7 +15,7 @@ $siteAddress = getSetting('site_address', SITE_ADDRESS);
     ['name' => 'Contact Us', 'url' => SITE_URL . '/contact-us'],
 ]), JSON_UNESCAPED_SLASHES); ?></script>
 
-<section class="inner-hero" style="background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;">
+<section class="inner-hero" style="<?= $heroBg ?>">
     <div class="container text-center">
         <span class="section-subtitle"><?php echo __('contact_page_subtitle'); ?></span>
         <h1 style="color: var(--white); font-size: clamp(2.5rem, 5vw, 4rem);"><?php echo __('contact_page_title'); ?></h1>

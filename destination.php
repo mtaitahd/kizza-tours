@@ -63,6 +63,8 @@ $countryPageMap = [
     'burundi' => 'burundi-tours',
 ];
 $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
+$heroBgImg = getMediaUrl('hero_poster', '');
+$heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%, rgba(13,46,74,0.7) 100%), url('{$heroBgImg}') center/cover no-repeat; padding: 140px 0 80px;" : "background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;";
 ?>
 <?php include 'includes/header.php'; ?>
 <script type="application/ld+json"><?php echo json_encode(seoBreadcrumbSchema([
@@ -75,7 +77,7 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
     'description' => htmlspecialchars(substr($dest['description'] ?: $dest['short_description'] ?: '', 0, 200)),
 ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 
-<section class="inner-hero" style="background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;">
+<section class="inner-hero" style="<?= $heroBg ?>">
     <div class="container text-center">
         <span class="section-subtitle"><?php echo htmlspecialchars($dest['country'] ?? ''); ?></span>
         <h1 style="color: var(--white); font-size: clamp(2.5rem, 5vw, 4rem);"><?php echo htmlspecialchars($dest['name']); ?></h1>

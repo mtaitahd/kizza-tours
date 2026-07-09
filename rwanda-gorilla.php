@@ -11,7 +11,7 @@ $faqs = [
     ['question' => __('tour_rw_faq_q4'), 'answer' => __('tour_rw_faq_a4')],
     ['question' => __('tour_rw_faq_q5'), 'answer' => __('tour_rw_faq_a5')],
 ];
-$heroImg = getMediaUrl('rwanda_gorilla_image', '');
+$heroImg = getMediaUrl('rwanda_gorilla_image', getMediaUrl('hero_poster', ''));
 $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%, rgba(13,46,74,0.7) 100%), url('{$heroImg}') center/cover no-repeat; padding: 140px 0 80px;" : "background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;";
 ?>
 <?php include 'includes/header.php'; ?>
