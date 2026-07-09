@@ -332,6 +332,7 @@ if ($quotesTablesOk) {
         .empty-state i { font-size: 3rem; margin-bottom: 15px; display: block; }
         #dataTable { width: 100%; }
         #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        #dataTable thead th { white-space: nowrap; }
         #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; }
         #dataTable td.actions-cell .btn { white-space: nowrap; }
     </style>
