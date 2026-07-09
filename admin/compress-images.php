@@ -58,6 +58,55 @@ function compressImage($source, $quality = 75) {
     }
 }
 
+function scanImagesRecursive($dir) {
+    $result = [];
+    if (!is_dir($dir)) return $result;
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+    );
+    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    foreach ($iterator as $file) {
+        if ($file->isFile() && in_array(strtolower($file->getExtension()), $allowed)) {
+            $result[] = [
+                'path' => $file->getPathname(),
+                'name' => $file->getFilename(),
+                'size' => $file->getSize(),
+                'dir' => str_replace(BASE_PATH, '', $file->getPath()) . '/'
+            ];
+        }
+    }
+    return $result;
+}
+
+// Known setting keys that store image paths, mapped to page labels
+$pageLabels = [
+    'tanzania_safari_image' => 'Tanzania Safari Page',
+    'kenya_tanzania_image' => 'Kenya Tanzania Page',
+    'rwanda_gorilla_image' => 'Rwanda Gorilla Page',
+    'uganda_tours_image' => 'Uganda Tours Page',
+    'zanzibar_holidays_image' => 'Zanzibar Holidays Page',
+    'burundi_tours_image' => 'Burundi Tours Page',
+    'mount_kenya_image' => 'Mount Kenya Page',
+    'maasai_mara_image' => 'Maasai Mara Package',
+    'uganda_gorilla_adventure_image' => 'Uganda Gorilla Package',
+    'rwanda_luxury_gorilla_image' => 'Rwanda Luxury Gorilla Package',
+    'amboseli_kilimanjaro_image' => 'Amboseli Package',
+    'hero_poster' => 'Hero Poster',
+    'about_image' => 'About Section',
+    'cta_background' => 'CTA Background',
+    'og_image' => 'OG Image (Social)',
+    'site_favicon' => 'Favicon',
+];
+
+// Build a map of filenames -> page labels
+$settingImageMap = [];
+foreach ($pageLabels as $key => $label) {
+    $val = getSetting($key, '');
+    if (!empty($val)) {
+        $settingImageMap[basename($val)] = $label;
+    }
+}
+
 $images = [];
 $dirs = [
     BASE_PATH . 'assets/images/',
@@ -65,17 +114,14 @@ $dirs = [
 ];
 
 foreach ($dirs as $dir) {
-    if (!is_dir($dir)) continue;
-    $files = glob($dir . '*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE);
-    foreach ($files as $file) {
-        $images[] = [
-            'path' => $file,
-            'name' => basename($file),
-            'size' => filesize($file),
-            'dir' => str_replace(BASE_PATH, '', dirname($file)) . '/'
-        ];
-    }
+    $images = array_merge($images, scanImagesRecursive($dir));
 }
+
+// Attach page label where known
+$images = array_map(function($img) use ($settingImageMap) {
+    $img['page'] = $settingImageMap[$img['name']] ?? '';
+    return $img;
+}, $images);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['compress'])) {
     $selected = $_POST['images'] ?? [];
@@ -107,17 +153,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['compress'])) {
     // Re-scan to show updated sizes
     $images = [];
     foreach ($dirs as $dir) {
-        if (!is_dir($dir)) continue;
-        $files = glob($dir . '*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE);
-        foreach ($files as $file) {
-            $images[] = [
-                'path' => $file,
-                'name' => basename($file),
-                'size' => filesize($file),
-                'dir' => str_replace(BASE_PATH, '', dirname($file)) . '/'
-            ];
-        }
+        $images = array_merge($images, scanImagesRecursive($dir));
     }
+    $images = array_map(function($img) use ($settingImageMap) {
+        $img['page'] = $settingImageMap[$img['name']] ?? '';
+        return $img;
+    }, $images);
 }
 ?>
 <!DOCTYPE html>
@@ -201,8 +242,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['compress'])) {
                 <div class="alert alert-info">No images found in assets/images/ or uploads/.</div>
                 <?php else: ?>
                 <div class="card mb-4">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold">Select images to compress</h6>
+                        <span class="badge badge-primary"><?= count($images) ?> images total</span>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="" id="compressForm">
@@ -222,14 +264,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['compress'])) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="thead-light">
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-bordered table-hover" style="position: relative;">
+                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 1;">
                                         <tr>
                                             <th style="width:40px"><input type="checkbox" id="checkAll"></th>
                                             <th>Preview</th>
                                             <th>File</th>
                                             <th>Folder</th>
+                                            <th>Page</th>
                                             <th>Size</th>
                                         </tr>
                                     </thead>
@@ -240,6 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['compress'])) {
                                             <td><img src="../<?= htmlspecialchars($img['dir'] . $img['name']) ?>" class="img-preview" alt="" onerror="this.style.display='none'"></td>
                                             <td><?= htmlspecialchars($img['name']) ?></td>
                                             <td><code><?= htmlspecialchars($img['dir']) ?></code></td>
+                                            <td><?= $img['page'] ? '<span class="badge badge-info">' . htmlspecialchars($img['page']) . '</span>' : '<span class="text-muted small">—</span>' ?></td>
                                             <td><?= formatSize($img['size']) ?></td>
                                         </tr>
                                         <?php endforeach; ?>

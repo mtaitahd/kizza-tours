@@ -16,6 +16,46 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
     $_SESSION['admin_image'] = $row['profile_image'] ?? null;
 }
 
+// Individual image upload via AJAX
+$fileFields = [
+    'hero_poster' => ['dir' => 'uploads/', 'prefix' => 'hero_poster'],
+    'about_image' => ['dir' => 'uploads/', 'prefix' => 'about'],
+    'cta_background' => ['dir' => 'uploads/', 'prefix' => 'cta'],
+    'og_image' => ['dir' => 'uploads/', 'prefix' => 'og'],
+    'site_favicon' => ['dir' => 'uploads/', 'prefix' => 'favicon'],
+    'tanzania_safari_image' => ['dir' => 'uploads/', 'prefix' => 'tanzania'],
+    'kenya_tanzania_image' => ['dir' => 'uploads/', 'prefix' => 'kenya_tz'],
+    'rwanda_gorilla_image' => ['dir' => 'uploads/', 'prefix' => 'rwanda'],
+    'uganda_tours_image' => ['dir' => 'uploads/', 'prefix' => 'uganda'],
+    'zanzibar_holidays_image' => ['dir' => 'uploads/', 'prefix' => 'zanzibar'],
+    'burundi_tours_image' => ['dir' => 'uploads/', 'prefix' => 'burundi'],
+    'mount_kenya_image' => ['dir' => 'uploads/', 'prefix' => 'mount_kenya'],
+    'maasai_mara_image' => ['dir' => 'uploads/', 'prefix' => 'maasai_mara'],
+    'uganda_gorilla_adventure_image' => ['dir' => 'uploads/', 'prefix' => 'uganda_gorilla_adv'],
+    'rwanda_luxury_gorilla_image' => ['dir' => 'uploads/', 'prefix' => 'rwanda_luxury'],
+    'amboseli_kilimanjaro_image' => ['dir' => 'uploads/', 'prefix' => 'amboseli'],
+];
+
+if (isset($_POST['ajax_upload']) && isset($_POST['field_key'])) {
+    header('Content-Type: application/json');
+    $key = $_POST['field_key'];
+    if (!isset($fileFields[$key]) || !isset($_FILES[$key]) || $_FILES[$key]['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['success' => false, 'message' => 'No file uploaded or invalid field']);
+        exit;
+    }
+    $cfg = $fileFields[$key];
+    $uploaded = uploadFile($_FILES[$key], BASE_PATH . $cfg['dir'], $cfg['prefix']);
+    if ($uploaded) {
+        $oldFile = getSetting($key);
+        if ($oldFile) deleteFile($oldFile);
+        updateSetting($key, $uploaded);
+        echo json_encode(['success' => true, 'url' => SITE_URL . '/' . $uploaded, 'file' => basename($uploaded)]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Upload failed. Check file type (jpg, png, webp, gif, svg, avif) and size (max 10MB).']);
+    }
+    exit;
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Text settings
@@ -35,26 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // File uploads
-    $fileFields = [
-        'hero_poster' => ['dir' => 'uploads/', 'prefix' => 'hero_poster'],
-        'about_image' => ['dir' => 'uploads/', 'prefix' => 'about'],
-        'cta_background' => ['dir' => 'uploads/', 'prefix' => 'cta'],
-        'og_image' => ['dir' => 'uploads/', 'prefix' => 'og'],
-        'site_favicon' => ['dir' => 'uploads/', 'prefix' => 'favicon'],
-        'tanzania_safari_image' => ['dir' => 'uploads/', 'prefix' => 'tanzania'],
-        'kenya_tanzania_image' => ['dir' => 'uploads/', 'prefix' => 'kenya_tz'],
-        'rwanda_gorilla_image' => ['dir' => 'uploads/', 'prefix' => 'rwanda'],
-        'uganda_tours_image' => ['dir' => 'uploads/', 'prefix' => 'uganda'],
-        'zanzibar_holidays_image' => ['dir' => 'uploads/', 'prefix' => 'zanzibar'],
-        'burundi_tours_image' => ['dir' => 'uploads/', 'prefix' => 'burundi'],
-        'mount_kenya_image' => ['dir' => 'uploads/', 'prefix' => 'mount_kenya'],
-        'maasai_mara_image' => ['dir' => 'uploads/', 'prefix' => 'maasai_mara'],
-        'uganda_gorilla_adventure_image' => ['dir' => 'uploads/', 'prefix' => 'uganda_gorilla_adv'],
-        'rwanda_luxury_gorilla_image' => ['dir' => 'uploads/', 'prefix' => 'rwanda_luxury'],
-        'amboseli_kilimanjaro_image' => ['dir' => 'uploads/', 'prefix' => 'amboseli'],
-    ];
-    
+    // File uploads (uses $fileFields defined above for AJAX)
     $uploadErrors = [];
     foreach ($fileFields as $key => $cfg) {
         if (isset($_FILES[$key]) && $_FILES[$key]['error'] === UPLOAD_ERR_OK) {
@@ -138,7 +159,8 @@ foreach ($textSettings as $key) {
             .topbar { left: 0; }
             body.sidebar-toggled .topbar { left: 0; }
         }
-    </style>
+        .gap-2 { gap: 0.5rem; }
+        .upload-status { display: block; min-height: 1.2rem; margin-top: 0.25rem; }
     </style>
 </head>
 <body id="page-top">
@@ -529,34 +551,46 @@ foreach ($textSettings as $key) {
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Tanzania Safari Page Image</label>
-                                                    <input type="file" class="form-control-file" name="tanzania_safari_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="tanzania_safari_image" accept="image/*" id="file_tanzania_safari_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="tanzania_safari_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_tanzania_safari_image"></span>
                                                     <?php $v = getSetting('tanzania_safari_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_tanzania_safari_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_tanzania_safari_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_tanzania_safari_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Kenya Tanzania Safari Page Image</label>
-                                                    <input type="file" class="form-control-file" name="kenya_tanzania_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="kenya_tanzania_image" accept="image/*" id="file_kenya_tanzania_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="kenya_tanzania_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_kenya_tanzania_image"></span>
                                                     <?php $v = getSetting('kenya_tanzania_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_kenya_tanzania_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_kenya_tanzania_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_kenya_tanzania_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -565,34 +599,46 @@ foreach ($textSettings as $key) {
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Rwanda Gorilla Trekking Page Image</label>
-                                                    <input type="file" class="form-control-file" name="rwanda_gorilla_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="rwanda_gorilla_image" accept="image/*" id="file_rwanda_gorilla_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="rwanda_gorilla_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_rwanda_gorilla_image"></span>
                                                     <?php $v = getSetting('rwanda_gorilla_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_rwanda_gorilla_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_rwanda_gorilla_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_rwanda_gorilla_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Uganda Tours Page Image</label>
-                                                    <input type="file" class="form-control-file" name="uganda_tours_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="uganda_tours_image" accept="image/*" id="file_uganda_tours_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="uganda_tours_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_uganda_tours_image"></span>
                                                     <?php $v = getSetting('uganda_tours_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_uganda_tours_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_uganda_tours_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_uganda_tours_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -601,34 +647,46 @@ foreach ($textSettings as $key) {
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Zanzibar Holidays Page Image</label>
-                                                    <input type="file" class="form-control-file" name="zanzibar_holidays_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="zanzibar_holidays_image" accept="image/*" id="file_zanzibar_holidays_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="zanzibar_holidays_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_zanzibar_holidays_image"></span>
                                                     <?php $v = getSetting('zanzibar_holidays_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_zanzibar_holidays_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_zanzibar_holidays_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_zanzibar_holidays_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Burundi Tours Page Image</label>
-                                                    <input type="file" class="form-control-file" name="burundi_tours_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="burundi_tours_image" accept="image/*" id="file_burundi_tours_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="burundi_tours_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_burundi_tours_image"></span>
                                                     <?php $v = getSetting('burundi_tours_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_burundi_tours_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_burundi_tours_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_burundi_tours_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -637,17 +695,23 @@ foreach ($textSettings as $key) {
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Mount Kenya Climbing Page Image</label>
-                                                    <input type="file" class="form-control-file" name="mount_kenya_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="mount_kenya_image" accept="image/*" id="file_mount_kenya_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="mount_kenya_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_mount_kenya_image"></span>
                                                     <?php $v = getSetting('mount_kenya_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_mount_kenya_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_mount_kenya_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_mount_kenya_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -659,34 +723,46 @@ foreach ($textSettings as $key) {
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Maasai Mara Great Migration Safari</label>
-                                                    <input type="file" class="form-control-file" name="maasai_mara_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="maasai_mara_image" accept="image/*" id="file_maasai_mara_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="maasai_mara_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_maasai_mara_image"></span>
                                                     <?php $v = getSetting('maasai_mara_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_maasai_mara_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_maasai_mara_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_maasai_mara_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Uganda Gorilla Trekking Adventure</label>
-                                                    <input type="file" class="form-control-file" name="uganda_gorilla_adventure_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="uganda_gorilla_adventure_image" accept="image/*" id="file_uganda_gorilla_adventure_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="uganda_gorilla_adventure_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_uganda_gorilla_adventure_image"></span>
                                                     <?php $v = getSetting('uganda_gorilla_adventure_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_uganda_gorilla_adventure_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_uganda_gorilla_adventure_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_uganda_gorilla_adventure_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -695,34 +771,46 @@ foreach ($textSettings as $key) {
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Rwanda Luxury Gorilla Safari</label>
-                                                    <input type="file" class="form-control-file" name="rwanda_luxury_gorilla_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="rwanda_luxury_gorilla_image" accept="image/*" id="file_rwanda_luxury_gorilla_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="rwanda_luxury_gorilla_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_rwanda_luxury_gorilla_image"></span>
                                                     <?php $v = getSetting('rwanda_luxury_gorilla_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_rwanda_luxury_gorilla_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_rwanda_luxury_gorilla_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_rwanda_luxury_gorilla_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Amboseli & Kilimanjaro Views Safari</label>
-                                                    <input type="file" class="form-control-file" name="amboseli_kilimanjaro_image" accept="image/*">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <input type="file" class="form-control-file" name="amboseli_kilimanjaro_image" accept="image/*" id="file_amboseli_kilimanjaro_image" style="flex:1;">
+                                                        <button type="button" class="btn btn-sm btn-success upload-btn" data-key="amboseli_kilimanjaro_image"><i class="fas fa-upload"></i> Upload</button>
+                                                    </div>
+                                                    <span class="upload-status text-muted small" id="status_amboseli_kilimanjaro_image"></span>
                                                     <?php $v = getSetting('amboseli_kilimanjaro_image'); if ($v): ?>
                                                     <div class="mt-2 d-flex align-items-center flex-wrap">
                                                         <?php if (file_exists(BASE_PATH . $v)): ?>
-                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
+                                                        <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_amboseli_kilimanjaro_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
                                                         <span class="text-muted small">File missing — re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_amboseli_kilimanjaro_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
+                                                    <?php else: ?>
+                                                    <div class="mt-2 d-flex align-items-center flex-wrap" id="preview_wrap_amboseli_kilimanjaro_image" style="display:none;"></div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -796,5 +884,56 @@ foreach ($textSettings as $key) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
+    <script>
+    $(function() {
+        $('.upload-btn').on('click', function() {
+            var key = $(this).data('key');
+            var fileInput = $('#file_' + key)[0];
+            var statusEl = $('#status_' + key);
+            
+            if (!fileInput.files || !fileInput.files[0]) {
+                statusEl.html('<span class="text-danger">Select a file first</span>');
+                return;
+            }
+            
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+            statusEl.html('<span class="text-info">Uploading, please wait...</span>');
+            
+            var formData = new FormData();
+            formData.append('ajax_upload', '1');
+            formData.append('field_key', key);
+            formData.append(key, fileInput.files[0]);
+            
+            $.ajax({
+                url: '',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.success) {
+                        statusEl.html('<span class="text-success"><i class="fas fa-check"></i> Uploaded: ' + resp.file + '</span>');
+                        var wrap = $('#preview_wrap_' + key);
+                        if (wrap.length) {
+                            wrap.show().html('<img src="' + resp.url + '" class="preview-thumb"> <span class="text-muted small ml-2">' + resp.file + '</span>');
+                        }
+                        $('#preview_' + key).attr('src', resp.url);
+                    } else {
+                        statusEl.html('<span class="text-danger"><i class="fas fa-times"></i> ' + resp.message + '</span>');
+                    }
+                },
+                error: function() {
+                    statusEl.html('<span class="text-danger">Upload failed. Server error.</span>');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Upload');
+                    fileInput.value = '';
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>
