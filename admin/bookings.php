@@ -298,7 +298,7 @@ if ($quotesTablesOk) {
         .reply-entry .reply-date { font-size: 0.75rem; color: #adb5bd; }
         .reply-entry .reply-subject { font-weight: 600; font-size: 0.9rem; color: #495057; margin-bottom: 0.25rem; }
         .reply-entry .reply-message { font-size: 0.85rem; color: #6c757d; line-height: 1.5; }
-        .sidebar-light .sidebar-brand { background: none !important; }
+        .sidebar-light .sidebar-brand { background-color: #0A2540 !important; }
         .bg-navbar { background-color: #0A2540 !important; }
         #accordionSidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 1030; overflow-y: auto; }
         #content-wrapper { margin-left: 14rem; transition: margin-left 0.3s ease-in-out; }

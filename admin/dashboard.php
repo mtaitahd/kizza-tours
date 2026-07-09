@@ -42,7 +42,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .sidebar-light .sidebar-brand { background: none !important; }
+        .sidebar-light .sidebar-brand { background-color: #0A2540 !important; }
         .bg-navbar { background-color: #0A2540 !important; }
 
         .card { border-radius: 12px; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }

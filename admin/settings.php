@@ -152,7 +152,7 @@ foreach ($textSettings as $key) {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .sidebar-light .sidebar-brand { background: none !important; }
+        .sidebar-light .sidebar-brand { background-color: #0A2540 !important; }
         .bg-navbar { background-color: #0A2540 !important; }
         .form-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #6c757d; font-weight: 600; }
         #accordionSidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 1030; overflow-y: auto; }
