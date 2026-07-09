@@ -327,6 +327,11 @@ if ($quotesTablesOk) {
         .item-row { transition: background 0.2s; }
         .item-row:hover { background: #f0f4ff; }
         .currency-symbol { font-weight: 600; }
+        #wrapper #content-wrapper { overflow-x: visible; width: calc(100% - 14rem); }
+        body.sidebar-toggled #wrapper #content-wrapper { width: calc(100% - 6.5rem); }
+        #container-wrapper { max-width: 100%; width: 100%; padding-left: 1.5rem; padding-right: 1.5rem; }
+        .card.mb-4 { width: 100%; max-width: 100%; }
+        .card-body.p-0 { width: 100%; }
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .empty-state { padding: 60px 20px; text-align: center; color: #adb5bd; }
         .empty-state i { font-size: 3rem; margin-bottom: 15px; display: block; }
@@ -354,7 +359,7 @@ if ($quotesTablesOk) {
         <!-- Sidebar -->
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#" style="background-color: #0A2540;">
-                <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35" style="border-radius: 50%;"></div>
+                <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35" style="border-radius: 6px;"></div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
             <hr class="sidebar-divider my-0">
@@ -422,7 +427,7 @@ if ($quotesTablesOk) {
 
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2" style="border-radius:6px;"> Manage Bookings</h4>
+                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="40" class="mr-2" style="border-radius:6px;"> Manage Bookings</h4>
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="dashboard">Home</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Bookings</li>

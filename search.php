@@ -113,11 +113,13 @@ $pageSeo['description'] = 'Search and filter our premium East Africa tour packag
             </div>
             <?php else: ?>
             <div class="row g-4">
-                <?php foreach ($packages as $i => $pkg): ?>
+                <?php foreach ($packages as $i => $pkg):
+                    $pkgImg = !empty($pkg['image']) && file_exists(BASE_PATH . $pkg['image']) ? SITE_URL . '/' . $pkg['image'] : ASSETS_PATH . 'images/placeholder.svg';
+                ?>
                 <div class="col-lg-4 col-md-6">
                     <div class="package-card">
                         <div class="package-card-image">
-                            <img src="<?php echo getMediaUrl($pkg['image'], 'images/placeholder.svg'); ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy" onerror="this.src='<?php echo ASSETS_PATH; ?>images/placeholder.svg'">
+                            <img src="<?php echo $pkgImg; ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy" onerror="this.src='<?php echo ASSETS_PATH; ?>images/placeholder.svg'">
                             <?php if ($i === 0): ?>
                             <span class="package-card-badge"><?php echo __('bestseller') ?: 'Bestseller'; ?></span>
                             <?php elseif ($pkg['featured']): ?>

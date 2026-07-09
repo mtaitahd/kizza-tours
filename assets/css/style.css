@@ -2222,6 +2222,19 @@ body.topbar-hidden .navbar {
     }
 }
 
+/*===== DROPDOWN HOVER (Desktop only) =====*/
+@media (min-width: 992px) {
+    .navbar .dropdown:hover > .dropdown-menu {
+        display: block;
+        margin-top: 0;
+        opacity: 1;
+        visibility: visible;
+    }
+    .navbar .dropdown > .dropdown-toggle:active {
+        pointer-events: none;
+    }
+}
+
 /*===== FOOTER =====*/
 .footer {
     background: rgba(10, 37, 64, 0.85);
