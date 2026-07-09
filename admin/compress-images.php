@@ -322,14 +322,17 @@ $totalImages = count($allImageFiles);
                     </div>
 
                     <?php if ($compressAttempted): ?>
-                    <div class="row">
+                    <div class="row" id="resultsSection">
                         <div class="col-12">
                             <div class="card compress-card mb-4">
                                 <div class="card-header py-3 d-flex align-items-center justify-content-between">
                                     <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-list mr-2"></i>Results</h6>
-                                    <?php if ($hasLibrary): ?>
-                                    <span class="badge badge-primary" style="font-size:0.85rem;"><?php echo $filesFound; ?> images processed</span>
-                                    <?php endif; ?>
+                                    <div>
+                                        <?php if ($hasLibrary): ?>
+                                        <span class="badge badge-primary mr-2" style="font-size:0.85rem;"><?php echo $filesFound; ?> images processed</span>
+                                        <?php endif; ?>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('resultsSection').style.display='none'"><i class="fas fa-times mr-1"></i>Clear</button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <?php if (!$hasLibrary): ?>
