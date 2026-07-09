@@ -330,11 +330,23 @@ if ($quotesTablesOk) {
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .empty-state { padding: 60px 20px; text-align: center; color: #adb5bd; }
         .empty-state i { font-size: 3rem; margin-bottom: 15px; display: block; }
-        #dataTable { width: 100%; }
-        #dataTable td, #dataTable th { overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        #dataTable { width: 100%; margin-bottom: 0; }
+        #dataTable th, #dataTable td { vertical-align: middle; }
         #dataTable thead th { white-space: nowrap; }
-        #dataTable td.actions-cell, #dataTable th.actions-cell { white-space: nowrap; }
+        #dataTable tbody td { white-space: nowrap; }
+        #dataTable th:nth-child(1), #dataTable td:nth-child(1) { min-width: 100px; }
+        #dataTable th:nth-child(2), #dataTable td:nth-child(2) { min-width: 170px; }
+        #dataTable th:nth-child(3), #dataTable td:nth-child(3) { min-width: 240px; }
+        #dataTable th:nth-child(4), #dataTable td:nth-child(4) { min-width: 170px; }
+        #dataTable th:nth-child(5), #dataTable td:nth-child(5) { min-width: 150px; }
+        #dataTable th:nth-child(6), #dataTable td:nth-child(6) { min-width: 80px; text-align: center; }
+        #dataTable th:nth-child(7), #dataTable td:nth-child(7) { min-width: 120px; }
+        #dataTable th:nth-child(8), #dataTable td:nth-child(8) { min-width: 120px; }
+        #dataTable th:nth-child(9), #dataTable td:nth-child(9) { min-width: 120px; }
+        #dataTable th:nth-child(10), #dataTable td:nth-child(10) { min-width: 220px; }
+        #dataTable td.actions-cell { white-space: nowrap; }
         #dataTable td.actions-cell .btn { white-space: nowrap; }
+        #dataTable .badge { white-space: nowrap; }
     </style>
 </head>
 <body id="page-top">
@@ -430,7 +442,7 @@ if ($quotesTablesOk) {
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-striped mb-0" id="dataTable">
+                                <table class="table table-hover table-striped align-middle mb-0" id="dataTable">
                                     <thead>
                                         <tr>
                                             <th>Ref</th>

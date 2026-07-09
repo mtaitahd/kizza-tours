@@ -71,15 +71,26 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
 ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 
 <?php
-$tourHeroBg = !empty($tour['hero_image']) && file_exists(BASE_PATH . $tour['hero_image'])
-    ? 'background: linear-gradient(rgba(10,37,64,0.7), rgba(10,37,64,0.7)), url(' . SITE_URL . '/' . htmlspecialchars($tour['hero_image']) . ') center/cover no-repeat;'
+$heroBgCandidates = [
+    !empty($tour['hero_image']) ? $tour['hero_image'] : null,
+    !empty($tour['image']) ? $tour['image'] : null,
+];
+$heroBgUrl = '';
+foreach ($heroBgCandidates as $candidate) {
+    if ($candidate && file_exists(BASE_PATH . $candidate)) {
+        $heroBgUrl = SITE_URL . '/' . htmlspecialchars($candidate);
+        break;
+    }
+}
+$tourHeroBg = $heroBgUrl
+    ? 'background: linear-gradient(rgba(10,37,64,0.7), rgba(10,37,64,0.7)), url(' . $heroBgUrl . ') center/cover no-repeat;'
     : 'background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%);';
 ?>
 <section class="inner-hero" style="<?= $tourHeroBg ?> padding: 140px 0 80px;">
     <div class="container text-center">
         <span class="section-subtitle"><?php echo htmlspecialchars($tour['country'] ?? ''); ?> Safari</span>
-        <h1 style="color: var(--white); font-size: clamp(2rem, 4vw, 3.5rem);"><?php echo htmlspecialchars($tour['title']); ?></h1>
-        <p style="color: rgba(255,255,255,0.8); max-width: 700px; margin: 1rem auto 0; font-size: 1.1rem;">
+        <h1><?php echo htmlspecialchars($tour['title']); ?></h1>
+        <p style="max-width: 700px; margin: 1rem auto 0;">
             <?php echo htmlspecialchars($tour['duration'] ?? ''); ?> &bull; From $<?php echo number_format($tour['price'] ?? 0, 0); ?> per person
         </p>
     </div>
