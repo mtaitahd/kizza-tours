@@ -64,7 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle compression
-if (isset($_POST['compress']) && $hasLibrary) {
+$compressAttempted = isset($_POST['compress']);
+if ($compressAttempted && $hasLibrary) {
     function compressImage($path, $quality, $maxWidth, $useImagick) {
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $origSize = filesize($path);
@@ -312,22 +313,28 @@ $totalImages = count($allImageFiles);
                         <div class="card-body">
                             <p class="text-muted">Compresses all images (<strong>70% quality</strong>, max width <strong>1920px</strong>) across <code>uploads/</code>, <code>assets/images/</code>, and <code>templates/assets/img/</code>.</p>
                             <form method="post" onsubmit="document.getElementById('compressSubmitBtn').disabled = true; document.getElementById('compressSubmitBtn').innerHTML = '<i class=\'fas fa-spinner fa-spin mr-2\'></i>Processing...';">
-                                <button type="submit" name="compress" id="compressSubmitBtn" class="btn btn-primary" <?php echo !$hasLibrary ? 'disabled' : ''; ?>>
+                                <input type="hidden" name="compress" value="1">
+                                <button type="submit" id="compressSubmitBtn" class="btn btn-primary">
                                     <i class="fas fa-compress-alt mr-2"></i>Compress All Images
                                 </button>
                             </form>
                         </div>
                     </div>
 
-                    <?php if (isset($_POST['compress']) && $hasLibrary): ?>
+                    <?php if ($compressAttempted): ?>
                     <div class="row">
                         <div class="col-12">
                             <div class="card compress-card mb-4">
                                 <div class="card-header py-3 d-flex align-items-center justify-content-between">
                                     <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-list mr-2"></i>Results</h6>
+                                    <?php if ($hasLibrary): ?>
                                     <span class="badge badge-primary" style="font-size:0.85rem;"><?php echo $filesFound; ?> images processed</span>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="card-body">
+                                    <?php if (!$hasLibrary): ?>
+                                        <div class="alert alert-danger mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>No image library found! Install <strong>GD</strong> or <strong>Imagick</strong> PHP extension to use compression.</div>
+                                    <?php else: ?>
                                     <div class="result-log">
                                         <?php foreach ($results as $r): ?>
                                             <?php if ($r['optimal']): ?>
@@ -339,6 +346,7 @@ $totalImages = count($allImageFiles);
                                         <div class="done mt-2">Done! Total saved: <?php echo round($totalSaved/1024); ?> KB</div>
                                         <div class="done">Library: <?php echo $useImagick ? 'Imagick' : 'GD'; ?></div>
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
