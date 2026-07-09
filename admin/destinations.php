@@ -103,7 +103,7 @@ $destinations = $db->fetchAll("SELECT * FROM destinations ORDER BY sort_order AS
     <div id="wrapper">
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
-                <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35"></div>
+                <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35" style="border-radius: 50%;"></div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
             <hr class="sidebar-divider my-0">
@@ -171,7 +171,7 @@ $destinations = $db->fetchAll("SELECT * FROM destinations ORDER BY sort_order AS
 
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2"> Manage Destinations</h4>
+                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2" style="border-radius: 6px;"> Manage Destinations</h4>
                         <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#destModal">
                             <i class="fas fa-plus"></i> Add Destination
                         </button>
