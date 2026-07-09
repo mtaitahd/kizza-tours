@@ -116,13 +116,13 @@ function compressImage($path, $quality, $maxWidth, $useImagick) {
     return ['orig' => $origSize, 'new' => $origSize]; // already optimal
 }
 
-function scanDir($dir, &$results = []) {
+function scanImageDir($dir, &$results = []) {
     $items = scandir($dir);
     foreach ($items as $item) {
         if ($item === '.' || $item === '..') continue;
         $path = $dir . '/' . $item;
         if (is_dir($path)) {
-            scanDir($path, $results);
+            scanImageDir($path, $results);
         } else {
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
@@ -138,7 +138,7 @@ function scanDir($dir, &$results = []) {
 $files = [];
 foreach ($scanDirs as $dir) {
     if (is_dir($dir)) {
-        scanDir($dir, $files);
+        scanImageDir($dir, $files);
     }
 }
 echo "Found " . count($files) . " images to process\n\n";
