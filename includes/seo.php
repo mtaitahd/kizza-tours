@@ -302,27 +302,31 @@ function seoGenerateSitemap() {
     $url = SITE_URL;
     $today = date('Y-m-d');
 
-    $fileDates = [];
-    foreach (['index.php', 'about-us.php', 'contact-us.php', 'book-tour.php', 'tanzania-safari.php', 'kenya-tanzania-safari.php', 'uganda-tours.php', 'zanzibar-holidays.php', 'burundi-tours.php', 'rwanda-gorilla.php', 'mount-kenya.php'] as $f) {
-        $fp = BASE_PATH . $f;
-        if (file_exists($fp)) {
-            $fileDates[$f] = date('Y-m-d', filemtime($fp));
-        }
-    }
-
-    $pages = [
-        ['loc' => $url . '/', 'lastmod' => $fileDates['index.php'] ?? $today, 'priority' => '1.0', 'changefreq' => 'weekly'],
-        ['loc' => $url . '/about-us', 'lastmod' => $fileDates['about-us.php'] ?? $today, 'priority' => '0.9', 'changefreq' => 'monthly'],
-        ['loc' => $url . '/contact-us', 'lastmod' => $fileDates['contact-us.php'] ?? $today, 'priority' => '0.8', 'changefreq' => 'monthly'],
-        ['loc' => $url . '/book-tour', 'lastmod' => $fileDates['book-tour.php'] ?? $today, 'priority' => '0.9', 'changefreq' => 'monthly'],
-        ['loc' => $url . '/tanzania-safari', 'lastmod' => $fileDates['tanzania-safari.php'] ?? $today, 'priority' => '0.9', 'changefreq' => 'weekly'],
-        ['loc' => $url . '/kenya-tanzania-safari', 'lastmod' => $fileDates['kenya-tanzania-safari.php'] ?? $today, 'priority' => '0.9', 'changefreq' => 'weekly'],
-        ['loc' => $url . '/rwanda-gorilla-trekking', 'lastmod' => $fileDates['rwanda-gorilla.php'] ?? $today, 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ['loc' => $url . '/uganda-tours', 'lastmod' => $fileDates['uganda-tours.php'] ?? $today, 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ['loc' => $url . '/zanzibar-holidays', 'lastmod' => $fileDates['zanzibar-holidays.php'] ?? $today, 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ['loc' => $url . '/burundi-tours', 'lastmod' => $fileDates['burundi-tours.php'] ?? $today, 'priority' => '0.7', 'changefreq' => 'monthly'],
-        ['loc' => $url . '/mount-kenya-climbing', 'lastmod' => $fileDates['mount-kenya.php'] ?? $today, 'priority' => '0.8', 'changefreq' => 'weekly'],
+    $staticPages = [
+        ['file' => 'index.php', 'loc' => '/', 'priority' => '1.0', 'changefreq' => 'weekly'],
+        ['file' => 'about-us.php', 'loc' => '/about-us', 'priority' => '0.9', 'changefreq' => 'monthly'],
+        ['file' => 'contact-us.php', 'loc' => '/contact-us', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['file' => 'book-tour.php', 'loc' => '/book-tour', 'priority' => '0.9', 'changefreq' => 'monthly'],
+        ['file' => 'tanzania-safari.php', 'loc' => '/tanzania-safari', 'priority' => '0.9', 'changefreq' => 'weekly'],
+        ['file' => 'kenya-tanzania-safari.php', 'loc' => '/kenya-tanzania-safari', 'priority' => '0.9', 'changefreq' => 'weekly'],
+        ['file' => 'rwanda-gorilla.php', 'loc' => '/rwanda-gorilla-trekking', 'priority' => '0.8', 'changefreq' => 'weekly'],
+        ['file' => 'uganda-tours.php', 'loc' => '/uganda-tours', 'priority' => '0.8', 'changefreq' => 'weekly'],
+        ['file' => 'zanzibar-holidays.php', 'loc' => '/zanzibar-holidays', 'priority' => '0.8', 'changefreq' => 'weekly'],
+        ['file' => 'burundi-tours.php', 'loc' => '/burundi-tours', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['file' => 'mount-kenya.php', 'loc' => '/mount-kenya-climbing', 'priority' => '0.8', 'changefreq' => 'weekly'],
     ];
+
+    $pages = [];
+    foreach ($staticPages as $sp) {
+        $fp = BASE_PATH . $sp['file'];
+        if (!file_exists($fp)) continue;
+        $pages[] = [
+            'loc' => $url . $sp['loc'],
+            'lastmod' => date('Y-m-d', filemtime($fp)),
+            'priority' => $sp['priority'],
+            'changefreq' => $sp['changefreq'],
+        ];
+    }
 
     try {
         $db = Database::getInstance();

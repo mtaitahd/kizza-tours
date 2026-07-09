@@ -70,7 +70,12 @@ $countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
     'itinerary' => $itineraryLines ? array_slice(array_values($itineraryLines), 0, 10) : [],
 ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 
-<section class="inner-hero" style="background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;">
+<?php
+$tourHeroBg = !empty($tour['hero_image']) && file_exists(BASE_PATH . $tour['hero_image'])
+    ? 'background: linear-gradient(rgba(10,37,64,0.7), rgba(10,37,64,0.7)), url(' . SITE_URL . '/' . htmlspecialchars($tour['hero_image']) . ') center/cover no-repeat;'
+    : 'background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%);';
+?>
+<section class="inner-hero" style="<?= $tourHeroBg ?> padding: 140px 0 80px;">
     <div class="container text-center">
         <span class="section-subtitle"><?php echo htmlspecialchars($tour['country'] ?? ''); ?> Safari</span>
         <h1 style="color: var(--white); font-size: clamp(2rem, 4vw, 3.5rem);"><?php echo htmlspecialchars($tour['title']); ?></h1>

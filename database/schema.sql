@@ -53,6 +53,7 @@ CREATE TABLE tour_packages (
     includes TEXT,
     excludes TEXT,
     image VARCHAR(255),
+    hero_image VARCHAR(255) DEFAULT NULL,
     gallery TEXT,
     video_url VARCHAR(255),
     featured TINYINT(1) DEFAULT 0,

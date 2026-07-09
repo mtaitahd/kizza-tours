@@ -24,14 +24,18 @@ $pageSeo['canonical'] = SITE_URL . '/' . urlencode($page['slug']);
 $pageSeo['ogTitle'] = htmlspecialchars($page['meta_title'] ?: $page['title'] . ' - Kizza Tours');
 $pageSeo['ogDesc'] = htmlspecialchars(substr($page['meta_description'] ?: 'Learn more about ' . $page['title'] . ' with Kizza Tours & Safaris.', 0, 200));
 $pageSeo['h1'] = htmlspecialchars($page['title']);
-$og_image = $page['image'] ? SITE_URL . '/' . $page['image'] : '';
 
 require_once 'includes/header.php';
 ?>
 
-<section class="page-header-section section-padding" style="background: linear-gradient(135deg, #0A2540, #1A3A5C); padding-top: 150px;">
+<?php
+$heroBg = $page['hero_image'] && file_exists(BASE_PATH . $page['hero_image'])
+    ? 'background: linear-gradient(rgba(10,37,64,0.65), rgba(10,37,64,0.65)), url(' . htmlspecialchars(SITE_URL . '/' . $page['hero_image']) . ') center/cover no-repeat;'
+    : 'background: linear-gradient(135deg, #0A2540, #1A3A5C);';
+?>
+<section class="page-header-section section-padding" style="<?= $heroBg ?> padding-top: 150px; min-height: 350px; display: flex; align-items: center;">
     <div class="container text-center">
-        <h1 class="text-white" style="font-size: clamp(2rem, 4vw, 3rem);"><?= htmlspecialchars($page['title']) ?></h1>
+        <h1 class="text-white" style="font-size: clamp(2rem, 4vw, 3rem); text-shadow: 0 2px 8px rgba(0,0,0,0.3);"><?= htmlspecialchars($page['title']) ?></h1>
         <?php if ($page['image'] && file_exists(BASE_PATH . $page['image'])): ?>
         <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="mt-3 rounded" style="max-height:300px;width:auto;border-radius:12px;">
         <?php endif; ?>

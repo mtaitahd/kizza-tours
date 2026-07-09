@@ -15,6 +15,20 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
     $_SESSION['admin_image'] = $row['profile_image'] ?? null;
 }
 
+function ensurePagesTable() {
+    try {
+        $db = db();
+        try {
+            $db->query("ALTER TABLE pages ADD COLUMN hero_image VARCHAR(255) DEFAULT NULL AFTER image");
+        } catch (\Throwable $e) {
+        }
+        return true;
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+ensurePagesTable();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -39,10 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        $heroImage = '';
+        $hasNewHero = false;
+        if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
+            $uploaded = uploadFile($_FILES['hero_image'], BASE_PATH . 'uploads/pages/', 'hero_' . $slug);
+            if ($uploaded) {
+                $heroImage = $uploaded;
+                $hasNewHero = true;
+            }
+        }
+
         if ($action === 'add') {
             $db->insert(
-                "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $status, $sort_order]
+                "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, hero_image, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $heroImage, $status, $sort_order]
             );
             seoGenerateSitemap();
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully'];
@@ -50,16 +74,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($hasNewImage) {
                 $old = $db->fetchOne("SELECT image FROM pages WHERE id = ?", [$pageId]);
                 if ($old && $old['image']) deleteFile($old['image']);
-                $db->query(
-                    "UPDATE pages SET title=?, slug=?, content=?, meta_title=?, meta_description=?, meta_keywords=?, image=?, status=?, sort_order=? WHERE id=?",
-                    [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $status, $sort_order, $pageId]
-                );
-            } else {
-                $db->query(
-                    "UPDATE pages SET title=?, slug=?, content=?, meta_title=?, meta_description=?, meta_keywords=?, status=?, sort_order=? WHERE id=?",
-                    [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $sort_order, $pageId]
-                );
             }
+            if ($hasNewHero) {
+                $old = $db->fetchOne("SELECT hero_image FROM pages WHERE id = ?", [$pageId]);
+                if ($old && $old['hero_image']) deleteFile($old['hero_image']);
+            }
+            $sql = "UPDATE pages SET title=?, slug=?, content=?, meta_title=?, meta_description=?, meta_keywords=?, status=?, sort_order=?";
+            $params = [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $sort_order];
+            if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
+            if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
+            $sql .= " WHERE id=?";
+            $params[] = $pageId;
+            $db->query($sql, $params);
             seoGenerateSitemap();
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page updated successfully'];
         }
@@ -68,8 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash'] = ['type' => $ok ? 'success' : 'danger', 'message' => $ok ? 'Sitemap generated successfully' : 'Sitemap generation failed'];
     } elseif ($action === 'delete') {
         $pageId = intval($_POST['page_id'] ?? 0);
-        $page = $db->fetchOne("SELECT image FROM pages WHERE id = ?", [$pageId]);
+        $page = $db->fetchOne("SELECT image, hero_image FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['image']) deleteFile($page['image']);
+        if ($page && $page['hero_image']) deleteFile($page['hero_image']);
         $db->query("DELETE FROM pages WHERE id = ?", [$pageId]);
         seoGenerateSitemap();
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page deleted successfully'];
@@ -79,6 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($page && $page['image']) deleteFile($page['image']);
         $db->query("UPDATE pages SET image = NULL WHERE id = ?", [$pageId]);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image removed'];
+    } elseif ($_POST['action'] === 'remove_hero') {
+        $pageId = intval($_POST['page_id'] ?? 0);
+        $page = $db->fetchOne("SELECT hero_image FROM pages WHERE id = ?", [$pageId]);
+        if ($page && $page['hero_image']) deleteFile($page['hero_image']);
+        $db->query("UPDATE pages SET hero_image = NULL WHERE id = ?", [$pageId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Hero image removed'];
     }
 
     header('Location: pages');
@@ -250,76 +283,91 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-8">
-                            <div class="form-group">
-                                <label>Page Title <span class="text-danger">*</span></label>
-                                <input type="text" name="title" id="pageTitle" class="form-control" required oninput="autoSlug(this.value)">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Slug <span class="text-danger">*</span></label>
-                                <input type="text" name="slug" id="pageSlug" class="form-control" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Content</label>
-                        <textarea name="content" id="pageContent" rows="12" class="form-control" style="font-family:monospace;"></textarea>
-                        <small class="text-muted">HTML content supported. Use full HTML or plain text.</small>
-                    </div>
-                    <hr>
-                    <h6 class="font-weight-bold">SEO & Meta</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Meta Title</label>
-                                <input type="text" name="meta_title" id="pageMetaTitle" class="form-control">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Meta Keywords</label>
-                                <input type="text" name="meta_keywords" id="pageMetaKeywords" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Meta Description</label>
-                        <textarea name="meta_description" id="pageMetaDesc" rows="3" class="form-control"></textarea>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Featured Image</label>
-                                <input type="file" name="image" class="form-control-file" accept="image/*">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Status</label>
-                                <select name="status" id="pageStatus" class="form-control">
-                                    <option value="active">Active</option>
-                                    <option value="draft">Draft</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Sort Order</label>
-                                <input type="number" name="sort_order" id="pageSortOrder" class="form-control" value="0">
-                            </div>
-                        </div>
-                    </div>
-                    <div id="editImageSection" style="display:none;">
-                        <div class="form-group">
-                            <label>Current Image:</label>
-                            <div>
-                                <img id="editImagePreview" src="" alt="" style="max-height:80px;border-radius:4px;">
-                                <label class="ml-3 text-muted"><input type="checkbox" name="remove_image" value="1"> Remove current image</label>
-                            </div>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label>Page Title <span class="text-danger">*</span></label>
+                    <input type="text" name="title" id="pageTitle" class="form-control" maxlength="255" required oninput="autoSlug(this.value)">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Slug <span class="text-danger">*</span></label>
+                    <input type="text" name="slug" id="pageSlug" class="form-control" maxlength="255" required>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Content</label>
+            <textarea name="content" id="pageContent" rows="12" class="form-control" style="font-family:monospace;"></textarea>
+            <small class="text-muted">HTML content supported. Use full HTML or plain text.</small>
+        </div>
+        <hr>
+        <h6 class="font-weight-bold">SEO & Meta</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Meta Title <small class="text-muted">(max 255 chars)</small></label>
+                    <input type="text" name="meta_title" id="pageMetaTitle" class="form-control" maxlength="255">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Meta Keywords <small class="text-muted">(max 255 chars)</small></label>
+                    <input type="text" name="meta_keywords" id="pageMetaKeywords" class="form-control" maxlength="255">
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Meta Description <small class="text-muted">(recommended max 160 chars for Google)</small></label>
+            <textarea name="meta_description" id="pageMetaDesc" rows="3" class="form-control" maxlength="500"></textarea>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Featured Image</label>
+                    <input type="file" name="image" class="form-control-file" accept="image/*">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Hero Image <small class="text-muted">(full-width banner)</small></label>
+                    <input type="file" name="hero_image" class="form-control-file" accept="image/*">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" id="pageStatus" class="form-control">
+                        <option value="active">Active</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" id="pageSortOrder" class="form-control" value="0">
+                </div>
+            </div>
+        </div>
+        <div id="editImageSection" style="display:none;">
+            <div class="form-group">
+                <label>Current Image:</label>
+                <div>
+                    <img id="editImagePreview" src="" alt="" style="max-height:80px;border-radius:4px;">
+                    <label class="ml-3 text-muted"><input type="checkbox" name="remove_image" value="1"> Remove current image</label>
+                </div>
+            </div>
+        </div>
+        <div id="editHeroSection" style="display:none;">
+            <div class="form-group">
+                <label>Current Hero Image:</label>
+                <div>
+                    <img id="editHeroPreview" src="" alt="" style="max-height:80px;border-radius:4px;">
+                    <label class="ml-3 text-muted"><input type="checkbox" name="remove_hero" value="1"> Remove hero image</label>
+                </div>
+            </div>
+        </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -353,6 +401,7 @@ function openAdd() {
     document.getElementById('pageStatus').value = 'active';
     document.getElementById('pageSortOrder').value = '0';
     document.getElementById('editImageSection').style.display = 'none';
+    document.getElementById('editHeroSection').style.display = 'none';
 }
 
 function editPage(p) {
@@ -374,6 +423,14 @@ function editPage(p) {
         document.getElementById('editImagePreview').src = '../' + p.image;
     } else {
         imgSection.style.display = 'none';
+    }
+
+    var heroSection = document.getElementById('editHeroSection');
+    if (p.hero_image) {
+        heroSection.style.display = 'block';
+        document.getElementById('editHeroPreview').src = '../' + p.hero_image;
+    } else {
+        heroSection.style.display = 'none';
     }
 
     $('#pageModal').modal('show');

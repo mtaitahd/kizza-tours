@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `pages` (
   `meta_description` TEXT,
   `meta_keywords` VARCHAR(255) DEFAULT NULL,
   `image` VARCHAR(255) DEFAULT NULL,
+  `hero_image` VARCHAR(255) DEFAULT NULL,
   `status` ENUM('active','draft') DEFAULT 'active',
   `sort_order` INT DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -18,6 +18,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
     <?php seoRenderMetaTags($pageSeo); ?>
     <meta name="keywords" content="Kizza Tours, East Africa safaris, Tanzania tours, Kenya safaris, gorilla trekking, Kilimanjaro climbing, luxury safari, Zanzibar holidays, Uganda tours, Rwanda tours">
     <meta name="author" content="<?php echo $siteName; ?>">
@@ -25,6 +26,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 
     <!-- Open Graph -->
     <meta property="og:image" content="<?php echo $ogImage; ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:url" content="<?php echo htmlspecialchars($pageSeo['canonical'] ?? SITE_URL, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:type" content="<?php echo ($pageSeo['schema'] ?? '') === 'Article' ? 'article' : 'website'; ?>">
     <meta property="og:site_name" content="<?php echo $siteName; ?>">

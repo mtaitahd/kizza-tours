@@ -16,6 +16,15 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
     $_SESSION['admin_image'] = $row['profile_image'] ?? null;
 }
 
+function ensureToursTable() {
+    try {
+        $db = db();
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN hero_image VARCHAR(255) DEFAULT NULL AFTER image"); } catch (\Throwable $e) {}
+        return true;
+    } catch (\Throwable $e) { return false; }
+}
+ensureToursTable();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
@@ -46,34 +55,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hasNewImage = true;
             }
         }
+
+        $heroImage = '';
+        $hasNewHero = false;
+        if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
+            $uploaded = uploadFile($_FILES['hero_image'], BASE_PATH . 'uploads/tours/', 'hero_' . $slug);
+            if ($uploaded) {
+                $heroImage = $uploaded;
+                $hasNewHero = true;
+            }
+        }
         
         if ($action === 'add') {
             $db->insert(
-                "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $status]
+                "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status]
             );
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour added successfully'];
         } else {
             if ($hasNewImage) {
                 $old = $db->fetchOne("SELECT image FROM tour_packages WHERE id = ?", [$tourId]);
                 if ($old && $old['image']) deleteFile($old['image']);
-                $db->query(
-                    "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, image=?, status=? WHERE id=?",
-                    [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $status, $tourId]
-                );
-            } else {
-                $db->query(
-                    "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, status=? WHERE id=?",
-                    [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status, $tourId]
-                );
             }
+            if ($hasNewHero) {
+                $old = $db->fetchOne("SELECT hero_image FROM tour_packages WHERE id = ?", [$tourId]);
+                if ($old && $old['hero_image']) deleteFile($old['hero_image']);
+            }
+            $sql = "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, status=?";
+            $params = [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status];
+            if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
+            if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
+            $sql .= " WHERE id=?";
+            $params[] = $tourId;
+            $db->query($sql, $params);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
         }
     } elseif ($action === 'delete') {
         $tourId = intval($_POST['tour_id'] ?? 0);
-        $tour = $db->fetchOne("SELECT image FROM tour_packages WHERE id = ?", [$tourId]);
+        $tour = $db->fetchOne("SELECT image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
         if ($tour && $tour['image']) deleteFile($tour['image']);
+        if ($tour && $tour['hero_image']) deleteFile($tour['hero_image']);
         $db->query("DELETE FROM tour_packages WHERE id = ?", [$tourId]);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour deleted successfully'];
     }
@@ -356,10 +378,16 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label>Image</label>
                                     <input type="file" class="form-control-file" name="image" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Hero Image <small class="text-muted">(full-width banner)</small></label>
+                                    <input type="file" class="form-control-file" name="hero_image" accept="image/*">
                                 </div>
                             </div>
                         </div>
