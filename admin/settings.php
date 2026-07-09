@@ -1,7 +1,7 @@
 <?php
+ob_start();
 require_once '../includes/config.php';
 require_once '../includes/db.php';
-session_start();
 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: ./');
@@ -37,21 +37,30 @@ $fileFields = [
 ];
 
 if (isset($_POST['ajax_upload']) && isset($_POST['field_key'])) {
+    ob_clean();
     header('Content-Type: application/json');
-    $key = $_POST['field_key'];
-    if (!isset($fileFields[$key]) || !isset($_FILES[$key]) || $_FILES[$key]['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'message' => 'No file uploaded or invalid field']);
-        exit;
-    }
-    $cfg = $fileFields[$key];
-    $uploaded = uploadFile($_FILES[$key], BASE_PATH . $cfg['dir'], $cfg['prefix']);
-    if ($uploaded) {
-        $oldFile = getSetting($key);
-        if ($oldFile) deleteFile($oldFile);
-        updateSetting($key, $uploaded);
-        echo json_encode(['success' => true, 'url' => SITE_URL . '/' . $uploaded, 'file' => basename($uploaded)]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Upload failed. Check file type (jpg, png, webp, gif, svg, avif) and size (max 10MB).']);
+    try {
+        $key = $_POST['field_key'];
+        if (!isset($fileFields[$key]) || !isset($_FILES[$key]) || $_FILES[$key]['error'] !== UPLOAD_ERR_OK) {
+            $errMsg = 'No file uploaded or invalid field';
+            if (isset($_FILES[$key])) {
+                $errMsg .= ' (error code: ' . $_FILES[$key]['error'] . ')';
+            }
+            echo json_encode(['success' => false, 'message' => $errMsg]);
+            exit;
+        }
+        $cfg = $fileFields[$key];
+        $uploaded = uploadFile($_FILES[$key], BASE_PATH . $cfg['dir'], $cfg['prefix']);
+        if ($uploaded) {
+            $oldFile = getSetting($key);
+            if ($oldFile) deleteFile($oldFile);
+            updateSetting($key, $uploaded);
+            echo json_encode(['success' => true, 'url' => SITE_URL . '/' . $uploaded, 'file' => basename($uploaded)]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Upload failed. Check file type (jpg, png, webp, gif, svg, avif) and size (max 10MB).']);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -924,8 +933,9 @@ foreach ($textSettings as $key) {
                         statusEl.html('<span class="text-danger"><i class="fas fa-times"></i> ' + resp.message + '</span>');
                     }
                 },
-                error: function() {
-                    statusEl.html('<span class="text-danger">Upload failed. Server error.</span>');
+                error: function(jqXHR) {
+                    var txt = jqXHR.responseText || 'Server error (no response)';
+                    statusEl.html('<span class="text-danger"><i class="fas fa-times"></i> ' + txt.substring(0, 200) + '</span>');
                 },
                 complete: function() {
                     btn.prop('disabled', false).html('<i class="fas fa-upload"></i> Upload');
