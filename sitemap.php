@@ -1,21 +1,32 @@
 <?php
-// Buffer all output to prevent stray headers/cookies/whitespace from corrupting XML
-ob_start();
-
-require_once __DIR__ . '/includes/config.php';
-require_once __DIR__ . '/includes/db.php';
-require_once __DIR__ . '/includes/seo.php';
-
-// Discard any output from includes (session cookies, BOM, warnings)
-ob_end_clean();
-
-// Now set the header on a clean output buffer
-ob_start();
+// Sitemap generator - minimal footprint, no sessions/cookies/headers pollution
+// This file serves the live XML sitemap directly to search engines
 
 header('Content-Type: application/xml; charset=utf-8');
 header('X-Robots-Tag: index, follow');
+header('Cache-Control: public, max-age=3600');
 
-$url = SITE_URL;
+// Load only .env for DB credentials - NO session_start(), NO setcookie()
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            putenv(trim($key) . '=' . trim(trim($value), '"\''));
+        }
+    }
+}
+
+$siteProtocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$siteHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$prodDomains = array_map('trim', explode(',', getenv('PRODUCTION_DOMAINS') ?: 'kizzatoursandsafaris.com,www.kizzatoursandsafaris.com'));
+$baseUrl = in_array($siteHost, $prodDomains)
+    ? $siteProtocol . '://' . $siteHost
+    : $siteProtocol . '://' . $siteHost . rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+
 $today = date('Y-m-d');
 
 $staticPages = [
@@ -37,7 +48,7 @@ foreach ($staticPages as $sp) {
     $fp = __DIR__ . '/' . $sp['file'];
     if (!file_exists($fp)) continue;
     $pages[] = [
-        'loc' => $url . $sp['loc'],
+        'loc' => $baseUrl . $sp['loc'],
         'lastmod' => date('Y-m-d', filemtime($fp)),
         'priority' => $sp['priority'],
         'changefreq' => $sp['changefreq'],
@@ -45,34 +56,54 @@ foreach ($staticPages as $sp) {
 }
 
 try {
-    $db = Database::getInstance();
-    $tours = $db->fetchAll("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''");
+    $dbHost = getenv('DB_HOST') ?: 'localhost';
+    $dbName = getenv('DB_NAME') ?: 'kizza_tours';
+    $dbUser = getenv('DB_USER') ?: 'root';
+    $dbPass = getenv('DB_PASS') ?: '';
+    $dbCharset = getenv('DB_CHARSET') ?: 'utf8mb4';
+
+    $pdo = new PDO(
+        "mysql:host={$dbHost};dbname={$dbName};charset={$dbCharset}",
+        $dbUser,
+        $dbPass,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]
+    );
+    $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+    $tours = $pdo->query("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($tours as $tour) {
         $pages[] = [
-            'loc' => $url . '/safari/' . urlencode($tour['slug']),
+            'loc' => $baseUrl . '/safari/' . $tour['slug'],
             'lastmod' => !empty($tour['updated_at']) ? date('Y-m-d', strtotime($tour['updated_at'])) : $today,
             'priority' => '0.7',
             'changefreq' => 'monthly',
         ];
     }
-    $dests = $db->fetchAll("SELECT slug, updated_at FROM destinations WHERE status = 'active' AND slug IS NOT NULL AND slug != ''");
+
+    $dests = $pdo->query("SELECT slug, updated_at FROM destinations WHERE status = 'active' AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($dests as $dest) {
         $pages[] = [
-            'loc' => $url . '/destination/' . urlencode($dest['slug']),
+            'loc' => $baseUrl . '/destination/' . $dest['slug'],
             'lastmod' => !empty($dest['updated_at']) ? date('Y-m-d', strtotime($dest['updated_at'])) : $today,
             'priority' => '0.6',
             'changefreq' => 'monthly',
         ];
     }
-    $dbPages = $db->fetchAll("SELECT slug, updated_at FROM pages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''");
+
+    $dbPages = $pdo->query("SELECT slug, updated_at FROM pages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($dbPages as $p) {
         $pages[] = [
-            'loc' => $url . '/' . urlencode($p['slug']),
+            'loc' => $baseUrl . '/' . $p['slug'],
             'lastmod' => !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : $today,
             'priority' => '0.6',
             'changefreq' => 'monthly',
         ];
     }
+    $pdo = null;
 } catch (Exception $e) {
     error_log("Sitemap DB Error: " . $e->getMessage());
 }
@@ -90,4 +121,3 @@ foreach ($pages as $p) {
 $xml .= "</urlset>\n";
 
 echo $xml;
-ob_end_flush();
