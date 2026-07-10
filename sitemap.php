@@ -1,9 +1,19 @@
 <?php
-// KIZZA TOURS & SAFARIS - Dynamic Sitemap
-header('Content-Type: application/xml; charset=utf-8');
+// Buffer all output to prevent stray headers/cookies/whitespace from corrupting XML
+ob_start();
+
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/seo.php';
+
+// Discard any output from includes (session cookies, BOM, warnings)
+ob_end_clean();
+
+// Now set the header on a clean output buffer
+ob_start();
+
+header('Content-Type: application/xml; charset=utf-8');
+header('X-Robots-Tag: index, follow');
 
 $url = SITE_URL;
 $today = date('Y-m-d');
@@ -34,7 +44,6 @@ foreach ($staticPages as $sp) {
     ];
 }
 
-// Get dynamic tours/packages from DB
 try {
     $db = Database::getInstance();
     $tours = $db->fetchAll("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''");
@@ -65,18 +74,20 @@ try {
         ];
     }
 } catch (Exception $e) {
-    // DB not available, sitemap with static pages only
+    error_log("Sitemap DB Error: " . $e->getMessage());
 }
 
-echo '<?xml version="1.0" encoding="UTF-8"?>';
-?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<?php foreach ($pages as $p): ?>
-    <url>
-        <loc><?php echo htmlspecialchars($p['loc'], ENT_XML1, 'UTF-8'); ?></loc>
-        <lastmod><?php echo htmlspecialchars($p['lastmod'], ENT_XML1, 'UTF-8'); ?></lastmod>
-        <changefreq><?php echo $p['changefreq']; ?></changefreq>
-        <priority><?php echo $p['priority']; ?></priority>
-    </url>
-<?php endforeach; ?>
-</urlset>
+$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+foreach ($pages as $p) {
+    $xml .= "  <url>\n";
+    $xml .= "    <loc>" . htmlspecialchars($p['loc'], ENT_XML1, 'UTF-8') . "</loc>\n";
+    $xml .= "    <lastmod>" . htmlspecialchars($p['lastmod'], ENT_XML1, 'UTF-8') . "</lastmod>\n";
+    $xml .= "    <changefreq>" . $p['changefreq'] . "</changefreq>\n";
+    $xml .= "    <priority>" . $p['priority'] . "</priority>\n";
+    $xml .= "  </url>\n";
+}
+$xml .= "</urlset>\n";
+
+echo $xml;
+ob_end_flush();
