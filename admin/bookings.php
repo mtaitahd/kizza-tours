@@ -593,7 +593,15 @@ if ($quotesTablesOk) {
                                             <p><strong>Travel Date:</strong> <?php echo $b['travel_date'] ? date('F d, Y', strtotime($b['travel_date'])) : 'N/A'; ?></p>
                                         </div>
                                         <div class="col-md-6">
-                                            <p><strong>Destination:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('-', ' ', $b['destination_id'] ?? 'N/A'))); ?></p>
+                                            <?php
+                                            $destDisplay = 'N/A';
+                                            if (!empty($b['message']) && preg_match('/^Destination:\s*(.+)/m', $b['message'], $m)) {
+                                                $destDisplay = trim($m[1]);
+                                            } elseif (!empty($b['destination_id'])) {
+                                                $destDisplay = ucfirst(str_replace('-', ' ', $b['destination_id']));
+                                            }
+                                            ?>
+                                            <p><strong>Destination:</strong> <?php echo htmlspecialchars($destDisplay); ?></p>
                                             <p><strong>Guests:</strong> <?php echo $b['guests']; ?></p>
                                             <p><strong>Budget:</strong> <?php echo htmlspecialchars($b['budget'] ?: 'N/A'); ?></p>
                                             <p><strong>Accommodation:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $b['accommodation'] ?? 'N/A'))); ?></p>
