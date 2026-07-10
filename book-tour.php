@@ -39,58 +39,91 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
                                 <h5 style="font-family: var(--font-secondary); margin-bottom: 1rem; color: var(--primary);"><?php echo __('book_form_preferences'); ?></h5>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold"><?php echo __('book_form_destination_label'); ?> <span style="color: red;">*</span></label>
-                                <select class="form-select form-select-lg" name="destination" required>
-                                    <option value=""><?php echo __('book_form_destination_select'); ?></option>
-                                    <option value="serengeti"><?php echo __('book_form_dest_serengeti'); ?></option>
-                                    <option value="maasai-mara"><?php echo __('book_form_dest_maasai_mara'); ?></option>
-                                    <option value="ngorongoro"><?php echo __('book_form_dest_ngorongoro'); ?></option>
-                                    <option value="kilimanjaro"><?php echo __('book_form_dest_kilimanjaro'); ?></option>
-                                    <option value="zanzibar"><?php echo __('book_form_dest_zanzibar'); ?></option>
-                                    <option value="bwindi"><?php echo __('book_form_dest_bwindi'); ?></option>
-                                    <option value="volcanoes"><?php echo __('book_form_dest_volcanoes'); ?></option>
-                                    <option value="amboseli"><?php echo __('book_form_dest_amboseli'); ?></option>
-                                    <option value="tarangire"><?php echo __('book_form_dest_tarangire'); ?></option>
-                                    <option value="mount-kenya"><?php echo __('book_form_dest_mount_kenya'); ?></option>
-                                    <option value="multiple"><?php echo __('book_form_dest_multiple'); ?></option>
+                                <label class="form-label fw-semibold"><?php echo __('book_form_dest_country_label'); ?> <span style="color: red;">*</span></label>
+                                <select class="form-select form-select-lg" name="destination_country" id="destCountry" required>
+                                    <option value=""><?php echo __('book_form_dest_country_select'); ?></option>
+                                    <option value="tanzania">Tanzania</option>
+                                    <option value="kenya">Kenya</option>
+                                    <option value="uganda">Uganda</option>
+                                    <option value="rwanda">Rwanda</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label fw-semibold"><?php echo __('book_form_dest_place_label'); ?> <span style="color: red;">*</span></label>
+                                <select class="form-select form-select-lg" name="destination_place" id="destPlace" required>
+                                    <option value=""><?php echo __('book_form_dest_place_select'); ?></option>
+                                </select>
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label fw-semibold"><?php echo __('book_form_package_label'); ?></label>
-                                <select class="form-select form-select-lg" name="package">
-                                    <option value=""><?php echo __('book_form_package_select'); ?></option>
-                                    <option value="luxury-safari"><?php echo __('book_form_pkg_luxury'); ?></option>
-                                    <option value="migration-safari"><?php echo __('book_form_pkg_migration'); ?></option>
-                                    <option value="gorilla-trekking"><?php echo __('book_form_pkg_gorilla'); ?></option>
-                                    <option value="kilimanjaro-climb"><?php echo __('book_form_pkg_kilimanjaro'); ?></option>
-                                    <option value="beach-holiday"><?php echo __('book_form_pkg_beach'); ?></option>
-                                    <option value="cultural-tour"><?php echo __('book_form_pkg_cultural'); ?></option>
-                                    <option value="honeymoon"><?php echo __('book_form_pkg_honeymoon'); ?></option>
-                                    <option value="family-safari"><?php echo __('book_form_pkg_family'); ?></option>
-                                    <option value="mount-kenya-climb"><?php echo __('book_form_pkg_mount_kenya'); ?></option>
-                                    <option value="private-tour"><?php echo __('book_form_pkg_private'); ?></option>
-                                    <option value="custom"><?php echo __('book_form_pkg_custom'); ?></option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold"><?php echo __('book_form_date_label'); ?> <span style="color: red;">*</span></label>
-                                <input type="date" class="form-control form-control-lg" name="travel_date" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold"><?php echo __('book_form_guests_label'); ?> <span style="color: red;">*</span></label>
-                                <input type="number" class="form-control form-control-lg" name="guests" min="1" max="50" value="2" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold"><?php echo __('book_form_budget_label'); ?></label>
-                                <select class="form-select form-select-lg" name="budget" required>
-                                    <option value=""><?php echo __('book_form_budget_select'); ?></option>
-                                    <option value="1000-2000">$1,000 - $2,000</option>
-                                    <option value="2000-3500">$2,000 - $3,500</option>
-                                    <option value="3500-5000">$3,500 - $5,000</option>
-                                    <option value="5000-7500">$5,000 - $7,500</option>
-                                    <option value="7500-10000">$7,500 - $10,000</option>
-                                    <option value="10000+">$10,000+</option>
-                                </select>
+                                <div class="row g-2" id="packageCheckboxes">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="luxury-safari" id="pkg_luxury">
+                                            <label class="form-check-label" for="pkg_luxury"><?php echo __('book_form_pkg_luxury'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="migration-safari" id="pkg_migration">
+                                            <label class="form-check-label" for="pkg_migration"><?php echo __('book_form_pkg_migration'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="gorilla-trekking" id="pkg_gorilla">
+                                            <label class="form-check-label" for="pkg_gorilla"><?php echo __('book_form_pkg_gorilla'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="kilimanjaro-climb" id="pkg_kili">
+                                            <label class="form-check-label" for="pkg_kili"><?php echo __('book_form_pkg_kilimanjaro'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="beach-holiday" id="pkg_beach">
+                                            <label class="form-check-label" for="pkg_beach"><?php echo __('book_form_pkg_beach'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="cultural-tour" id="pkg_cultural">
+                                            <label class="form-check-label" for="pkg_cultural"><?php echo __('book_form_pkg_cultural'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="honeymoon" id="pkg_honeymoon">
+                                            <label class="form-check-label" for="pkg_honeymoon"><?php echo __('book_form_pkg_honeymoon'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="family-safari" id="pkg_family">
+                                            <label class="form-check-label" for="pkg_family"><?php echo __('book_form_pkg_family'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="mount-kenya-climb" id="pkg_mt_kenya">
+                                            <label class="form-check-label" for="pkg_mt_kenya"><?php echo __('book_form_pkg_mount_kenya'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="private-tour" id="pkg_private">
+                                            <label class="form-check-label" for="pkg_private"><?php echo __('book_form_pkg_private'); ?></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="packages[]" value="custom" id="pkg_custom">
+                                            <label class="form-check-label" for="pkg_custom"><?php echo __('book_form_pkg_custom'); ?></label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold"><?php echo __('book_form_accommodation_label'); ?></label>
@@ -105,6 +138,26 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
                                 </select>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label fw-semibold"><?php echo __('book_form_budget_label'); ?></label>
+                                <select class="form-select form-select-lg" name="budget" required>
+                                    <option value=""><?php echo __('book_form_budget_select'); ?></option>
+                                    <option value="1000-2000">$1,000 - $2,000</option>
+                                    <option value="2000-3500">$2,000 - $3,500</option>
+                                    <option value="3500-5000">$3,500 - $5,000</option>
+                                    <option value="5000-7500">$5,000 - $7,500</option>
+                                    <option value="7500-10000">$7,500 - $10,000</option>
+                                    <option value="10000+">$10,000+</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold"><?php echo __('book_form_date_label'); ?> <span style="color: red;">*</span></label>
+                                <input type="date" class="form-control form-control-lg" name="travel_date" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold"><?php echo __('book_form_guests_label'); ?> <span style="color: red;">*</span></label>
+                                <input type="number" class="form-control form-control-lg" name="guests" min="1" max="50" value="2" required>
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label fw-semibold"><?php echo __('book_form_duration_label'); ?></label>
                                 <select class="form-select form-select-lg" name="duration">
                                     <option value=""><?php echo __('book_form_duration_select'); ?></option>
@@ -288,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // fallback if modal function isn't ready yet
                         document.querySelector('#refDisplay').textContent = res.reference || 'N/A';
                         document.querySelector('#idDisplay').textContent = '#' + (res.booking_id || '');
-                        document.querySelector('#successMessage').textContent = res.message || 'Thank you for choosing Kizza Safari Tours.';
+                        document.querySelector('#successMessage').textContent = res.message || 'Thank you for choosing Kizza Tours and Safaris for your adventure journey. Please allow us a little time to prepare and send you your itinerary package.';
                         setTimeout(function() {
                             var modalEl = document.getElementById('bookingSuccessModal');
                             if (modalEl && typeof bootstrap !== 'undefined') {
@@ -319,5 +372,44 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.send(new URLSearchParams(new FormData(form)).toString());
     });
 });
+
+// Cascading destination dropdown
+var destPlaces = {
+    'tanzania': [
+        { value: 'serengeti', label: 'Serengeti' },
+        { value: 'ngorongoro', label: 'Ngorongoro' },
+        { value: 'kilimanjaro', label: 'Kilimanjaro' },
+        { value: 'zanzibar', label: 'Zanzibar' },
+        { value: 'tarangire', label: 'Tarangire' }
+    ],
+    'kenya': [
+        { value: 'maasai-mara', label: 'Maasai Mara' },
+        { value: 'amboseli', label: 'Amboseli' },
+        { value: 'mount-kenya', label: 'Mount Kenya' }
+    ],
+    'uganda': [
+        { value: 'bwindi', label: 'Bwindi' }
+    ],
+    'rwanda': [
+        { value: 'volcanoes', label: 'Volcanoes National Park' }
+    ]
+};
+
+var countrySelect = document.getElementById('destCountry');
+var placeSelect = document.getElementById('destPlace');
+if (countrySelect && placeSelect) {
+    countrySelect.addEventListener('change', function() {
+        var country = this.value;
+        placeSelect.innerHTML = '<option value=""><?php echo __('book_form_dest_place_select'); ?></option>';
+        if (country && destPlaces[country]) {
+            destPlaces[country].forEach(function(p) {
+                var opt = document.createElement('option');
+                opt.value = p.value;
+                opt.textContent = p.label;
+                placeSelect.appendChild(opt);
+            });
+        }
+    });
+}
 </script>
 <?php include 'includes/footer.php'; ?>

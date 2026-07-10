@@ -97,7 +97,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
         <!-- Heading -->
         <div class="text-center px-4 mt-4">
           <h3 class="booking-success-heading">Booking Request Received Successfully!</h3>
-          <p class="booking-success-text" id="successMessage">Thank you for choosing Kizza Safari Tours. Your booking request has been received and our safari specialists will contact you within 24 hours with a customized itinerary.</p>
+          <p class="booking-success-text" id="successMessage">Thank you for choosing Kizza Tours and Safaris for your adventure journey. Please allow us a little time to prepare and send you your itinerary package.</p>
         </div>
 
         <!-- Reference Card -->
@@ -402,7 +402,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
 function showBookingSuccessModal(data) {
   document.getElementById('refDisplay').textContent = data.reference || 'N/A';
   document.getElementById('idDisplay').textContent = '#' + (data.booking_id || '');
-  document.getElementById('successMessage').textContent = data.message || 'Thank you for choosing Kizza Safari Tours. Your booking request has been received.';
+  document.getElementById('successMessage').textContent = data.message || 'Thank you for choosing Kizza Tours and Safaris for your adventure journey. Please allow us a little time to prepare and send you your itinerary package.';
 
   var modal = new bootstrap.Modal(document.getElementById('bookingSuccessModal'), {
     backdrop: 'static',

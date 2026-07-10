@@ -66,56 +66,85 @@ BOOKING MODAL - Premium Popup Form
             <form id="bookingForm" method="POST">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label"><?php echo __('booking_label_destination'); ?></label>
-                        <select class="form-select" name="destination" required>
-                            <option value=""><?php echo __('booking_opt_select_dest'); ?></option>
-                            <option value="serengeti"><?php echo __('booking_opt_serengeti'); ?></option>
-                            <option value="maasai-mara"><?php echo __('booking_opt_maasai_mara'); ?></option>
-                            <option value="ngorongoro"><?php echo __('booking_opt_ngorongoro'); ?></option>
-                            <option value="kilimanjaro"><?php echo __('booking_opt_kilimanjaro'); ?></option>
-                            <option value="zanzibar"><?php echo __('booking_opt_zanzibar'); ?></option>
-                            <option value="bwindi"><?php echo __('booking_opt_bwindi'); ?></option>
-                            <option value="volcanoes"><?php echo __('booking_opt_volcanoes'); ?></option>
-                            <option value="amboseli"><?php echo __('booking_opt_amboseli'); ?></option>
-                            <option value="tarangire"><?php echo __('booking_opt_tarangire'); ?></option>
-                            <option value="multiple"><?php echo __('booking_opt_multiple'); ?></option>
+                        <label class="form-label"><?php echo __('booking_label_country'); ?> <span style="color: red;">*</span></label>
+                        <select class="form-select" name="destination_country" id="modalDestCountry" required>
+                            <option value=""><?php echo __('booking_opt_select_country'); ?></option>
+                            <option value="tanzania">Tanzania</option>
+                            <option value="kenya">Kenya</option>
+                            <option value="uganda">Uganda</option>
+                            <option value="rwanda">Rwanda</option>
                         </select>
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label"><?php echo __('booking_label_place'); ?> <span style="color: red;">*</span></label>
+                        <select class="form-select" name="destination_place" id="modalDestPlace" required>
+                            <option value=""><?php echo __('booking_opt_select_place'); ?></option>
+                        </select>
+                    </div>
+                    <div class="col-12">
                         <label class="form-label"><?php echo __('booking_label_package'); ?></label>
-                        <select class="form-select" name="package">
-                            <option value=""><?php echo __('booking_opt_select_pkg'); ?></option>
-                            <option value="luxury-safari"><?php echo __('booking_opt_luxury_safari'); ?></option>
-                            <option value="migration-safari"><?php echo __('booking_opt_migration'); ?></option>
-                            <option value="gorilla-trekking"><?php echo __('booking_opt_gorilla'); ?></option>
-                            <option value="kilimanjaro-climb"><?php echo __('booking_opt_kili_climb'); ?></option>
-                            <option value="beach-holiday"><?php echo __('booking_opt_beach'); ?></option>
-                            <option value="cultural-tour"><?php echo __('booking_opt_cultural'); ?></option>
-                            <option value="honeymoon"><?php echo __('booking_opt_honeymoon'); ?></option>
-                            <option value="family-safari"><?php echo __('booking_opt_family'); ?></option>
-                            <option value="private-tour"><?php echo __('booking_opt_private'); ?></option>
-                            <option value="custom"><?php echo __('booking_opt_custom'); ?></option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label"><?php echo __('booking_label_date'); ?></label>
-                        <input type="date" class="form-control" name="travel_date" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label"><?php echo __('booking_label_guests'); ?></label>
-                        <input type="number" class="form-control" name="guests" min="1" max="50" value="2" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label"><?php echo __('booking_label_budget'); ?></label>
-                        <select class="form-select" name="budget" required>
-                            <option value=""><?php echo __('booking_opt_select_budget'); ?></option>
-                            <option value="1000-2000"><?php echo __('booking_opt_budget_1'); ?></option>
-                            <option value="2000-3500"><?php echo __('booking_opt_budget_2'); ?></option>
-                            <option value="3500-5000"><?php echo __('booking_opt_budget_3'); ?></option>
-                            <option value="5000-7500"><?php echo __('booking_opt_budget_4'); ?></option>
-                            <option value="7500-10000"><?php echo __('booking_opt_budget_5'); ?></option>
-                            <option value="10000+"><?php echo __('booking_opt_budget_6'); ?></option>
-                        </select>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="luxury-safari" id="modal_pkg_luxury">
+                                    <label class="form-check-label" for="modal_pkg_luxury"><?php echo __('booking_opt_luxury_safari'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="migration-safari" id="modal_pkg_migration">
+                                    <label class="form-check-label" for="modal_pkg_migration"><?php echo __('booking_opt_migration'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="gorilla-trekking" id="modal_pkg_gorilla">
+                                    <label class="form-check-label" for="modal_pkg_gorilla"><?php echo __('booking_opt_gorilla'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="kilimanjaro-climb" id="modal_pkg_kili">
+                                    <label class="form-check-label" for="modal_pkg_kili"><?php echo __('booking_opt_kili_climb'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="beach-holiday" id="modal_pkg_beach">
+                                    <label class="form-check-label" for="modal_pkg_beach"><?php echo __('booking_opt_beach'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="cultural-tour" id="modal_pkg_cultural">
+                                    <label class="form-check-label" for="modal_pkg_cultural"><?php echo __('booking_opt_cultural'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="honeymoon" id="modal_pkg_honeymoon">
+                                    <label class="form-check-label" for="modal_pkg_honeymoon"><?php echo __('booking_opt_honeymoon'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="family-safari" id="modal_pkg_family">
+                                    <label class="form-check-label" for="modal_pkg_family"><?php echo __('booking_opt_family'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="private-tour" id="modal_pkg_private">
+                                    <label class="form-check-label" for="modal_pkg_private"><?php echo __('booking_opt_private'); ?></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="packages[]" value="custom" id="modal_pkg_custom">
+                                    <label class="form-check-label" for="modal_pkg_custom"><?php echo __('booking_opt_custom'); ?></label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label"><?php echo __('booking_label_accommodation'); ?></label>
@@ -128,6 +157,26 @@ BOOKING MODAL - Premium Popup Form
                             <option value="resort"><?php echo __('booking_opt_resort'); ?></option>
                             <option value="mixed"><?php echo __('booking_opt_mixed'); ?></option>
                         </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><?php echo __('booking_label_budget'); ?></label>
+                        <select class="form-select" name="budget" required>
+                            <option value=""><?php echo __('booking_opt_select_budget'); ?></option>
+                            <option value="1000-2000"><?php echo __('booking_opt_budget_1'); ?></option>
+                            <option value="2000-3500"><?php echo __('booking_opt_budget_2'); ?></option>
+                            <option value="3500-5000"><?php echo __('booking_opt_budget_3'); ?></option>
+                            <option value="5000-7500"><?php echo __('booking_opt_budget_4'); ?></option>
+                            <option value="7500-10000"><?php echo __('booking_opt_budget_5'); ?></option>
+                            <option value="10000+"><?php echo __('booking_opt_budget_6'); ?></option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><?php echo __('booking_label_date'); ?></label>
+                        <input type="date" class="form-control" name="travel_date" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><?php echo __('booking_label_guests'); ?></label>
+                        <input type="number" class="form-control" name="guests" min="1" max="50" value="2" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label"><?php echo __('booking_label_name'); ?></label>
