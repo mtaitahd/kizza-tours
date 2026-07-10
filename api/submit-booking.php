@@ -31,8 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     // Sanitize and validate inputs
-    $dest_country = trim($_POST['destination_country'] ?? '');
-    $dest_place = trim($_POST['destination_place'] ?? '');
+    $destination = trim($_POST['destination'] ?? '');
     $packages = isset($_POST['packages']) ? (array)$_POST['packages'] : [];
     $packageStr = !empty($packages) ? implode(', ', $packages) : '';
     $travel_date = trim($_POST['travel_date'] ?? '');
@@ -44,15 +43,9 @@ try {
     $phone = trim($_POST['phone'] ?? '');
     $message = trim($_POST['message'] ?? '');
 
-    // Build readable destination labels
-    $countryLabel = !empty($dest_country) ? ucfirst(str_replace('-', ' ', $dest_country)) : '';
-    $placeLabel = !empty($dest_place) ? ucfirst(str_replace('-', ' ', $dest_place)) : '';
-    $destination = !empty($countryLabel) && !empty($placeLabel) ? $countryLabel . ' - ' . $placeLabel : trim($countryLabel . ' ' . $placeLabel);
-
     // Validate required fields
     $errors = [];
-    if (empty($dest_country)) $errors[] = 'Country is required';
-    if (empty($dest_place)) $errors[] = 'Place is required';
+    if (empty($destination)) $errors[] = 'Destination is required';
     if (empty($full_name)) $errors[] = 'Full name is required';
     if (empty($email)) $errors[] = 'Email is required';
     if (empty($phone)) $errors[] = 'Phone is required';
@@ -73,7 +66,7 @@ try {
     $reference = BOOKING_PREFIX . '-' . strtoupper(substr(uniqid(), -6)) . rand(100, 999);
 
     // Append destination/package/budget info to message (table has no matching varchar columns)
-    $enrichedMessage = "Country: {$dest_country}\nPlace: {$dest_place}\nPackages: {$packageStr}\nBudget: {$budget}\nAccommodation: {$accommodation}\n\n{$message}";
+    $enrichedMessage = "Destination: {$destination}\nPackages: {$packageStr}\nBudget: {$budget}\nAccommodation: {$accommodation}\n\n{$message}";
 
     // Insert into database
     $db = db();
@@ -101,8 +94,7 @@ try {
         <p><strong>Name:</strong> {$full_name}</p>
         <p><strong>Email:</strong> {$email}</p>
         <p><strong>Phone:</strong> {$phone}</p>
-        <p><strong>Country:</strong> {$countryLabel}</p>
-        <p><strong>Place:</strong> {$placeLabel}</p>
+        <p><strong>Destination:</strong> {$destination}</p>
         <p><strong>Packages:</strong> {$packageStr}</p>
         <p><strong>Travel Date:</strong> {$travel_date}</p>
         <p><strong>Guests:</strong> {$guests}</p>
@@ -125,8 +117,7 @@ try {
         <p>Dear {$full_name},</p>
         <p>Thank you for choosing Kizza Tours &amp; Safaris for your adventure journey. Please allow us a little time to prepare and send you your itinerary package.</p>
         <p><strong>Your Booking Reference:</strong> {$reference}</p>
-        <p><strong>Country:</strong> {$countryLabel}</p>
-        <p><strong>Place:</strong> {$placeLabel}</p>
+        <p><strong>Destination:</strong> {$destination}</p>
         <p><strong>Travel Date:</strong> {$travel_date}</p>
         <p><strong>Guests:</strong> {$guests}</p>
         <p>We will contact you within 24 hours with a personalized itinerary and quotation.</p>

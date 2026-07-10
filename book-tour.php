@@ -39,19 +39,20 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
                                 <h5 style="font-family: var(--font-secondary); margin-bottom: 1rem; color: var(--primary);"><?php echo __('book_form_preferences'); ?></h5>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold"><?php echo __('book_form_dest_country_label'); ?> <span style="color: red;">*</span></label>
-                                <select class="form-select form-select-lg" name="destination_country" id="destCountry" required>
-                                    <option value=""><?php echo __('book_form_dest_country_select'); ?></option>
-                                    <option value="tanzania">Tanzania</option>
-                                    <option value="kenya">Kenya</option>
-                                    <option value="uganda">Uganda</option>
-                                    <option value="rwanda">Rwanda</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold"><?php echo __('book_form_dest_place_label'); ?> <span style="color: red;">*</span></label>
-                                <select class="form-select form-select-lg" name="destination_place" id="destPlace" required>
-                                    <option value=""><?php echo __('book_form_dest_place_select'); ?></option>
+                                <label class="form-label fw-semibold"><?php echo __('book_form_destination_label'); ?> <span style="color: red;">*</span></label>
+                                <select class="form-select form-select-lg" name="destination" required>
+                                    <option value=""><?php echo __('book_form_destination_select'); ?></option>
+                                    <option value="serengeti"><?php echo __('book_form_dest_serengeti'); ?></option>
+                                    <option value="maasai-mara"><?php echo __('book_form_dest_maasai_mara'); ?></option>
+                                    <option value="ngorongoro"><?php echo __('book_form_dest_ngorongoro'); ?></option>
+                                    <option value="kilimanjaro"><?php echo __('book_form_dest_kilimanjaro'); ?></option>
+                                    <option value="zanzibar"><?php echo __('book_form_dest_zanzibar'); ?></option>
+                                    <option value="bwindi"><?php echo __('book_form_dest_bwindi'); ?></option>
+                                    <option value="volcanoes"><?php echo __('book_form_dest_volcanoes'); ?></option>
+                                    <option value="amboseli"><?php echo __('book_form_dest_amboseli'); ?></option>
+                                    <option value="tarangire"><?php echo __('book_form_dest_tarangire'); ?></option>
+                                    <option value="mount-kenya"><?php echo __('book_form_dest_mount_kenya'); ?></option>
+                                    <option value="multiple"><?php echo __('book_form_dest_multiple'); ?></option>
                                 </select>
                             </div>
                             <div class="col-12">
@@ -373,43 +374,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Cascading destination dropdown
-var destPlaces = {
-    'tanzania': [
-        { value: 'serengeti', label: 'Serengeti' },
-        { value: 'ngorongoro', label: 'Ngorongoro' },
-        { value: 'kilimanjaro', label: 'Kilimanjaro' },
-        { value: 'zanzibar', label: 'Zanzibar' },
-        { value: 'tarangire', label: 'Tarangire' }
-    ],
-    'kenya': [
-        { value: 'maasai-mara', label: 'Maasai Mara' },
-        { value: 'amboseli', label: 'Amboseli' },
-        { value: 'mount-kenya', label: 'Mount Kenya' }
-    ],
-    'uganda': [
-        { value: 'bwindi', label: 'Bwindi' }
-    ],
-    'rwanda': [
-        { value: 'volcanoes', label: 'Volcanoes National Park' }
-    ]
-};
-
-var countrySelect = document.getElementById('destCountry');
-var placeSelect = document.getElementById('destPlace');
-if (countrySelect && placeSelect) {
-    countrySelect.addEventListener('change', function() {
-        var country = this.value;
-        placeSelect.innerHTML = '<option value=""><?php echo __('book_form_dest_place_select'); ?></option>';
-        if (country && destPlaces[country]) {
-            destPlaces[country].forEach(function(p) {
-                var opt = document.createElement('option');
-                opt.value = p.value;
-                opt.textContent = p.label;
-                placeSelect.appendChild(opt);
-            });
-        }
-    });
-}
 </script>
 <?php include 'includes/footer.php'; ?>

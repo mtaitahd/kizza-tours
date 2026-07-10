@@ -214,48 +214,13 @@ $(document).ready(function() {
     });
 
     //==========================================
-    // CASCADING DESTINATION DROPDOWN (MODAL)
-    //==========================================
-    var modalDestPlaces = {
-        'tanzania': [
-            { value: 'serengeti', label: 'Serengeti' },
-            { value: 'ngorongoro', label: 'Ngorongoro' },
-            { value: 'kilimanjaro', label: 'Kilimanjaro' },
-            { value: 'zanzibar', label: 'Zanzibar' },
-            { value: 'tarangire', label: 'Tarangire' }
-        ],
-        'kenya': [
-            { value: 'maasai-mara', label: 'Maasai Mara' },
-            { value: 'amboseli', label: 'Amboseli' },
-            { value: 'mount-kenya', label: 'Mount Kenya' }
-        ],
-        'uganda': [
-            { value: 'bwindi', label: 'Bwindi' }
-        ],
-        'rwanda': [
-            { value: 'volcanoes', label: 'Volcanoes National Park' }
-        ]
-    };
-
-    $(document).on('change', '#modalDestCountry', function() {
-        var country = this.value;
-        var $place = $('#modalDestPlace');
-        $place.html('<option value="">Select Place</option>');
-        if (country && modalDestPlaces[country]) {
-            $.each(modalDestPlaces[country], function(i, p) {
-                $place.append('<option value="' + p.value + '">' + p.label + '</option>');
-            });
-        }
-    });
-
-    //==========================================
     // REAL-TIME PRICE ESTIMATOR
     //==========================================
     function updatePriceEstimate() {
-        const place = $('select[name="destination_place"]').val();
+        const destination = $('select[name="destination"]').val();
         const guests = parseInt($('input[name="guests"]').val()) || 1;
 
-        // Base prices by place
+        // Base prices by destination
         const basePrices = {
             'serengeti': 1200,
             'maasai-mara': 1100,
@@ -269,12 +234,12 @@ $(document).ready(function() {
             'mount-kenya': 1100
         };
 
-        const basePrice = basePrices[place] || 1000;
+        const basePrice = basePrices[destination] || 1000;
         const totalEstimate = basePrice * guests;
 
         // Update estimate if element exists
         const estimateEl = $('#priceEstimate');
-        if (estimateEl.length && place) {
+        if (estimateEl.length && destination) {
             estimateEl.html(`
                 <div class="glass-gold p-3 rounded-3 mt-3">
                     <div class="d-flex justify-content-between align-items-center">
@@ -297,7 +262,7 @@ $(document).ready(function() {
     }
 
     // Trigger price update on field change
-    $(document).on('change', 'select[name="destination_place"], input[name="guests"]', function() {
+    $(document).on('change', 'select[name="destination"], input[name="guests"]', function() {
         updatePriceEstimate();
     });
 
@@ -311,9 +276,7 @@ $(document).ready(function() {
             $('input[name="packages[]"][value="' + pkg + '"]').prop('checked', true);
         }
         if (params.has('destination')) {
-            // For destination URLs, try to set country and place
-            var dest = params.get('destination');
-            $('select[name="destination_place"]').val(dest);
+            $('select[name="destination"]').val(params.get('destination'));
         }
     }
 

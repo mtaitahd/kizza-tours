@@ -66,19 +66,19 @@ BOOKING MODAL - Premium Popup Form
             <form id="bookingForm" method="POST">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label"><?php echo __('booking_label_country'); ?> <span style="color: red;">*</span></label>
-                        <select class="form-select" name="destination_country" id="modalDestCountry" required>
-                            <option value=""><?php echo __('booking_opt_select_country'); ?></option>
-                            <option value="tanzania">Tanzania</option>
-                            <option value="kenya">Kenya</option>
-                            <option value="uganda">Uganda</option>
-                            <option value="rwanda">Rwanda</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label"><?php echo __('booking_label_place'); ?> <span style="color: red;">*</span></label>
-                        <select class="form-select" name="destination_place" id="modalDestPlace" required>
-                            <option value=""><?php echo __('booking_opt_select_place'); ?></option>
+                        <label class="form-label"><?php echo __('booking_label_destination'); ?> <span style="color: red;">*</span></label>
+                        <select class="form-select" name="destination" required>
+                            <option value=""><?php echo __('booking_opt_select_dest'); ?></option>
+                            <option value="serengeti"><?php echo __('booking_opt_serengeti'); ?></option>
+                            <option value="maasai-mara"><?php echo __('booking_opt_maasai_mara'); ?></option>
+                            <option value="ngorongoro"><?php echo __('booking_opt_ngorongoro'); ?></option>
+                            <option value="kilimanjaro"><?php echo __('booking_opt_kilimanjaro'); ?></option>
+                            <option value="zanzibar"><?php echo __('booking_opt_zanzibar'); ?></option>
+                            <option value="bwindi"><?php echo __('booking_opt_bwindi'); ?></option>
+                            <option value="volcanoes"><?php echo __('booking_opt_volcanoes'); ?></option>
+                            <option value="amboseli"><?php echo __('booking_opt_amboseli'); ?></option>
+                            <option value="tarangire"><?php echo __('booking_opt_tarangire'); ?></option>
+                            <option value="multiple"><?php echo __('booking_opt_multiple'); ?></option>
                         </select>
                     </div>
                     <div class="col-12">
