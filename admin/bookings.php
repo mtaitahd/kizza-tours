@@ -217,6 +217,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'PDF generation failed: ' . $e->getMessage()];
         }
 
+    } elseif ($_POST['action'] === 'update_payment') {
+        $paymentStatus = trim($_POST['payment_status'] ?? 'unpaid');
+        $db->query("UPDATE bookings SET payment_status = ? WHERE id = ?", [$paymentStatus, $bookingId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Payment status updated to ' . ucfirst(str_replace('_', ' ', $paymentStatus))];
+
     } elseif ($_POST['action'] === 'send_quote_email') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
         try {
@@ -532,6 +537,21 @@ if ($quotesTablesOk) {
                                                         <button type="submit" class="btn btn-outline-warning" title="Reopen"><i class="fas fa-undo"></i></button>
                                                     </form>
                                                     <?php endif; ?>
+                                                    <?php if ($b['payment_status'] !== 'paid'): ?>
+                                                    <form method="POST" style="display:inline;">
+                                                        <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                                        <input type="hidden" name="action" value="update_payment">
+                                                        <input type="hidden" name="payment_status" value="paid">
+                                                        <button type="submit" class="btn btn-outline-primary" title="Mark as Paid"><i class="fas fa-credit-card"></i> Pay</button>
+                                                    </form>
+                                                    <?php else: ?>
+                                                    <form method="POST" style="display:inline;">
+                                                        <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                                        <input type="hidden" name="action" value="update_payment">
+                                                        <input type="hidden" name="payment_status" value="unpaid">
+                                                        <button type="submit" class="btn btn-outline-warning" title="Mark as Unpaid"><i class="fas fa-undo"></i></button>
+                                                    </form>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>
@@ -577,6 +597,19 @@ if ($quotesTablesOk) {
                                             <p><strong>Guests:</strong> <?php echo $b['guests']; ?></p>
                                             <p><strong>Budget:</strong> <?php echo htmlspecialchars($b['budget'] ?: 'N/A'); ?></p>
                                             <p><strong>Accommodation:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $b['accommodation'] ?? 'N/A'))); ?></p>
+                                            <p><strong>Payment:</strong>
+                                                <span class="badge badge-<?php echo $b['payment_status'] === 'paid' ? 'success' : ($b['payment_status'] === 'partial' ? 'info' : 'secondary'); ?>">
+                                                    <?php echo ucfirst(str_replace('_', ' ', $b['payment_status'])); ?>
+                                                </span>
+                                                <?php if ($b['payment_status'] !== 'paid'): ?>
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                                    <input type="hidden" name="action" value="update_payment">
+                                                    <input type="hidden" name="payment_status" value="paid">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success ml-2"><i class="fas fa-credit-card"></i> Mark Paid</button>
+                                                </form>
+                                                <?php endif; ?>
+                                            </p>
                                         </div>
                                         <?php if ($b['message']): ?>
                                         <div class="col-12">
