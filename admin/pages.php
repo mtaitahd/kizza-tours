@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (in_array($action, ['add', 'edit'])) {
         $pageId = intval($_POST['page_id'] ?? 0);
         $title = trim($_POST['title'] ?? '');
-        $slug = trim($_POST['slug'] ?? slugify($title));
+        $slug = strtolower(trim($_POST['slug'] ?? slugify($title)));
         $content = $_POST['content'] ?? '';
         $meta_title = trim($_POST['meta_title'] ?? '');
         $meta_description = trim($_POST['meta_description'] ?? '');
