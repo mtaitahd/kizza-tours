@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (in_array($action, ['add', 'edit'])) {
         $tourId = intval($_POST['tour_id'] ?? 0);
         $title = trim($_POST['title'] ?? '');
-        $slug = trim($_POST['slug'] ?? slugify($title));
+        $slug = slugify($_POST['slug'] ?? $title);
         $duration = trim($_POST['duration'] ?? '');
         $price = floatval($_POST['price'] ?? 0);
         $country = trim($_POST['country'] ?? '');

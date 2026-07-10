@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $country = trim($_POST['country'] ?? '');
-        $slug = trim($_POST['slug'] ?? slugify($name));
+        $slug = slugify($_POST['slug'] ?? $name);
         $description = trim($_POST['description'] ?? '');
         $short_description = trim($_POST['short_description'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
