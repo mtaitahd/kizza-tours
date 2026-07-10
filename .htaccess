@@ -5,8 +5,7 @@
 RewriteEngine On
 RewriteBase /
 
-# Sitemap: serve static file if exists, else generate via PHP
-RewriteCond %{REQUEST_FILENAME} !-f
+# Sitemap: always generate via PHP for fresh content
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
 # Robots.txt: route to dynamic PHP generator

@@ -42,25 +42,19 @@ $heroBg = $page['hero_image'] && file_exists(BASE_PATH . $page['hero_image'])
 <?php
 $hasImage1 = $page['image'] && file_exists(BASE_PATH . $page['image']);
 $hasImage2 = $page['image_2'] && file_exists(BASE_PATH . $page['image_2']);
-$hasAnyImage = $hasImage1 || $hasImage2;
 ?>
 
 <section class="section-padding">
     <div class="container">
-        <?php if ($hasAnyImage): ?>
-        <div class="row justify-content-center">
+        <?php if ($hasImage1): ?>
+        <div class="row justify-content-center mb-4">
             <div class="col-lg-10">
                 <div class="page-layout-with-image">
                     <div class="page-content" style="font-size:1.05rem;line-height:1.8;color:#334155;">
                         <?= $page['content'] ?>
                     </div>
                     <div class="page-featured-sidebar">
-                        <?php if ($hasImage1): ?>
-                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm mb-3">
-                        <?php endif; ?>
-                        <?php if ($hasImage2): ?>
-                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image_2']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm">
-                        <?php endif; ?>
+                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm">
                     </div>
                 </div>
             </div>
@@ -76,6 +70,18 @@ $hasAnyImage = $hasImage1 || $hasImage2;
         <?php endif; ?>
     </div>
 </section>
+
+<?php if ($hasImage2): ?>
+<section class="section-padding pt-0">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image_2']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm w-100" style="max-height:500px;object-fit:cover;">
+            </div>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
 
 <style>
 .page-layout-with-image { display: flex; gap: 2rem; align-items: flex-start; }
