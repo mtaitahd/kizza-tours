@@ -32,6 +32,10 @@ function ensureQuoteTables() {
             $db->query("ALTER TABLE quotes MODIFY COLUMN inquiry_id INT DEFAULT NULL");
         } catch (\Throwable $e) {
         }
+        try {
+            $db->query("ALTER TABLE quotes ADD COLUMN email_subject VARCHAR(255) DEFAULT NULL AFTER pdf_path");
+        } catch (\Throwable $e) {
+        }
         return true;
     } catch (\Throwable $e) {
         try {
@@ -208,14 +212,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $db->query("DELETE FROM quotes WHERE id = ?", [$quoteId]);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote deleted'];
 
-    } elseif ($_POST['action'] === 'generate_pdf') {
+    } elseif ($_POST['action'] === 'upload_pdf') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
         try {
-            $pdf = generateQuotePdf($quoteId);
-            $_SESSION['flash'] = ['type' => 'success', 'message' => 'PDF generated successfully'];
+            $pdfDir = BASE_PATH . 'uploads/quotes/';
+            if (!is_dir($pdfDir)) mkdir($pdfDir, 0755, true);
+            $pdfFile = $_FILES['pdf_file'] ?? null;
+            if ($pdfFile && $pdfFile['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($pdfFile['name'], PATHINFO_EXTENSION));
+                if ($ext !== 'pdf') throw new Exception('Only PDF files are allowed');
+                $filename = 'quote_' . $quoteId . '_' . uniqid() . '.pdf';
+                $dest = $pdfDir . $filename;
+                if (move_uploaded_file($pdfFile['tmp_name'], $dest)) {
+                    $old = $db->fetchOne("SELECT pdf_path FROM quotes WHERE id = ?", [$quoteId]);
+                    if ($old && !empty($old['pdf_path'])) {
+                        $oldFile = BASE_PATH . $old['pdf_path'];
+                        if (file_exists($oldFile)) @unlink($oldFile);
+                    }
+                    $db->query("UPDATE quotes SET pdf_path = ? WHERE id = ?", ['uploads/quotes/' . $filename, $quoteId]);
+                    $_SESSION['flash'] = ['type' => 'success', 'message' => 'PDF uploaded successfully'];
+                } else {
+                    throw new Exception('Failed to upload PDF');
+                }
+            } else {
+                throw new Exception('No PDF file selected or upload error');
+            }
         } catch (Exception $e) {
-            $_SESSION['flash'] = ['type' => 'error', 'message' => 'PDF generation failed: ' . $e->getMessage()];
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'PDF upload failed: ' . $e->getMessage()];
         }
+
+    } elseif ($_POST['action'] === 'update_subject') {
+        $quoteId = intval($_POST['quote_id'] ?? 0);
+        $subject = trim($_POST['email_subject'] ?? '');
+        $db->query("UPDATE quotes SET email_subject = ? WHERE id = ?", [$subject, $quoteId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Email subject updated'];
 
     } elseif ($_POST['action'] === 'update_payment') {
         $paymentStatus = trim($_POST['payment_status'] ?? 'unpaid');
@@ -720,21 +750,21 @@ if ($quotesTablesOk) {
                                                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                                                             </form>
                                                         <?php elseif ($quoteData['status'] === 'confirmed' || $quoteData['status'] === 'sent'): ?>
-                                                            <button class="btn btn-sm btn-outline-primary" onclick="openBookingQuoteEditor(<?php echo $b['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
+                                                            <button class="btn btn-sm btn-outline-info" onclick="editSubject(<?php echo $quoteData['id']; ?>, '<?php echo htmlspecialchars($quoteData['email_subject'] ?? '', ENT_QUOTES); ?>')"><i class="fas fa-pen"></i> Subject</button>
                                                             <?php if (empty($quoteData['pdf_path'])): ?>
-                                                                <form method="POST" style="display:inline;">
-                                                                    <input type="hidden" name="action" value="generate_pdf">
+                                                                <form method="POST" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:4px;">
+                                                                    <input type="hidden" name="action" value="upload_pdf">
                                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Generate PDF</button>
+                                                                    <input type="file" name="pdf_file" accept=".pdf" required style="font-size:0.8rem;max-width:130px;" onchange="this.form.submit()">
                                                                 </form>
                                                             <?php else: ?>
-                                                                <form method="POST" style="display:inline;">
-                                                                    <input type="hidden" name="action" value="generate_pdf">
-                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf"></i> Regenerate PDF</button>
-                                                                </form>
                                                                 <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
                                                                 <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
+                                                                <form method="POST" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:4px;">
+                                                                    <input type="hidden" name="action" value="upload_pdf">
+                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
+                                                                    <input type="file" name="pdf_file" accept=".pdf" style="font-size:0.8rem;max-width:130px;" onchange="this.form.submit()">
+                                                                </form>
                                                             <?php endif; ?>
                                                             <form method="POST" style="display:inline;">
                                                                 <input type="hidden" name="action" value="send_quote_email">
@@ -924,6 +954,32 @@ if ($quotesTablesOk) {
         </div>
     </div>
 
+    <!-- Subject Edit Modal -->
+    <div class="modal fade" id="subjectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST">
+                    <input type="hidden" name="action" value="update_subject">
+                    <input type="hidden" name="quote_id" id="subjQuoteId" value="0">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-pen mr-2"></i>Edit Email Subject</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Email Subject</label>
+                            <input type="text" name="email_subject" id="subjEmailSubject" class="form-control" maxlength="255">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Subject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
@@ -1016,6 +1072,12 @@ if ($quotesTablesOk) {
             document.getElementById('qTaxAmount').textContent = '$' + taxAmount.toFixed(2);
             document.getElementById('qDiscountAmount').textContent = discount.toFixed(2);
             document.getElementById('qTotal').textContent = '$' + total.toFixed(2);
+        }
+
+        function editSubject(quoteId, currentSubject) {
+            document.getElementById('subjQuoteId').value = quoteId;
+            document.getElementById('subjEmailSubject').value = currentSubject;
+            $('#subjectModal').modal('show');
         }
 
         function openBookingQuoteEditor(bookingId, quoteId) {

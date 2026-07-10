@@ -269,7 +269,7 @@ function sendQuoteEmail($quoteId) {
     $fullPdfPath = __DIR__ . '/../' . $quote['pdf_path'];
     $siteName = getSetting('site_name', 'Kizza Tours & Safaris');
 
-    $subject = 'Your Quotation from ' . $siteName . ' - ' . $quote['quote_number'];
+    $subject = !empty($quote['email_subject']) ? $quote['email_subject'] : ('Your Quotation from ' . $siteName . ' - ' . $quote['quote_number']);
 
     $body = "
     <html>
