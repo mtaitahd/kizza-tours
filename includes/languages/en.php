@@ -419,9 +419,9 @@ return [
     'booking_cta_feature2' => 'Best Price Guarantee',
     'booking_cta_feature3' => '24/7 Concierge Support',
     'booking_cta_note' => 'Your information is secure. We\'ll respond within 24 hours.',
-    'booking_label_country' => 'Country (Nchi)',
+    'booking_label_country' => 'Destination',
     'booking_opt_select_country' => 'Select Country',
-    'booking_label_place' => 'Place (Sehemu)',
+    'booking_label_place' => 'Destination',
     'booking_opt_select_place' => 'Select Place',
     'booking_opt_serengeti' => 'Serengeti, Tanzania',
     'booking_opt_maasai_mara' => 'Maasai Mara, Kenya',
@@ -489,8 +489,8 @@ return [
     'contact_send_btn' => 'Send Message',
 
     // Book form destination keys (used in book-tour.php)
-    'book_form_dest_country_label' => 'Country (Nchi)',
-    'book_form_dest_place_label' => 'Place (Sehemu)',
+    'book_form_dest_country_label' => 'Destination',
+    'book_form_dest_place_label' => 'Destination',
     'book_form_dest_place_select' => 'Select Place',
     'book_form_dest_country_select' => 'Select Country',
     'book_form_dest_serengeti' => 'Serengeti, Tanzania',
