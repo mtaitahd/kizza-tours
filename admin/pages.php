@@ -28,6 +28,7 @@ function ensurePagesTable() {
         }
         return true;
     } catch (\Throwable $e) {
+        error_log("Pages table ensure error: " . $e->getMessage());
         return false;
     }
 }
@@ -39,13 +40,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (in_array($action, ['add', 'edit'])) {
         $pageId = intval($_POST['page_id'] ?? 0);
         $title = trim($_POST['title'] ?? '');
-        $slug = slugify($_POST['slug'] ?? $title);
+        $rawSlug = trim($_POST['slug'] ?? '');
+        $slug = !empty($rawSlug) ? strtolower(preg_replace('/[^a-z0-9]+/i', '-', $rawSlug)) : slugify($title);
+        $slug = trim($slug, '-');
         $content = $_POST['content'] ?? '';
         $meta_title = trim($_POST['meta_title'] ?? '');
         $meta_description = trim($_POST['meta_description'] ?? '');
         $meta_keywords = trim($_POST['meta_keywords'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
         $sort_order = intval($_POST['sort_order'] ?? 0);
+
+        if (empty($slug)) {
+            $slug = slugify($title);
+        }
+
+        $existingSlug = $db->fetchOne("SELECT id FROM pages WHERE slug = ? AND id != ?", [$slug, $pageId]);
+        if ($existingSlug) {
+            $slug = $slug . '-' . $pageId;
+        }
 
         $image = '';
         $hasNewImage = false;
@@ -82,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, hero_image, image_2, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $heroImage, $image2, $status, $sort_order]
             );
-            seoGenerateSitemap();
+            try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully', 'preview_url' => SITE_URL . '/' . $slug];
         } else {
             if ($hasNewImage) {
@@ -105,11 +117,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql .= " WHERE id=?";
             $params[] = $pageId;
             $db->query($sql, $params);
-            seoGenerateSitemap();
+            try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page updated successfully', 'preview_url' => SITE_URL . '/' . $slug];
         }
     } elseif ($action === 'generate_sitemap') {
-        $ok = seoGenerateSitemap();
+        try {
+            $ok = seoGenerateSitemap();
+        } catch (\Throwable $e) {
+            error_log("Sitemap gen error: " . $e->getMessage());
+            $ok = false;
+        }
         $_SESSION['flash'] = ['type' => $ok ? 'success' : 'danger', 'message' => $ok ? 'Sitemap generated successfully' : 'Sitemap generation failed'];
     } elseif ($action === 'delete') {
         $pageId = intval($_POST['page_id'] ?? 0);
@@ -118,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($page && $page['hero_image']) deleteFile($page['hero_image']);
         if ($page && $page['image_2']) deleteFile($page['image_2']);
         $db->query("DELETE FROM pages WHERE id = ?", [$pageId]);
-        seoGenerateSitemap();
+        try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page deleted successfully'];
     } elseif ($_POST['action'] === 'remove_image') {
         $pageId = intval($_POST['page_id'] ?? 0);

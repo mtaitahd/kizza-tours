@@ -23,7 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $country = trim($_POST['country'] ?? '');
-        $slug = slugify($_POST['slug'] ?? $name);
+        $rawSlug = trim($_POST['slug'] ?? '');
+        $slug = !empty($rawSlug) ? strtolower(preg_replace('/[^a-z0-9]+/i', '-', $rawSlug)) : slugify($name);
+        $slug = trim($slug, '-');
         $description = trim($_POST['description'] ?? '');
         $short_description = trim($_POST['short_description'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
