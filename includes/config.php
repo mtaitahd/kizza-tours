@@ -381,6 +381,10 @@ function uploadFile($file, $targetDir, $prefix = 'file') {
         return false;
     }
     
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
+    
     $filename = $prefix . '_' . uniqid() . '.' . $ext;
     $targetPath = rtrim($targetDir, '/') . '/' . $filename;
     

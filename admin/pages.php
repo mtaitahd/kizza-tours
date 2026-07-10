@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $heroImage, $status, $sort_order]
             );
             seoGenerateSitemap();
-            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully'];
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully', 'preview_url' => SITE_URL . '/' . $slug];
         } else {
             if ($hasNewImage) {
                 $old = $db->fetchOne("SELECT image FROM pages WHERE id = ?", [$pageId]);
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $params[] = $pageId;
             $db->query($sql, $params);
             seoGenerateSitemap();
-            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page updated successfully'];
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page updated successfully', 'preview_url' => SITE_URL . '/' . $slug];
         }
     } elseif ($action === 'generate_sitemap') {
         $ok = seoGenerateSitemap();
@@ -208,6 +208,9 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                 <?php if ($flash): ?>
                 <div class="alert alert-<?= $flash['type'] === 'success' ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
                     <i class="fas fa-<?= $flash['type'] === 'success' ? 'check-circle' : 'exclamation-circle' ?> mr-2"></i><?= htmlspecialchars($flash['message']) ?>
+                    <?php if (!empty($flash['preview_url'])): ?>
+                    <a href="<?= htmlspecialchars($flash['preview_url']) ?>" target="_blank" class="btn btn-sm btn-outline-dark ml-3"><i class="fas fa-external-link-alt mr-1"></i>Preview</a>
+                    <?php endif; ?>
                     <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                 </div>
                 <?php endif; ?>
@@ -228,7 +231,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                                         <th>Slug</th>
                                         <th>Status</th>
                                         <th>Order</th>
-                                        <th style="width:140px">Actions</th>
+                                        <th style="width:180px">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -250,6 +253,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                                         <td><?= $p['status'] === 'active' ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-secondary">Draft</span>' ?></td>
                                         <td><?= $p['sort_order'] ?></td>
                                         <td>
+                                            <a href="../<?= htmlspecialchars($p['slug']) ?>" target="_blank" class="btn btn-secondary btn-sm" title="Preview"><i class="fas fa-eye"></i></a>
                                             <button class="btn btn-info btn-sm" onclick='editPage(<?= json_encode($p) ?>)'><i class="fas fa-edit"></i></button>
                                             <form method="POST" action="" class="d-inline" onsubmit="return confirm('Delete this page?');">
                                                 <input type="hidden" name="action" value="delete">
