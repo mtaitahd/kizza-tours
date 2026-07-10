@@ -36,14 +36,25 @@ $heroBg = $page['hero_image'] && file_exists(BASE_PATH . $page['hero_image'])
 <section class="page-header-section section-padding" style="<?= $heroBg ?> padding-top: 150px; min-height: 350px; display: flex; align-items: center;">
     <div class="container text-center">
         <h1 class="text-white" style="font-size: clamp(2rem, 4vw, 3rem); text-shadow: 0 2px 8px rgba(0,0,0,0.3);"><?= htmlspecialchars($page['title']) ?></h1>
-        <?php if ($page['image'] && file_exists(BASE_PATH . $page['image'])): ?>
-        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="mt-3 rounded" style="max-height:300px;width:auto;border-radius:12px;">
-        <?php endif; ?>
     </div>
 </section>
 
 <section class="section-padding">
     <div class="container">
+        <?php if ($page['image'] && file_exists(BASE_PATH . $page['image'])): ?>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="page-layout-with-image">
+                    <div class="page-content" style="font-size:1.05rem;line-height:1.8;color:#334155;">
+                        <?= $page['content'] ?>
+                    </div>
+                    <div class="page-featured-sidebar">
+                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="page-content" style="font-size:1.05rem;line-height:1.8;color:#334155;">
@@ -51,10 +62,19 @@ $heroBg = $page['hero_image'] && file_exists(BASE_PATH . $page['hero_image'])
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 </section>
 
 <style>
+.page-layout-with-image { display: flex; gap: 2rem; align-items: flex-start; }
+.page-layout-with-image .page-content { flex: 1; min-width: 0; }
+.page-featured-sidebar { flex: 0 0 350px; max-width: 350px; }
+.page-featured-sidebar img { width: 100%; height: auto; border-radius: 12px; }
+@media (max-width: 991px) {
+    .page-layout-with-image { flex-direction: column-reverse; }
+    .page-featured-sidebar { flex: none; max-width: 100%; }
+}
 .page-content h1, .page-content h2, .page-content h3 { font-family: var(--font-primary); color: var(--primary); margin-top: 1.5rem; margin-bottom: 1rem; }
 .page-content h1 { font-size: 2rem; }
 .page-content h2 { font-size: 1.6rem; }

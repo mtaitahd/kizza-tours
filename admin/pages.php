@@ -254,7 +254,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                                         <td><?= $p['sort_order'] ?></td>
                                         <td>
                                             <a href="../<?= htmlspecialchars($p['slug']) ?>" target="_blank" class="btn btn-secondary btn-sm" title="Preview"><i class="fas fa-eye"></i></a>
-                                            <button class="btn btn-info btn-sm" onclick='editPage(<?= json_encode($p) ?>)'><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-info btn-sm" onclick='editPage(<?= htmlspecialchars(json_encode($p), ENT_QUOTES) ?>)'><i class="fas fa-edit"></i></button>
                                             <form method="POST" action="" class="d-inline" onsubmit="return confirm('Delete this page?');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="page_id" value="<?= $p['id'] ?>">
