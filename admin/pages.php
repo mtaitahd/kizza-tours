@@ -22,6 +22,10 @@ function ensurePagesTable() {
             $db->query("ALTER TABLE pages ADD COLUMN hero_image VARCHAR(255) DEFAULT NULL AFTER image");
         } catch (\Throwable $e) {
         }
+        try {
+            $db->query("ALTER TABLE pages ADD COLUMN image_2 VARCHAR(255) DEFAULT NULL AFTER hero_image");
+        } catch (\Throwable $e) {
+        }
         return true;
     } catch (\Throwable $e) {
         return false;
@@ -63,10 +67,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        $image2 = '';
+        $hasNewImage2 = false;
+        if (isset($_FILES['image_2']) && $_FILES['image_2']['error'] === UPLOAD_ERR_OK) {
+            $uploaded = uploadFile($_FILES['image_2'], BASE_PATH . 'uploads/pages/', 'page2_' . $slug);
+            if ($uploaded) {
+                $image2 = $uploaded;
+                $hasNewImage2 = true;
+            }
+        }
+
         if ($action === 'add') {
             $db->insert(
-                "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, hero_image, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $heroImage, $status, $sort_order]
+                "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, hero_image, image_2, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $heroImage, $image2, $status, $sort_order]
             );
             seoGenerateSitemap();
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully', 'preview_url' => SITE_URL . '/' . $slug];
@@ -79,10 +93,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $old = $db->fetchOne("SELECT hero_image FROM pages WHERE id = ?", [$pageId]);
                 if ($old && $old['hero_image']) deleteFile($old['hero_image']);
             }
+            if ($hasNewImage2) {
+                $old = $db->fetchOne("SELECT image_2 FROM pages WHERE id = ?", [$pageId]);
+                if ($old && $old['image_2']) deleteFile($old['image_2']);
+            }
             $sql = "UPDATE pages SET title=?, slug=?, content=?, meta_title=?, meta_description=?, meta_keywords=?, status=?, sort_order=?";
             $params = [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $status, $sort_order];
             if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
             if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
+            if ($hasNewImage2) { $sql .= ", image_2=?"; $params[] = $image2; }
             $sql .= " WHERE id=?";
             $params[] = $pageId;
             $db->query($sql, $params);
@@ -94,9 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash'] = ['type' => $ok ? 'success' : 'danger', 'message' => $ok ? 'Sitemap generated successfully' : 'Sitemap generation failed'];
     } elseif ($action === 'delete') {
         $pageId = intval($_POST['page_id'] ?? 0);
-        $page = $db->fetchOne("SELECT image, hero_image FROM pages WHERE id = ?", [$pageId]);
+        $page = $db->fetchOne("SELECT image, hero_image, image_2 FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['image']) deleteFile($page['image']);
         if ($page && $page['hero_image']) deleteFile($page['hero_image']);
+        if ($page && $page['image_2']) deleteFile($page['image_2']);
         $db->query("DELETE FROM pages WHERE id = ?", [$pageId]);
         seoGenerateSitemap();
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page deleted successfully'];
@@ -112,6 +132,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($page && $page['hero_image']) deleteFile($page['hero_image']);
         $db->query("UPDATE pages SET hero_image = NULL WHERE id = ?", [$pageId]);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Hero image removed'];
+    } elseif ($_POST['action'] === 'remove_image_2') {
+        $pageId = intval($_POST['page_id'] ?? 0);
+        $page = $db->fetchOne("SELECT image_2 FROM pages WHERE id = ?", [$pageId]);
+        if ($page && $page['image_2']) deleteFile($page['image_2']);
+        $db->query("UPDATE pages SET image_2 = NULL WHERE id = ?", [$pageId]);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Second image removed'];
     }
 
     header('Location: pages');
@@ -327,19 +353,25 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
         </div>
         <hr>
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="form-group">
-                    <label>Featured Image</label>
+                    <label>Featured Image 1</label>
                     <input type="file" name="image" class="form-control-file" accept="image/*">
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="form-group">
-                    <label>Hero Image <small class="text-muted">(full-width banner)</small></label>
+                    <label>Featured Image 2</label>
+                    <input type="file" name="image_2" class="form-control-file" accept="image/*">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label>Hero Image <small class="text-muted">(banner)</small></label>
                     <input type="file" name="hero_image" class="form-control-file" accept="image/*">
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="form-group">
                     <label>Status</label>
                     <select name="status" id="pageStatus" class="form-control">
@@ -348,6 +380,8 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                     </select>
                 </div>
             </div>
+        </div>
+        <div class="row">
             <div class="col-md-4">
                 <div class="form-group">
                     <label>Sort Order</label>
@@ -370,6 +404,15 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                 <div>
                     <img id="editHeroPreview" src="" alt="" style="max-height:80px;border-radius:4px;">
                     <label class="ml-3 text-muted"><input type="checkbox" name="remove_hero" value="1"> Remove hero image</label>
+                </div>
+            </div>
+        </div>
+        <div id="editImage2Section" style="display:none;">
+            <div class="form-group">
+                <label>Current Featured Image 2:</label>
+                <div>
+                    <img id="editImage2Preview" src="" alt="" style="max-height:80px;border-radius:4px;">
+                    <label class="ml-3 text-muted"><input type="checkbox" name="remove_image_2" value="1"> Remove image</label>
                 </div>
             </div>
         </div>
@@ -407,6 +450,7 @@ function openAdd() {
     document.getElementById('pageSortOrder').value = '0';
     document.getElementById('editImageSection').style.display = 'none';
     document.getElementById('editHeroSection').style.display = 'none';
+    document.getElementById('editImage2Section').style.display = 'none';
 }
 
 function editPage(p) {
@@ -436,6 +480,14 @@ function editPage(p) {
         document.getElementById('editHeroPreview').src = '../' + p.hero_image;
     } else {
         heroSection.style.display = 'none';
+    }
+
+    var img2Section = document.getElementById('editImage2Section');
+    if (p.image_2) {
+        img2Section.style.display = 'block';
+        document.getElementById('editImage2Preview').src = '../' + p.image_2;
+    } else {
+        img2Section.style.display = 'none';
     }
 
     $('#pageModal').modal('show');

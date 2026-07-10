@@ -39,9 +39,15 @@ $heroBg = $page['hero_image'] && file_exists(BASE_PATH . $page['hero_image'])
     </div>
 </section>
 
+<?php
+$hasImage1 = $page['image'] && file_exists(BASE_PATH . $page['image']);
+$hasImage2 = $page['image_2'] && file_exists(BASE_PATH . $page['image_2']);
+$hasAnyImage = $hasImage1 || $hasImage2;
+?>
+
 <section class="section-padding">
     <div class="container">
-        <?php if ($page['image'] && file_exists(BASE_PATH . $page['image'])): ?>
+        <?php if ($hasAnyImage): ?>
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="page-layout-with-image">
@@ -49,7 +55,12 @@ $heroBg = $page['hero_image'] && file_exists(BASE_PATH . $page['hero_image'])
                         <?= $page['content'] ?>
                     </div>
                     <div class="page-featured-sidebar">
-                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm">
+                        <?php if ($hasImage1): ?>
+                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm mb-3">
+                        <?php endif; ?>
+                        <?php if ($hasImage2): ?>
+                        <img src="<?= htmlspecialchars(SITE_URL . '/' . $page['image_2']) ?>" alt="<?= htmlspecialchars($page['title']) ?>" class="rounded shadow-sm">
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
