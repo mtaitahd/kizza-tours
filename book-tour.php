@@ -57,74 +57,20 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-semibold"><?php echo __('book_form_package_label'); ?></label>
-                                <div class="row g-2" id="packageCheckboxes">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="luxury-safari" id="pkg_luxury">
-                                            <label class="form-check-label" for="pkg_luxury"><?php echo __('book_form_pkg_luxury'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="migration-safari" id="pkg_migration">
-                                            <label class="form-check-label" for="pkg_migration"><?php echo __('book_form_pkg_migration'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="gorilla-trekking" id="pkg_gorilla">
-                                            <label class="form-check-label" for="pkg_gorilla"><?php echo __('book_form_pkg_gorilla'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="kilimanjaro-climb" id="pkg_kili">
-                                            <label class="form-check-label" for="pkg_kili"><?php echo __('book_form_pkg_kilimanjaro'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="beach-holiday" id="pkg_beach">
-                                            <label class="form-check-label" for="pkg_beach"><?php echo __('book_form_pkg_beach'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="cultural-tour" id="pkg_cultural">
-                                            <label class="form-check-label" for="pkg_cultural"><?php echo __('book_form_pkg_cultural'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="honeymoon" id="pkg_honeymoon">
-                                            <label class="form-check-label" for="pkg_honeymoon"><?php echo __('book_form_pkg_honeymoon'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="family-safari" id="pkg_family">
-                                            <label class="form-check-label" for="pkg_family"><?php echo __('book_form_pkg_family'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="mount-kenya-climb" id="pkg_mt_kenya">
-                                            <label class="form-check-label" for="pkg_mt_kenya"><?php echo __('book_form_pkg_mount_kenya'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="private-tour" id="pkg_private">
-                                            <label class="form-check-label" for="pkg_private"><?php echo __('book_form_pkg_private'); ?></label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="packages[]" value="custom" id="pkg_custom">
-                                            <label class="form-check-label" for="pkg_custom"><?php echo __('book_form_pkg_custom'); ?></label>
-                                        </div>
-                                    </div>
-                                </div>
+                                <select class="form-select form-select-lg" name="tour_package">
+                                    <option value=""><?php echo __('book_form_package_select'); ?></option>
+                                    <?php
+                                    $bookingTours = getTourPackages(['status' => 'active'], 50);
+                                    if (!empty($bookingTours)):
+                                        foreach ($bookingTours as $bt):
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($bt['slug'] ?? ''); ?>"><?php echo htmlspecialchars($bt['title'] . ' - ' . ($bt['duration'] ?: '') . ' - $' . number_format($bt['price'] ?? 0, 0)); ?></option>
+                                    <?php
+                                        endforeach;
+                                    endif;
+                                    ?>
+                                    <option value="custom"><?php echo __('book_form_pkg_custom'); ?></option>
+                                </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold"><?php echo __('book_form_accommodation_label'); ?></label>
