@@ -155,7 +155,13 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         .top-bar-link{color:rgba(255,255,255,0.7);white-space:nowrap;font-size:.78rem}
         .top-bar-link i{margin-right:.4rem;font-size:.72rem;color:var(--secondary);}
         .top-bar-select{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);padding:.25rem .6rem;border-radius:0;font-size:.75rem;cursor:pointer;outline:none;max-width:130px}
-        .top-bar-search-btn{background:var(--secondary);border:none;color:var(--primary);width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem}'; 
+        .top-bar-search-btn{background:var(--secondary);border:none;color:var(--primary);width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem}
+        .tours-dropdown-menu{background:var(--primary);border:1px solid rgba(255,255,255,0.1);max-height:70vh;overflow-y:auto;width:320px;scrollbar-width:thin;scrollbar-color:rgba(212,175,55,0.4) transparent}
+        .tours-dropdown-menu::-webkit-scrollbar{width:6px}
+        .tours-dropdown-menu::-webkit-scrollbar-track{background:transparent}
+        .tours-dropdown-menu::-webkit-scrollbar-thumb{background:rgba(212,175,55,0.4);border-radius:3px}
+        .tours-dropdown-menu .dropdown-item{padding:.45rem 1rem;white-space:normal;line-height:1.3}
+        .tours-dropdown-menu .dropdown-item:hover{background:rgba(255,255,255,0.08);color:var(--secondary)}'; 
     ?></style>
 
     <script>function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
@@ -251,7 +257,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                 <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/about-us"><?php echo __('nav_about'); ?></a></li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="toursDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><?php echo __('nav_tours'); ?></a>
-                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="toursDropdown" style="background: var(--primary); border: 1px solid rgba(255,255,255,0.1);">
+                    <ul class="dropdown-menu dropdown-menu-dark tours-dropdown-menu" aria-labelledby="toursDropdown">
                         <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/tanzania-safari"><?php echo __('nav_tour_tz'); ?></a></li>
                         <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/kenya-tanzania-safari"><?php echo __('nav_tour_ke_tz'); ?></a></li>
                         <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/uganda-tours"><?php echo __('nav_tour_ug'); ?></a></li>
@@ -259,6 +265,23 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                         <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/burundi-tours"><?php echo __('nav_tour_bi'); ?></a></li>
                         <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/rwanda-gorilla-trekking"><?php echo __('nav_tour_rw'); ?></a></li>
                         <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/mount-kenya-climbing"><?php echo __('nav_tour_kenya'); ?></a></li>
+                        <?php
+                        $navTours = [];
+                        try {
+                            $navDb = Database::getInstance();
+                            $navTours = $navDb->fetchAll("SELECT title, slug, duration, price, country FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != '' ORDER BY country ASC, title ASC");
+                        } catch (\Throwable $e) {}
+                        if (!empty($navTours)):
+                        ?>
+                        <li><hr class="dropdown-divider" style="border-color: rgba(255,255,255,0.15);"></li>
+                        <li class="dropdown-header" style="color: var(--secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 0.25rem 1rem;"><?php echo __('nav_tours'); ?></li>
+                        <?php foreach ($navTours as $nt): ?>
+                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/safari/<?php echo htmlspecialchars($nt['slug']); ?>" title="<?php echo htmlspecialchars($nt['title']); ?>">
+                            <span style="font-size: 0.85rem;"><?php echo htmlspecialchars($nt['title']); ?></span>
+                            <br><small style="color: rgba(255,255,255,0.5); font-size: 0.7rem;"><?php echo htmlspecialchars($nt['country'] . ($nt['duration'] ? ' - ' . $nt['duration'] : '') . ($nt['price'] ? ' - $' . number_format($nt['price'], 0) : '')); ?></small>
+                        </a></li>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
                     </ul>
                 </li>
                 <li class="nav-item"><a class="nav-link" href="index.php#destinations"><?php echo __('nav_destinations'); ?></a></li>
