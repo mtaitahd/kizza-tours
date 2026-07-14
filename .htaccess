@@ -29,8 +29,9 @@ RewriteRule ^rwanda-gorilla/?$ rwanda-gorilla-trekking [R=301,L]
 RewriteCond %{THE_REQUEST} \s(/?)search\.php[\s?] [NC]
 RewriteRule ^ %1search [R=301,L]
 
-# Remove trailing slash (except home, admin, and real directories)
+# Remove trailing slash (except home, admin, real directories, and static files)
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} !^/?$
 RewriteCond %{REQUEST_URI} !^/admin/
 RewriteCond %{THE_REQUEST} \s(.+)/\s[\s?]
