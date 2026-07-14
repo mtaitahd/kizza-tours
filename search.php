@@ -26,6 +26,8 @@ $packages = searchTourPackages($searchParams);
 $pageSeo = seoPageMeta('search');
 $pageSeo['title'] = 'Search Tours - ' . getSetting('site_name', 'Kizza Tours & Safaris');
 $pageSeo['description'] = 'Search and filter our premium East Africa tour packages by destination, budget, and more.';
+$pageSeo['canonical'] = SITE_URL . '/search';
+$pageSeo['robots'] = 'noindex, nofollow';
 ?>
 <?php include 'includes/header.php'; ?>
 

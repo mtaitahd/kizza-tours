@@ -111,6 +111,15 @@ function seoPageData($pageKey) {
             'h1' => 'Mount Kenya Climbing Tours',
             'schema' => 'Tour',
         ],
+        'search' => [
+            'title' => 'Search Tours' . $suffix,
+            'description' => 'Search and filter our premium East Africa tour packages by destination, budget, and duration.',
+            'canonical' => $url . '/search',
+            'ogTitle' => 'Search Tours - Kizza Tours',
+            'ogDesc' => 'Find your perfect East Africa safari. Search by destination, budget, and duration.',
+            'h1' => 'Search Tours',
+            'robots' => 'noindex, nofollow',
+        ],
     ];
 
     return $pages[$pageKey] ?? $pages['home'];

@@ -36,6 +36,7 @@ Disallow: /templates/
 Disallow: /database/
 Disallow: /vendor/
 Disallow: /uploads/private/
+Disallow: /search
 
 # Sitemap
 Sitemap: <?php echo $baseUrl; ?>/sitemap.xml

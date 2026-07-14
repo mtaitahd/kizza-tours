@@ -25,6 +25,17 @@ RewriteRule ^ %1 [R=301,L]
 RewriteRule ^mount-kenya/?$ mount-kenya-climbing [R=301,L]
 RewriteRule ^rwanda-gorilla/?$ rwanda-gorilla-trekking [R=301,L]
 
+# Redirect search.php to clean URL
+RewriteCond %{THE_REQUEST} \s(/?)search\.php[\s?] [NC]
+RewriteRule ^ %1search [R=301,L]
+
+# Remove trailing slash (except home, admin, and real directories)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/?$
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{THE_REQUEST} \s(.+)/\s[\s?]
+RewriteRule ^ /%1 [R=301,L]
+
 # SEO Friendly URLs - Tour & Destination Pages
 RewriteRule ^safari/([a-z0-9-]+)/?$ tour-details.php?slug=$1 [L,QSA]
 RewriteRule ^destination/([a-z0-9-]+)/?$ destination.php?slug=$1 [L,QSA]

@@ -111,7 +111,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                 "url": "<?php echo SITE_URL; ?>",
                 "potentialAction": {
                     "@type": "SearchAction",
-                    "target": "<?php echo SITE_URL; ?>/?s={search_term_string}",
+                    "target": "<?php echo SITE_URL; ?>/search?q={search_term_string}",
                     "query-input": "required name=search_term_string"
                 }
             }
@@ -245,7 +245,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
     <div class="container">
-        <a class="navbar-brand" href="index.php">
+        <a class="navbar-brand" href="/">
             <img src="<?php echo ASSETS_PATH; ?>images/navimage.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -253,7 +253,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
-                <li class="nav-item"><a class="nav-link active" href="index.php"><?php echo __('nav_home'); ?></a></li>
+                <li class="nav-item"><a class="nav-link active" href="/"><?php echo __('nav_home'); ?></a></li>
                 <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/about-us"><?php echo __('nav_about'); ?></a></li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="toursDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><?php echo __('nav_tours'); ?></a>
@@ -284,8 +284,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                         <?php endif; ?>
                     </ul>
                 </li>
-                <li class="nav-item"><a class="nav-link" href="index.php#destinations"><?php echo __('nav_destinations'); ?></a></li>
-                <li class="nav-item"><a class="nav-link" href="index.php#gallery"><?php echo __('nav_gallery'); ?></a></li>
+                <li class="nav-item"><a class="nav-link" href="/#destinations"><?php echo __('nav_destinations'); ?></a></li>
+                <li class="nav-item"><a class="nav-link" href="/#gallery"><?php echo __('nav_gallery'); ?></a></li>
                 <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/contact-us"><?php echo __('nav_contact'); ?></a></li>
                 <li class="nav-item dropdown ms-lg-2">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
