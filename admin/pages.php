@@ -56,7 +56,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $existingSlug = $db->fetchOne("SELECT id FROM pages WHERE slug = ? AND id != ?", [$slug, $pageId]);
         if ($existingSlug) {
-            $slug = $slug . '-' . $pageId;
+            $base = $slug;
+            $counter = 2;
+            while (true) {
+                $candidate = $base . '-' . $counter;
+                $taken = $db->fetchOne("SELECT id FROM pages WHERE slug = ? AND id != ?", [$candidate, $pageId]);
+                if (!$taken) {
+                    $slug = $candidate;
+                    break;
+                }
+                $counter++;
+            }
         }
 
         $image = '';
@@ -448,7 +458,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
 <script src="../templates/assets/js/ruang-admin.min.js"></script>
 <script>
 function autoSlug(val) {
-    if (document.getElementById('pageAction').value === 'add' || !document.getElementById('pageSlug').value) {
+    if (document.getElementById('pageAction').value === 'add') {
         document.getElementById('pageSlug').value = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     }
 }
@@ -459,6 +469,8 @@ function openAdd() {
     document.getElementById('pageId').value = '0';
     document.getElementById('pageTitle').value = '';
     document.getElementById('pageSlug').value = '';
+    document.getElementById('pageSlug').readOnly = true;
+    document.getElementById('pageSlug').placeholder = 'Auto-generated from title';
     document.getElementById('pageContent').value = '';
     document.getElementById('pageMetaTitle').value = '';
     document.getElementById('pageMetaDesc').value = '';
@@ -476,6 +488,8 @@ function editPage(p) {
     document.getElementById('pageId').value = p.id;
     document.getElementById('pageTitle').value = p.title;
     document.getElementById('pageSlug').value = p.slug;
+    document.getElementById('pageSlug').readOnly = false;
+    document.getElementById('pageSlug').placeholder = '';
     document.getElementById('pageContent').value = p.content || '';
     document.getElementById('pageMetaTitle').value = p.meta_title || '';
     document.getElementById('pageMetaDesc').value = p.meta_description || '';
