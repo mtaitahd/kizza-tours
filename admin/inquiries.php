@@ -217,6 +217,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (Exception $e) {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Error: ' . $e->getMessage()];
         }
+    } elseif ($_POST['action'] === 'delete_selected') {
+        $ids = $_POST['inquiry_ids'] ?? [];
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $db->query("DELETE FROM inquiries WHERE id IN ($placeholders)", $ids);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => count($ids) . ' inquiry(ies) deleted successfully'];
+        }
+    } elseif ($_POST['action'] === 'delete_all') {
+        $db->query("DELETE FROM inquiries");
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'All inquiries deleted successfully'];
     }
 
     header('Location: inquiries');
@@ -396,13 +406,25 @@ if ($quotesTablesOk) {
 
                     <div class="card mb-4">
                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                            <input type="text" id="tableSearch" class="form-control form-control-sm" style="max-width: 300px;" placeholder="Filter inquiries..." onkeyup="filterTable(this.value)">
+                            <div class="d-flex align-items-center">
+                                <input type="text" id="tableSearch" class="form-control form-control-sm mr-2" style="max-width: 300px;" placeholder="Filter inquiries..." onkeyup="filterTable(this.value)">
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-danger mr-2" id="deleteSelectedBtn" style="display:none;" onclick="deleteSelected()">
+                                    <i class="fas fa-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
+                                </button>
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to DELETE ALL inquiries? This cannot be undone.');">
+                                    <input type="hidden" name="action" value="delete_all">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Delete All</button>
+                                </form>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-striped mb-0" id="dataTable">
                                     <thead>
                                         <tr>
+                                            <th style="width:3%"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
                                             <th style="width:16%">Name</th>
                                             <th style="width:18%">Email</th>
                                             <th style="width:13%">Phone</th>
@@ -418,6 +440,7 @@ if ($quotesTablesOk) {
                                             $quoteData = $quotesByInquiry[$inq['id']] ?? null;
                                         ?>
                                         <tr>
+                                            <td><input type="checkbox" class="inquiry-checkbox" value="<?php echo $inq['id']; ?>" onchange="updateSelectedCount()"></td>
                                             <td><?php echo htmlspecialchars($inq['full_name']); ?></td>
                                             <td><a href="mailto:<?php echo $inq['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($inq['email']); ?></a></td>
                                             <td><?php echo htmlspecialchars($inq['phone'] ?: '-'); ?></td>
@@ -458,7 +481,7 @@ if ($quotesTablesOk) {
                                         </tr>
                                         <?php endforeach; ?>
                                         <?php if (empty($inquiries)): ?>
-                                        <tr><td colspan="8" class="text-center py-4 text-muted">No inquiries yet</td></tr>
+                                        <tr><td colspan="9" class="text-center py-4 text-muted">No inquiries yet</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
@@ -922,6 +945,31 @@ if ($quotesTablesOk) {
         $('#quoteEditorModal').on('hidden.bs.modal', function() {
             location.reload();
         });
+    </script>
+    <script>
+        function toggleSelectAll(cb) {
+            document.querySelectorAll('.inquiry-checkbox').forEach(function(c) { c.checked = cb.checked; });
+            updateSelectedCount();
+        }
+        function updateSelectedCount() {
+            var count = document.querySelectorAll('.inquiry-checkbox:checked').length;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteSelectedBtn').style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        function deleteSelected() {
+            var ids = [];
+            document.querySelectorAll('.inquiry-checkbox:checked').forEach(function(c) { ids.push(c.value); });
+            if (ids.length === 0) return alert('No inquiries selected.');
+            if (!confirm('Delete ' + ids.length + ' selected inquiry(ies)? This cannot be undone.')) return;
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = '<input type="hidden" name="action" value="delete_selected">';
+            ids.forEach(function(id) {
+                form.innerHTML += '<input type="hidden" name="inquiry_ids[]" value="' + id + '">';
+            });
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 </body>
 </html>

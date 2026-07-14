@@ -264,6 +264,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (Exception $e) {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Error: ' . $e->getMessage()];
         }
+    } elseif ($_POST['action'] === 'delete_selected') {
+        $ids = $_POST['booking_ids'] ?? [];
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $db->query("DELETE FROM bookings WHERE id IN ($placeholders)", $ids);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => count($ids) . ' booking(s) deleted successfully'];
+        }
+    } elseif ($_POST['action'] === 'delete_all') {
+        $db->query("DELETE FROM bookings");
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'All bookings deleted successfully'];
     }
     header('Location: bookings');
     exit;
@@ -482,13 +492,25 @@ if ($quotesTablesOk) {
 
                     <div class="card mb-4">
                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                            <input type="text" id="tableSearch" class="form-control form-control-sm" style="max-width: 300px;" placeholder="Filter bookings..." onkeyup="filterTable(this.value)">
+                            <div class="d-flex align-items-center">
+                                <input type="text" id="tableSearch" class="form-control form-control-sm mr-2" style="max-width: 300px;" placeholder="Filter bookings..." onkeyup="filterTable(this.value)">
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-danger mr-2" id="deleteSelectedBtn" style="display:none;" onclick="deleteSelected()">
+                                    <i class="fas fa-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
+                                </button>
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to DELETE ALL bookings? This cannot be undone.');">
+                                    <input type="hidden" name="action" value="delete_all">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Delete All</button>
+                                </form>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped align-middle mb-0" id="dataTable">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
                                             <th>Ref</th>
                                             <th>Name</th>
                                             <th>Email</th>
@@ -506,6 +528,7 @@ if ($quotesTablesOk) {
                                             $quoteData = $quotesByBooking[$b['id']] ?? null;
                                         ?>
                                         <tr>
+                                            <td><input type="checkbox" class="booking-checkbox" value="<?php echo $b['id']; ?>" onchange="updateSelectedCount()"></td>
                                             <td><strong><?php echo htmlspecialchars($b['booking_reference']); ?></strong></td>
                                             <td><?php echo htmlspecialchars($b['full_name']); ?></td>
                                             <td><a href="mailto:<?php echo $b['email']; ?>" style="color: #0A2540;"><?php echo htmlspecialchars($b['email']); ?></a></td>
@@ -592,7 +615,7 @@ if ($quotesTablesOk) {
                                         <?php endforeach; ?>
                                         <?php if (empty($bookings)): ?>
                                         <tr>
-                                            <td colspan="10">
+                                            <td colspan="11">
                                                 <div class="empty-state">
                                                     <i class="fas fa-calendar-check text-muted"></i>
                                                     <h5 class="text-muted">No bookings yet</h5>
@@ -1143,6 +1166,31 @@ if ($quotesTablesOk) {
         $('#bookingQuoteEditorModal').on('hidden.bs.modal', function() {
             location.reload();
         });
+    </script>
+    <script>
+        function toggleSelectAll(cb) {
+            document.querySelectorAll('.booking-checkbox').forEach(function(c) { c.checked = cb.checked; });
+            updateSelectedCount();
+        }
+        function updateSelectedCount() {
+            var count = document.querySelectorAll('.booking-checkbox:checked').length;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteSelectedBtn').style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        function deleteSelected() {
+            var ids = [];
+            document.querySelectorAll('.booking-checkbox:checked').forEach(function(c) { ids.push(c.value); });
+            if (ids.length === 0) return alert('No bookings selected.');
+            if (!confirm('Delete ' + ids.length + ' selected booking(s)? This cannot be undone.')) return;
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = '<input type="hidden" name="action" value="delete_selected">';
+            ids.forEach(function(id) {
+                form.innerHTML += '<input type="hidden" name="booking_ids[]" value="' + id + '">';
+            });
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 </body>
 </html>
