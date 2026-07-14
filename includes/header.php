@@ -5,7 +5,7 @@ $siteName = getSetting('site_name', 'Kizza Tours & Safaris');
 $siteEmail = getSetting('site_email', SITE_EMAIL);
 $sitePhone = getSetting('site_phone', SITE_PHONE);
 $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
-$ogImage = getMediaUrl('og_image', 'https://kizzatoursandsafaris.com/assets/images/log.png');
+$ogImage = getMediaUrl('og_image', 'https://kizzatoursandsafaris.com/assets/images/ogimage.png');
 $favicon = getMediaUrl('site_favicon', 'images/log.png');
 
 if (!isset($pageSeo) || !is_array($pageSeo)) {
@@ -120,8 +120,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     </script>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="<?php echo ASSETS_PATH; ?>images/log.png">
-    <link rel="apple-touch-icon" href="<?php echo ASSETS_PATH; ?>images/log.png">
+    <link rel="icon" type="image/png" href="<?php echo ASSETS_PATH; ?>images/ogimage.png">
+    <link rel="apple-touch-icon" href="<?php echo ASSETS_PATH; ?>images/ogimage.png">
 
     <!-- Preconnect (limited to 4 most critical) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -246,7 +246,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
     <div class="container">
         <a class="navbar-brand" href="index.php">
-            <img src="<?php echo ASSETS_PATH; ?>images/log.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
+            <img src="<?php echo ASSETS_PATH; ?>images/navimage.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

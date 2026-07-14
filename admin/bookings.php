@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($status === 'confirmed' && $booking) {
             $subject = 'Your Safari Booking is Confirmed - ' . htmlspecialchars($booking['booking_reference']);
             $body = '<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:auto;">';
-            $body .= '<div style="text-align:center;margin-bottom:20px;"><img src="' . SITE_URL . '/assets/images/log.png" alt="Kizza Tours" style="height:60px;"></div>';
+            $body .= '<div style="text-align:center;margin-bottom:20px;"><img src="' . SITE_URL . '/assets/images/ogimage.png" alt="Kizza Tours" style="height:60px;"></div>';
             $body .= '<h1 style="color:#0A2540;text-align:center;">Booking Confirmed!</h1>';
             $body .= '<p style="font-size:1.1em;color:#333;">Dear ' . htmlspecialchars($booking['full_name']) . ',</p>';
             $body .= '<p>Great news! Your safari booking with <strong>Kizza Tours &amp; Safaris</strong> has been confirmed.</p>';
