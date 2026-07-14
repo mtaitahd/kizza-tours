@@ -207,7 +207,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     } elseif ($_POST['action'] === 'send_quote_email') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
+        $emailSubject = trim($_POST['email_subject'] ?? 'Your Safari Quote from Kizza Tours');
         try {
+            $pdfFile = $_FILES['pdf_file'] ?? null;
+            if ($pdfFile && $pdfFile['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($pdfFile['name'], PATHINFO_EXTENSION));
+                if ($ext !== 'pdf') throw new Exception('Only PDF files are allowed');
+                $pdfDir = BASE_PATH . 'uploads/quotes/';
+                if (!is_dir($pdfDir)) mkdir($pdfDir, 0755, true);
+                $filename = 'quote_' . $quoteId . '_' . uniqid() . '.pdf';
+                $dest = $pdfDir . $filename;
+                if (move_uploaded_file($pdfFile['tmp_name'], $dest)) {
+                    $pdfPath = 'uploads/quotes/' . $filename;
+                    if ($quoteId) {
+                        $old = $db->fetchOne("SELECT pdf_path FROM quotes WHERE id = ?", [$quoteId]);
+                        if ($old && !empty($old['pdf_path'])) {
+                            $oldFile = BASE_PATH . $old['pdf_path'];
+                            if (file_exists($oldFile)) @unlink($oldFile);
+                        }
+                        $db->query("UPDATE quotes SET pdf_path = ?, email_subject = ? WHERE id = ?", [$pdfPath, $emailSubject, $quoteId]);
+                    } else {
+                        $inquiryId = intval($_POST['inquiry_id'] ?? 0);
+                        $quoteNum = 'QT-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+                        $db->query("INSERT INTO quotes (quote_number, inquiry_id, email_subject, pdf_path, status) VALUES (?, ?, ?, ?, 'confirmed')", [$quoteNum, $inquiryId, $emailSubject, $pdfPath]);
+                        $quoteId = $db->lastInsertId();
+                    }
+                } else {
+                    throw new Exception('Failed to upload PDF');
+                }
+            } elseif ($quoteId) {
+                $db->query("UPDATE quotes SET email_subject = ? WHERE id = ?", [$emailSubject, $quoteId]);
+            }
+
+            if (!$quoteId) throw new Exception('No quote found to send');
+
             $sent = sendQuoteEmail($quoteId);
             if ($sent) {
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote sent via email successfully'];
@@ -546,94 +579,33 @@ if ($quotesTablesOk) {
                                         </div>
 
                                         <div class="col-md-6">
-                                            <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Quote Management</h6>
-                                            <?php if ($quoteData): ?>
-                                                <div class="quote-section">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <strong>#<?php echo htmlspecialchars($quoteData['quote_number']); ?></strong>
-                                                        <span class="badge badge-<?php
-                                                            $s = $quoteData['status'];
-                                                            echo $s === 'draft' ? 'secondary' : ($s === 'prepared' ? 'info' : ($s === 'confirmed' ? 'primary' : 'success'));
-                                                        ?>"><?php echo ucfirst($s); ?></span>
+                                            <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Send Quote</h6>
+                                            <div class="quote-section">
+                                                <form method="POST" enctype="multipart/form-data" id="sendQuoteForm<?php echo $inq['id']; ?>">
+                                                    <input type="hidden" name="action" value="send_quote_email">
+                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id'] ?? 0; ?>">
+                                                    <input type="hidden" name="inquiry_id" value="<?php echo $inq['id']; ?>">
+                                                    <div class="form-group">
+                                                        <label><strong>Email Subject</strong></label>
+                                                        <input type="text" class="form-control form-control-sm" name="email_subject" value="<?php echo htmlspecialchars($quoteData['email_subject'] ?? 'Your Safari Quote from Kizza Tours'); ?>" required>
                                                     </div>
-                                                    <?php if (!empty($quoteData['items'])): ?>
-                                                        <table class="table table-sm quote-items-table mb-2">
-                                                            <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
-                                                            <tbody>
-                                                            <?php $i = 1; foreach ($quoteData['items'] as $item): ?>
-                                                                <tr>
-                                                                    <td><?php echo $i++; ?></td>
-                                                                    <td><?php echo htmlspecialchars($item['description']); ?></td>
-                                                                    <td><?php echo (int)$item['quantity']; ?></td>
-                                                                    <td><?php echo '$' . number_format($item['unit_price'], 2); ?></td>
-                                                                    <td><?php echo '$' . number_format($item['total'], 2); ?></td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                            </tbody>
-                                                        </table>
-                                                        <div class="text-right" style="font-size:0.85rem;">
-                                                            <strong>Total: $<?php echo number_format($quoteData['total'], 2); ?></strong>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        <p class="text-muted mb-2">No items added yet.</p>
-                                                    <?php endif; ?>
-
-                                                    <div class="quote-actions">
-                                                        <?php if ($quoteData['status'] === 'draft'): ?>
-                                                            <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $inq['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit Quote</button>
-                                                            <form method="POST" style="display:inline;">
-                                                                <input type="hidden" name="action" value="prepare_quote">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
-                                                            </form>
-                                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
-                                                                <input type="hidden" name="action" value="delete_quote">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                                            </form>
-                                                        <?php elseif ($quoteData['status'] === 'prepared'): ?>
-                                                            <button class="btn btn-sm btn-outline-primary" onclick="openQuoteEditor(<?php echo $inq['id']; ?>, <?php echo $quoteData['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
-                                                            <form method="POST" style="display:inline;">
-                                                                <input type="hidden" name="action" value="confirm_quote">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
-                                                            </form>
-                                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
-                                                                <input type="hidden" name="action" value="delete_quote">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                                            </form>
-                                                        <?php elseif ($quoteData['status'] === 'confirmed' || $quoteData['status'] === 'sent'): ?>
-                                                            <button class="btn btn-sm btn-outline-info" onclick="editSubject(<?php echo $quoteData['id']; ?>, '<?php echo htmlspecialchars($quoteData['email_subject'] ?? '', ENT_QUOTES); ?>')"><i class="fas fa-pen"></i> Subject</button>
-                                                            <?php if (empty($quoteData['pdf_path'])): ?>
-                                                                <form method="POST" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:4px;">
-                                                                    <input type="hidden" name="action" value="upload_pdf">
-                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                    <input type="file" name="pdf_file" accept=".pdf" required style="font-size:0.8rem;max-width:130px;" onchange="this.form.submit()">
-                                                                </form>
-                                                            <?php else: ?>
-                                                                <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
+                                                    <div class="form-group">
+                                                        <label><strong>Attach Quote (PDF)</strong></label>
+                                                        <?php if (!empty($quoteData['pdf_path'])): ?>
+                                                            <div class="mb-2">
+                                                                <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View Current PDF</a>
                                                                 <a href="<?php echo '../' . $quoteData['pdf_path']; ?>" class="btn btn-sm btn-outline-secondary" download><i class="fas fa-download"></i> Download</a>
-                                                                <form method="POST" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:4px;">
-                                                                    <input type="hidden" name="action" value="upload_pdf">
-                                                                    <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                    <input type="file" name="pdf_file" accept=".pdf" style="font-size:0.8rem;max-width:130px;" onchange="this.form.submit()">
-                                                                </form>
-                                                            <?php endif; ?>
-                                                            <form method="POST" style="display:inline;">
-                                                                <input type="hidden" name="action" value="send_quote_email">
-                                                                <input type="hidden" name="quote_id" value="<?php echo $quoteData['id']; ?>">
-                                                                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> <?php echo $quoteData['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
-                                                            </form>
+                                                            </div>
                                                         <?php endif; ?>
+                                                        <input type="file" class="form-control-file" name="pdf_file" accept=".pdf" <?php echo empty($quoteData['pdf_path']) ? 'required' : ''; ?>>
+                                                        <small class="text-muted">Upload a new PDF to replace the current one.</small>
                                                     </div>
-                                                </div>
-                                            <?php else: ?>
-                                                <div class="quote-section text-center py-3">
-                                                    <p class="text-muted mb-2">No quote has been prepared for this inquiry yet.</p>
-                                                    <button class="btn btn-sm btn-success" onclick="openQuoteEditor(<?php echo $inq['id']; ?>, 0)"><i class="fas fa-plus"></i> Prepare Quote</button>
-                                                </div>
-                                            <?php endif; ?>
+                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-envelope"></i> <?php echo !empty($quoteData['pdf_path']) ? 'Resend Quote' : 'Send Quote'; ?> via Email</button>
+                                                </form>
+                                                <?php if (empty($quoteData)): ?>
+                                                    <p class="text-muted mt-2 mb-0" style="font-size:0.85rem;"><i class="fas fa-info-circle"></i> A quote record will be created automatically when you upload a PDF and send.</p>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
