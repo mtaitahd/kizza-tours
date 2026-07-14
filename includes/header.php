@@ -269,7 +269,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                         $navTours = [];
                         try {
                             $navDb = Database::getInstance();
-                            $navTours = $navDb->fetchAll("SELECT title, slug, duration, price, country FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != '' ORDER BY country ASC, title ASC");
+                            $navTours = $navDb->fetchAll("SELECT title, slug, duration, price, country FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != '' ORDER BY created_at DESC");
                         } catch (\Throwable $e) {}
                         if (!empty($navTours)):
                         ?>
