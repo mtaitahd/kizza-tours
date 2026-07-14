@@ -458,8 +458,10 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
 <script src="../templates/assets/js/ruang-admin.min.js"></script>
 <script>
 function autoSlug(val) {
-    if (document.getElementById('pageAction').value === 'add') {
-        document.getElementById('pageSlug').value = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    var action = document.getElementById('pageAction').value;
+    var slugField = document.getElementById('pageSlug');
+    if (action === 'add' || slugField.value === '') {
+        slugField.value = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     }
 }
 
