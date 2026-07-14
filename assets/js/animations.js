@@ -93,21 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ease: 'back.out(1.7)'
         });
 
-        gsap.utils.toArray('.timeline-item').forEach((item, i) => {
-            gsap.from(item, {
-                scrollTrigger: {
-                    trigger: item,
-                    start: 'top 90%',
-                    toggleActions: 'play none none none'
-                },
-                x: i % 2 === 0 ? -50 : 50,
-                opacity: 0,
-                duration: 0.8,
-                delay: i * 0.15,
-                ease: 'power3.out'
-            });
-        });
-
         // Counter Animation
         gsap.utils.toArray('.counter-number[data-count]').forEach(counter => {
             gsap.from(counter, {
