@@ -330,7 +330,7 @@ function seoGenerateSitemap() {
 
     try {
         $db = Database::getInstance();
-        $tours = $db->fetchAll("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''");
+        $tours = $db->fetchAll("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND (no_robots IS NULL OR no_robots = 0) AND slug IS NOT NULL AND slug != ''");
         foreach ($tours as $tour) {
             $pages[] = [
                 'loc' => $url . '/safari/' . urlencode($tour['slug']),

@@ -74,7 +74,7 @@ try {
     );
     $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-    $tours = $pdo->query("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''")->fetchAll();
+    $tours = $pdo->query("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND (no_robots IS NULL OR no_robots = 0) AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($tours as $tour) {
         $pages[] = [
             'loc' => $baseUrl . '/safari/' . $tour['slug'],

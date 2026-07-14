@@ -20,7 +20,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/">
     <?php seoRenderMetaTags($pageSeo); ?>
-    <meta name="keywords" content="Kizza Tours, East Africa safaris, Tanzania tours, Kenya safaris, gorilla trekking, Kilimanjaro climbing, luxury safari, Zanzibar holidays, Uganda tours, Rwanda tours">
+    <meta name="keywords" content="<?php echo htmlspecialchars($pageSeo['keywords'] ?? 'Kizza Tours, East Africa safaris, Tanzania tours, Kenya safaris, gorilla trekking, Kilimanjaro climbing, luxury safari, Zanzibar holidays, Uganda tours, Rwanda tours', ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="author" content="<?php echo $siteName; ?>">
     <meta name="robots" content="<?php echo htmlspecialchars($pageSeo['robots'] ?? 'index, follow', ENT_QUOTES, 'UTF-8'); ?>">
 

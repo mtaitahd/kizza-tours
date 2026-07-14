@@ -22,12 +22,18 @@ if (!$tour) {
 }
 
 $pageSeo = seoPageMeta($tour['country'] ? strtolower($tour['country']) . '-safari' : 'home');
-$pageSeo['title'] = htmlspecialchars($tour['title']) . ' | Kizza Tours';
-$pageSeo['description'] = htmlspecialchars(substr($tour['description'] ?? 'Book ' . $tour['title'] . ' with Kizza Tours & Safaris. ' . ($tour['duration'] ?? '') . ' package from $' . number_format($tour['price'] ?? 0, 0) . '.', 0, 160));
+$pageSeo['title'] = !empty($tour['meta_title']) ? htmlspecialchars($tour['meta_title']) : htmlspecialchars($tour['title']) . ' | Kizza Tours';
+$pageSeo['description'] = !empty($tour['meta_description']) ? htmlspecialchars($tour['meta_description']) : htmlspecialchars(substr($tour['description'] ?? 'Book ' . $tour['title'] . ' with Kizza Tours & Safaris. ' . ($tour['duration'] ?? '') . ' package from $' . number_format($tour['price'] ?? 0, 0) . '.', 0, 160));
 $pageSeo['canonical'] = SITE_URL . '/safari/' . urlencode($tour['slug']);
-$pageSeo['ogTitle'] = htmlspecialchars($tour['title']) . ' - Kizza Tours';
-$pageSeo['ogDesc'] = htmlspecialchars(substr($tour['description'] ?? '', 0, 200));
+$pageSeo['ogTitle'] = !empty($tour['meta_title']) ? htmlspecialchars($tour['meta_title']) : htmlspecialchars($tour['title']) . ' - Kizza Tours';
+$pageSeo['ogDesc'] = !empty($tour['meta_description']) ? htmlspecialchars(substr($tour['meta_description'], 0, 200)) : htmlspecialchars(substr($tour['description'] ?? '', 0, 200));
 $pageSeo['h1'] = htmlspecialchars($tour['title']);
+if (!empty($tour['meta_keywords'])) {
+    $pageSeo['keywords'] = htmlspecialchars($tour['meta_keywords']);
+}
+if (!empty($tour['no_robots'])) {
+    $pageSeo['robots'] = 'noindex, follow';
+}
 
 $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
 $sitePhone = getSetting('site_phone', SITE_PHONE);

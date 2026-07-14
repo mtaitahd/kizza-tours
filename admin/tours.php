@@ -20,6 +20,10 @@ function ensureToursTable() {
     try {
         $db = db();
         try { $db->query("ALTER TABLE tour_packages ADD COLUMN hero_image VARCHAR(255) DEFAULT NULL AFTER image"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN meta_title VARCHAR(255) DEFAULT NULL AFTER status"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN meta_description TEXT DEFAULT NULL AFTER meta_title"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN meta_keywords VARCHAR(255) DEFAULT NULL AFTER meta_description"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN no_robots TINYINT(1) DEFAULT 0 AFTER meta_keywords"); } catch (\Throwable $e) {}
         return true;
     } catch (\Throwable $e) { return false; }
 }
@@ -47,7 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gallery = trim($_POST['gallery'] ?? '');
         $itinerary = trim($_POST['itinerary'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
-        
+        $meta_title = trim($_POST['meta_title'] ?? '');
+        $meta_description = trim($_POST['meta_description'] ?? '');
+        $meta_keywords = trim($_POST['meta_keywords'] ?? '');
+        $no_robots = intval($_POST['no_robots'] ?? 0);
+
         $image = '';
         $hasNewImage = false;
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -70,10 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($action === 'add') {
             $db->insert(
-                "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status]
+                "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status, meta_title, meta_description, meta_keywords, no_robots) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status, $meta_title, $meta_description, $meta_keywords, $no_robots]
             );
+            try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour added successfully'];
         } else {
             if ($hasNewImage) {
@@ -84,13 +93,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $old = $db->fetchOne("SELECT hero_image FROM tour_packages WHERE id = ?", [$tourId]);
                 if ($old && $old['hero_image']) deleteFile($old['hero_image']);
             }
-            $sql = "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, status=?";
-            $params = [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status];
+            $sql = "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, status=?, meta_title=?, meta_description=?, meta_keywords=?, no_robots=?";
+            $params = [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status, $meta_title, $meta_description, $meta_keywords, $no_robots];
             if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
             if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
             $sql .= " WHERE id=?";
             $params[] = $tourId;
             $db->query($sql, $params);
+            try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
         }
     } elseif ($action === 'delete') {
@@ -99,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($tour && $tour['image']) deleteFile($tour['image']);
         if ($tour && $tour['hero_image']) deleteFile($tour['hero_image']);
         $db->query("DELETE FROM tour_packages WHERE id = ?", [$tourId]);
+        try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour deleted successfully'];
     }
     
@@ -244,6 +255,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                             <th>Duration</th>
                                             <th>Price</th>
                                             <th>Rating</th>
+                                            <th>SEO</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
@@ -267,6 +279,15 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                                     <i class="fas fa-star" style="color: <?php echo $i < $tour['rating'] ? '#0A2540' : '#e0e0e0'; ?>; font-size: 0.7rem;"></i>
                                                 <?php endfor; ?>
                                             </td>
+                                            <td>
+                                                <?php if (!empty($tour['no_robots'])): ?>
+                                                    <span class="badge badge-warning" title="No Index - hidden from search engines"><i class="fas fa-eye-slash"></i> NoIndex</span>
+                                                <?php elseif (!empty($tour['meta_title']) || !empty($tour['meta_description'])): ?>
+                                                    <span class="badge badge-info" title="Custom SEO meta set"><i class="fas fa-check"></i> Custom</span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-light text-muted" title="Auto-generated SEO"><i class="fas fa-robot"></i> Auto</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><span class="badge badge-<?php echo $tour['status'] === 'active' ? 'success' : 'secondary'; ?>"><?php echo ucfirst($tour['status']); ?></span></td>
                                             <td>
                                                 <div class="d-flex">
@@ -283,7 +304,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                         </tr>
                                         <?php endforeach; ?>
                                         <?php if (empty($tours)): ?>
-                                        <tr><td colspan="8" class="text-center py-4 text-muted">No tours found. Add your first tour!</td></tr>
+                                        <tr><td colspan="9" class="text-center py-4 text-muted">No tours found. Add your first tour!</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
@@ -434,6 +455,38 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                             <label>Itinerary</label>
                             <textarea class="form-control" name="itinerary" id="tourItinerary" rows="4"></textarea>
                         </div>
+                        <hr>
+                        <h6 class="font-weight-bold"><i class="fas fa-search mr-1"></i> SEO & Meta</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Meta Title <small class="text-muted">(max 255 chars)</small></label>
+                                    <input type="text" class="form-control" name="meta_title" id="tourMetaTitle" maxlength="255">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Meta Keywords <small class="text-muted">(max 255 chars)</small></label>
+                                    <input type="text" class="form-control" name="meta_keywords" id="tourMetaKeywords" maxlength="255">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Meta Description <small class="text-muted">(recommended max 160 chars for Google)</small></label>
+                            <textarea class="form-control" name="meta_description" id="tourMetaDesc" rows="3" maxlength="500"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Search Engine Indexing</label>
+                                    <select class="form-control" name="no_robots" id="tourNoRobots">
+                                        <option value="0">Index (allow search engines)</option>
+                                        <option value="1">No Index (hide from search engines)</option>
+                                    </select>
+                                    <small class="text-muted">No Index tours won't appear in Google or the sitemap.</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -467,6 +520,10 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
             document.getElementById('tourExcludes').value = t.excludes || '';
             document.getElementById('tourGallery').value = t.gallery || '';
             document.getElementById('tourItinerary').value = t.itinerary || '';
+            document.getElementById('tourMetaTitle').value = t.meta_title || '';
+            document.getElementById('tourMetaDesc').value = t.meta_description || '';
+            document.getElementById('tourMetaKeywords').value = t.meta_keywords || '';
+            document.getElementById('tourNoRobots').value = t.no_robots || 0;
             document.getElementById('tourModalTitle').textContent = 'Edit Tour';
             $('#tourModal').modal('show');
         }
