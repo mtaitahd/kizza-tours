@@ -1,0 +1,4 @@
+<?php
+// sitemap.xml - actual PHP file processed as XML by Apache
+// Bypasses .htaccess rewrite by existing as a real file
+require_once __DIR__ . '/sitemap.php';

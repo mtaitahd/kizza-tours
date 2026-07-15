@@ -8,6 +8,11 @@ RewriteBase /
 # Sitemap: always generate via PHP for fresh content
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
+# Process sitemap.xml as PHP (fallback if rewrite fails)
+<FilesMatch "^sitemap\.xml$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
 # Robots.txt: route to dynamic PHP generator
 RewriteRule ^robots\.txt$ robots.php [L]
 
