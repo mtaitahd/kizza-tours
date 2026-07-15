@@ -291,6 +291,9 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                             <td><span class="badge badge-<?php echo $tour['status'] === 'active' ? 'success' : 'secondary'; ?>"><?php echo ucfirst($tour['status']); ?></span></td>
                                             <td>
                                                 <div class="d-flex">
+                                                    <a href="../safari/<?php echo htmlspecialchars($tour['slug']); ?>" target="_blank" class="btn btn-sm btn-outline-info mr-1" title="View Tour">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
                                                     <button class="btn btn-sm btn-outline-secondary mr-1" onclick="editTour(<?php echo htmlspecialchars(json_encode($tour)); ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
