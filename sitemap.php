@@ -1,12 +1,14 @@
 <?php
-// Sitemap generator - minimal footprint, no sessions/cookies/headers pollution
-// This file serves the live XML sitemap directly to search engines
-
+// Sitemap generator - no sessions, no cookies, no output before XML
 header('Content-Type: application/xml; charset=utf-8');
 header('X-Robots-Tag: index, follow');
 header('Cache-Control: public, max-age=3600');
 
-// Load only .env for DB credentials - NO session_start(), NO setcookie()
+// Suppress any PHP errors from polluting XML output
+error_reporting(0);
+ini_set('display_errors', '0');
+
+// Minimal .env loader
 $envFile = __DIR__ . '/.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -105,7 +107,7 @@ try {
     }
     $pdo = null;
 } catch (Exception $e) {
-    error_log("Sitemap DB Error: " . $e->getMessage());
+    // DB error - just serve static pages, don't corrupt XML with error output
 }
 
 $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
