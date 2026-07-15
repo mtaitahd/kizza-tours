@@ -39,4 +39,4 @@ Disallow: /uploads/private/
 Disallow: /search
 
 # Sitemap
-Sitemap: <?php echo $baseUrl; ?>/sitemap.xml
+Sitemap: <?php echo $baseUrl; ?>/sitemap.php
