@@ -343,6 +343,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1rem;
             font-weight: normal;
         }
+        .otp-boxes {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .otp-box {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            color: #D4AF37;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .otp-box:focus {
+            background: rgba(255,255,255,0.12);
+            border-color: #D4AF37;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
+        }
+        .otp-box.filled {
+            border-color: #D4AF37;
+            background: rgba(212,175,55,0.1);
+        }
         .resend-link {
             color: var(--secondary);
             cursor: pointer;
@@ -385,20 +412,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST">
+                <form method="POST" id="otpForm">
                     <?php csrf_field(); ?>
                     <input type="hidden" name="login_step" value="otp">
                     <input type="hidden" name="otp_email_display" value="<?php echo htmlspecialchars($otpEmail); ?>">
+                    <input type="hidden" name="otp_code" id="otpHidden">
                     <div class="mb-3">
                         <label class="form-label">Enter 6-Digit Code</label>
-                        <input type="text" class="form-control otp-input" name="otp_code" placeholder="Enter code"
-                               maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code"
-                               required autofocus>
+                        <div class="otp-boxes" id="otpBoxes">
+                            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" autofocus>
+                            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                        </div>
                     </div>
                     <div class="mb-3 text-center">
                         <small style="color: rgba(255,255,255,0.4);">Code expires in 5 minutes</small>
                     </div>
-                    <button type="submit" class="btn btn-login mb-3">
+                    <button type="submit" class="btn btn-login mb-3" id="otpSubmitBtn">
                         <i class="fas fa-check-circle me-2"></i> Verify & Login
                     </button>
                 </form>
@@ -450,6 +483,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         fetch('send-otp-email', { method: 'POST' });
+
+        var boxes = document.querySelectorAll('.otp-box');
+        var hidden = document.getElementById('otpHidden');
+        var form = document.getElementById('otpForm');
+
+        if (boxes.length === 0) return;
+
+        boxes[0].focus();
+
+        boxes.forEach(function(box, i) {
+            // Only allow digits
+            box.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value.length === 1) {
+                    this.classList.add('filled');
+                    if (i < boxes.length - 1) {
+                        boxes[i + 1].focus();
+                    }
+                }
+                updateHidden();
+            });
+
+            // Backspace moves to previous box
+            box.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace') {
+                    if (this.value === '' && i > 0) {
+                        boxes[i - 1].focus();
+                        boxes[i - 1].value = '';
+                        boxes[i - 1].classList.remove('filled');
+                    } else {
+                        this.value = '';
+                        this.classList.remove('filled');
+                    }
+                    updateHidden();
+                    e.preventDefault();
+                }
+                // Enter submits form
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    var code = getCode();
+                    if (code.length === 6) form.submit();
+                }
+            });
+
+            // Handle paste
+            box.addEventListener('paste', function(e) {
+                e.preventDefault();
+                var paste = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                if (paste.length >= 6) {
+                    for (var j = 0; j < 6 && j < paste.length; j++) {
+                        boxes[j].value = paste[j];
+                        boxes[j].classList.add('filled');
+                    }
+                    boxes[5].focus();
+                    updateHidden();
+                }
+            });
+
+            // Select all on focus
+            box.addEventListener('focus', function() {
+                this.select();
+            });
+        });
+
+        function getCode() {
+            var code = '';
+            boxes.forEach(function(b) { code += b.value; });
+            return code;
+        }
+
+        function updateHidden() {
+            hidden.value = getCode();
+        }
+
+        // Auto-submit when all 6 digits entered
+        form.addEventListener('submit', function(e) {
+            hidden.value = getCode();
+            if (hidden.value.length < 6) {
+                e.preventDefault();
+            }
+        });
     });
     </script>
 </body>
