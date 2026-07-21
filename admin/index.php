@@ -2,6 +2,7 @@
 // KIZZA TOURS & SAFARIS - Admin Login with OTP
 require_once '../includes/config.php';
 require_once '../includes/db.php';
+require_once '../includes/mail.php';
 session_start();
 
 if (isset($_SESSION['admin_id'])) {
@@ -23,17 +24,18 @@ try {
         otp_code VARCHAR(6) NOT NULL,
         expires_at DATETIME NOT NULL,
         used TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_lookup (admin_id, otp_code, used, expires_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 } catch (Exception $e) {
-    error_log("OTP table creation failed: " . $e->getMessage());
+    error_log("OTP table error: " . $e->getMessage());
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $db = db();
 
-    // STEP 1: Username + Password verification
+    // STEP 1: Username + Password
     if (isset($_POST['login_step']) && $_POST['login_step'] === 'credentials') {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -46,22 +48,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
 
                 if ($admin && password_verify($password, $admin['password'])) {
-                    // Generate 6-digit OTP
                     $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
                     $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
-                    // Save OTP to database
-                    $db->query(
-                        "INSERT INTO admin_otp (admin_id, otp_code, expires_at) VALUES (?, ?, ?)",
-                        [$admin['id'], $otp, $expires]
-                    );
+                    // Save OTP to DB
+                    try {
+                        $db->query(
+                            "INSERT INTO admin_otp (admin_id, otp_code, expires_at) VALUES (?, ?, ?)",
+                            [$admin['id'], $otp, $expires]
+                        );
+                    } catch (Exception $e) {
+                        error_log("OTP insert error: " . $e->getMessage());
+                    }
 
-                    // Store pending admin ID in session (not logged in yet)
+                    // Store in session
                     $_SESSION['otp_admin_id'] = $admin['id'];
                     $_SESSION['otp_admin_name'] = $admin['full_name'];
                     $_SESSION['otp_sent_at'] = time();
+                    $_SESSION['otp_code'] = $otp;
 
-                    // Mask email for display: j***n@g***l.com
+                    // Mask email
                     $emailParts = explode('@', $admin['email']);
                     $masked = substr($emailParts[0], 0, 2) . str_repeat('*', max(strlen($emailParts[0]) - 2, 3));
                     if (isset($emailParts[1])) {
@@ -72,11 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $otpEmail = $masked;
 
-                    // Store OTP in session for verification
-                    $_SESSION['otp_backup_code'] = $otp;
-                    $_SESSION['otp_backup_email'] = $admin['email'];
-
-                    // Try to send email in background (don't block login)
+                    // Send OTP via email
                     $otpBody = "
                     <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
                         <div style='text-align: center; padding: 20px 0;'>
@@ -91,11 +93,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
 
-                    // Store OTP info for display
-                    $_SESSION['otp_code'] = $otp;
-                    $_SESSION['otp_display'] = true;
+                    $mailSent = sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
 
-                    $otpSent = true;
+                    if ($mailSent) {
+                        $otpSent = true;
+                    } else {
+                        $error = 'Failed to send verification email. Please check your email settings or try again.';
+                        error_log("OTP email failed to send to: " . $admin['email']);
+                    }
                 } else {
                     $error = 'Invalid username or password';
                 }
@@ -108,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // STEP 2: OTP verification
+    // STEP 2: OTP Verification
     if (isset($_POST['login_step']) && $_POST['login_step'] === 'otp') {
         $otpInput = trim($_POST['otp_code'] ?? '');
         $adminId = intval($_SESSION['otp_admin_id'] ?? 0);
@@ -117,34 +122,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $otpError = 'Please enter the verification code';
             $otpSent = true;
             $otpEmail = $_POST['otp_email_display'] ?? '';
+        } elseif (strlen($otpInput) !== 6 || !ctype_digit($otpInput)) {
+            $otpError = 'Code must be exactly 6 digits';
+            $otpSent = true;
+            $otpEmail = $_POST['otp_email_display'] ?? '';
         } elseif (!$adminId) {
             $error = 'Session expired. Please login again.';
         } else {
             try {
-                // Find valid OTP (from DB or backup session)
-                $otpRecord = $db->fetchOne(
-                    "SELECT * FROM admin_otp WHERE admin_id = ? AND otp_code = ? AND used = 0 AND expires_at > NOW() ORDER BY id DESC LIMIT 1",
-                    [$adminId, $otpInput]
-                );
-
-                // Also check session backup if DB fails
-                $backupValid = (
-                    !empty($_SESSION['otp_backup_code']) &&
-                    $_SESSION['otp_backup_code'] === $otpInput &&
+                // Check session backup code
+                $sessionValid = (
+                    !empty($_SESSION['otp_code']) &&
+                    hash_equals($_SESSION['otp_code'], $otpInput) &&
                     (time() - intval($_SESSION['otp_sent_at'] ?? 0)) < 300
                 );
 
-                if ($otpRecord || $backupValid) {
-                    // Mark OTP as used (if DB record exists)
+                // Check DB code
+                $dbValid = false;
+                try {
+                    $otpRecord = $db->fetchOne(
+                        "SELECT id FROM admin_otp WHERE admin_id = ? AND otp_code = ? AND used = 0 AND expires_at > NOW() ORDER BY id DESC LIMIT 1",
+                        [$adminId, $otpInput]
+                    );
                     if ($otpRecord) {
                         $db->query("UPDATE admin_otp SET used = 1 WHERE id = ?", [$otpRecord['id']]);
+                        $dbValid = true;
                     }
+                } catch (Exception $e) {
+                    error_log("OTP DB check error: " . $e->getMessage());
+                }
 
-                    // Get admin details
+                if ($sessionValid || $dbValid) {
                     $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
 
-                    // Clean up old OTPs
-                    $db->query("DELETE FROM admin_otp WHERE admin_id = ? AND (expires_at < NOW() OR used = 1)", [$adminId]);
+                    // Clean up OTPs
+                    try {
+                        $db->query("DELETE FROM admin_otp WHERE admin_id = ? AND (expires_at < NOW() OR used = 1)", [$adminId]);
+                    } catch (Exception $e) {}
 
                     // Complete login
                     $_SESSION['admin_id'] = $admin['id'];
@@ -152,11 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['admin_role'] = $admin['role'];
                     $_SESSION['admin_image'] = $admin['profile_image'] ?? null;
 
-                    // Update last login
                     $db->query("UPDATE admin_users SET last_login = NOW() WHERE id = ?", [$admin['id']]);
 
                     // Clean up OTP session
-                    unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_backup_code'], $_SESSION['otp_backup_email']);
+                    unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_code']);
 
                     header('Location: dashboard');
                     exit;
@@ -190,19 +203,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
                 if ($admin) {
                     $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+                    $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
-                    // Invalidate old OTPs
-                    $db->query("UPDATE admin_otp SET used = 1 WHERE admin_id = ? AND used = 0", [$adminId]);
-
-                    // Save new OTP
-                    $db->query(
-                        "INSERT INTO admin_otp (admin_id, otp_code, expires_at) VALUES (?, ?, ?)",
-                        [$adminId, $otp, date('Y-m-d H:i:s', strtotime('+5 minutes'))]
-                    );
+                    try {
+                        $db->query("UPDATE admin_otp SET used = 1 WHERE admin_id = ? AND used = 0", [$adminId]);
+                        $db->query("INSERT INTO admin_otp (admin_id, otp_code, expires_at) VALUES (?, ?, ?)", [$adminId, $otp, $expires]);
+                    } catch (Exception $e) {
+                        error_log("OTP resend DB error: " . $e->getMessage());
+                    }
 
                     $_SESSION['otp_sent_at'] = time();
-                    $_SESSION['otp_backup_code'] = $otp;
-                    $_SESSION['otp_display'] = true;
+                    $_SESSION['otp_code'] = $otp;
 
                     $emailParts = explode('@', $admin['email']);
                     $masked = substr($emailParts[0], 0, 2) . str_repeat('*', max(strlen($emailParts[0]) - 2, 3));
@@ -213,7 +224,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $masked .= '@' . $maskedDomain;
                     }
                     $otpEmail = $masked;
-                    $otpSent = true;
+
+                    $otpBody = "
+                    <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
+                        <div style='text-align: center; padding: 20px 0;'>
+                            <h2 style='color: #0A2540; margin: 0;'>Kizza Tours & Safaris</h2>
+                            <p style='color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;'>Admin Login Verification</p>
+                        </div>
+                        <div style='background: #f8f9fa; border-radius: 12px; padding: 30px; text-align: center;'>
+                            <p style='color: #333; margin-bottom: 10px;'>Your new verification code is:</p>
+                            <div style='font-size: 36px; font-weight: bold; color: #0A2540; letter-spacing: 8px; padding: 15px 0;'>" . $otp . "</div>
+                            <p style='color: #666; font-size: 13px; margin-top: 15px;'>This code expires in <strong>5 minutes</strong>.</p>
+                            <p style='color: #999; font-size: 12px; margin-top: 10px;'>If you didn't request this login, ignore this email.</p>
+                        </div>
+                    </div>";
+
+                    $mailSent = sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
+
+                    if ($mailSent) {
+                        $otpSent = true;
+                    } else {
+                        $otpError = 'Failed to resend email. Please try again.';
+                        $otpSent = true;
+                        $otpEmail = $masked;
+                    }
                 }
             } catch (Exception $e) {
                 $otpError = 'Failed to resend code. Please try again.';
@@ -254,10 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             max-width: 420px;
             margin: 0 auto;
         }
-        .login-logo {
-            text-align: center;
-            margin-bottom: 0.5rem;
-        }
+        .login-logo { text-align: center; margin-bottom: 0.5rem; }
         .login-title {
             text-align: center;
             color: rgba(255,255,255,0.6);
@@ -335,17 +366,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: none;
             font-size: 0.85rem;
         }
-        .resend-link:hover {
-            color: #C9A227;
-        }
+        .resend-link:hover { color: #C9A227; }
         .back-link {
             color: rgba(255,255,255,0.5);
             text-decoration: none;
             font-size: 0.85rem;
         }
-        .back-link:hover {
-            color: rgba(255,255,255,0.8);
-        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
     </style>
 </head>
 <body>
@@ -363,20 +390,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <?php if ($otpSent): ?>
-                <!-- STEP 2: OTP Verification -->
+                <!-- STEP 2: OTP Verification Form -->
                 <div class="success-msg mb-4">
-                    <i class="fas fa-paper-plane me-2"></i>Verification code sent to<br>
+                    <i class="fas fa-shield-alt me-2"></i>Verification code sent to<br>
                     <strong><?php echo htmlspecialchars($otpEmail); ?></strong>
                 </div>
-
-                <?php if (!empty($_SESSION['otp_display'])): ?>
-                    <div style="background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.4); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 1rem;">
-                        <small style="color: rgba(255,255,255,0.6);">Your verification code:</small>
-                        <div style="font-size: 2.5rem; font-weight: bold; color: #D4AF37; letter-spacing: 10px; margin-top: 5px;"><?php echo htmlspecialchars($_SESSION['otp_backup_code']); ?></div>
-                        <small style="color: rgba(255,255,255,0.4);">Expires in 5 minutes</small>
-                    </div>
-                    <?php unset($_SESSION['otp_display']); ?>
-                <?php endif; ?>
 
                 <?php if ($otpError): ?>
                     <div class="error-msg mb-4">
@@ -390,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="hidden" name="otp_email_display" value="<?php echo htmlspecialchars($otpEmail); ?>">
                     <div class="mb-3">
                         <label class="form-label">Enter 6-Digit Code</label>
-                        <input type="text" class="form-control otp-input" name="otp_code" placeholder="000000"
+                        <input type="password" class="form-control otp-input" name="otp_code" placeholder="Enter code"
                                maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code"
                                required autofocus>
                     </div>
@@ -406,6 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <form method="POST" style="display:inline;">
                         <?php csrf_field(); ?>
                         <input type="hidden" name="login_step" value="resend">
+                        <input type="hidden" name="otp_email_display" value="<?php echo htmlspecialchars($otpEmail); ?>">
                         <button type="submit" class="resend-link border-0 bg-transparent">
                             <i class="fas fa-redo me-1"></i>Resend Code
                         </button>
@@ -413,14 +432,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span style="color: rgba(255,255,255,0.2); margin: 0 8px;">|</span>
                     <form method="POST" style="display:inline;">
                         <?php csrf_field(); ?>
-                        <button type="submit" class="back-link border-0 bg-transparent" style="font-size:0.85rem;">
+                        <button type="submit" class="back-link border-0 bg-transparent">
                             <i class="fas fa-arrow-left me-1"></i>Back to Login
                         </button>
                     </form>
                 </div>
 
             <?php else: ?>
-                <!-- STEP 1: Credentials -->
+                <!-- STEP 1: Credentials Form -->
                 <form method="POST">
                     <?php csrf_field(); ?>
                     <input type="hidden" name="login_step" value="credentials">
