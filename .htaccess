@@ -69,6 +69,11 @@ RewriteRule ^([^/]+)/?$ $1.php [L]
     Deny from all
 </FilesMatch>
 
+# Block access to cache directory (contains sensitive settings like SMTP passwords)
+<IfModule mod_rewrite.c>
+    RewriteRule ^cache/ - [F,L]
+</IfModule>
+
 # Block directory listing
 Options -Indexes
 
