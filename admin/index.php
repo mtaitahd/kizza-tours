@@ -80,6 +80,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $otpSent = true;
 
+                    // Build email body for background sending
+                    $otpBody = "
+                    <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
+                        <div style='text-align: center; padding: 20px 0;'>
+                            <h2 style='color: #0A2540; margin: 0;'>Kizza Tours & Safaris</h2>
+                            <p style='color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;'>Admin Login Verification</p>
+                        </div>
+                        <div style='background: #f8f9fa; border-radius: 12px; padding: 30px; text-align: center;'>
+                            <p style='color: #333; margin-bottom: 10px;'>Your one-time verification code is:</p>
+                            <div style='font-size: 36px; font-weight: bold; color: #0A2540; letter-spacing: 8px; padding: 15px 0;'>" . $otp . "</div>
+                            <p style='color: #666; font-size: 13px; margin-top: 15px;'>This code expires in <strong>5 minutes</strong>.</p>
+                            <p style='color: #999; font-size: 12px; margin-top: 10px;'>If you didn't request this login, ignore this email.</p>
+                        </div>
+                    </div>";
+
                     // Store email info for background sending
                     $_SESSION['otp_pending_email'] = $admin['email'];
                     $_SESSION['otp_pending_otp'] = $otp;
@@ -222,15 +237,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
 
-                    $mailSent = sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
-
-                    if ($mailSent) {
-                        $otpSent = true;
-                    } else {
-                        $otpError = 'Failed to resend email. Please try again.';
-                        $otpSent = true;
-                        $otpEmail = $masked;
-                    }
+                    // Store for background sending via AJAX
+                    $_SESSION['otp_pending_email'] = $admin['email'];
+                    $_SESSION['otp_pending_otp'] = $otp;
+                    $_SESSION['otp_pending_body'] = $otpBody;
+                    $otpSent = true;
                 }
             } catch (Exception $e) {
                 $otpError = 'Failed to resend code. Please try again.';
