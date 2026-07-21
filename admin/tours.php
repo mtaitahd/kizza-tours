@@ -30,6 +30,7 @@ function ensureToursTable() {
 ensureToursTable();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
     
     if (in_array($action, ['add', 'edit'])) {
@@ -298,6 +299,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this tour?');">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="action" value="delete">
                                                         <input type="hidden" name="tour_id" value="<?php echo $tour['id']; ?>">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -336,6 +338,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="POST" enctype="multipart/form-data">
+                    <?php csrf_field(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="action" id="tourAction" value="add">
                         <input type="hidden" name="tour_id" id="tourId" value="0">

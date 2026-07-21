@@ -18,6 +18,7 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
 
 // Handle upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verify_csrf();
     if ($_POST['action'] === 'upload' && isset($_FILES['image'])) {
         $title = trim($_POST['title'] ?? '');
         $category = trim($_POST['category'] ?? '');
@@ -189,6 +190,7 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
                                     <span style="color: #0A2540; font-size: 0.7rem;"><?php echo htmlspecialchars(ucfirst($item['category'] ?: 'general')); ?></span>
                                 </div>
                                 <form method="POST" onsubmit="return confirm('Delete this image?');">
+                                    <?php csrf_field(); ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $item['id']; ?>">
                                     <button type="submit" class="delete-btn"><i class="fas fa-times"></i></button>
@@ -219,6 +221,7 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="POST" enctype="multipart/form-data">
+                    <?php csrf_field(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="action" value="upload">
                         <div class="form-group">

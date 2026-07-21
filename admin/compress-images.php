@@ -47,6 +47,7 @@ foreach ($scanDirs as $dir) {
 // Handle replace
 $replaceMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'replace') {
+    verify_csrf();
     $relPath = trim($_POST['rel_path'] ?? '');
     $absPath = realpath(__DIR__ . '/../' . $relPath);
     $baseDir = realpath(__DIR__ . '/..');
@@ -314,6 +315,7 @@ $totalImages = count($allImageFiles);
                         <div class="card-body">
                             <p class="text-muted">Compresses all images (<strong>70% quality</strong>, max width <strong>1920px</strong>) across <code>uploads/</code>, <code>assets/images/</code>, and <code>templates/assets/img/</code>.</p>
                             <form method="post" onsubmit="document.getElementById('compressSubmitBtn').disabled = true; document.getElementById('compressSubmitBtn').innerHTML = '<i class=\'fas fa-spinner fa-spin mr-2\'></i>Processing...';">
+                                <?php csrf_field(); ?>
                                 <input type="hidden" name="compress" value="1">
                                 <button type="submit" id="compressSubmitBtn" class="btn btn-primary">
                                     <i class="fas fa-compress-alt mr-2"></i>Compress All Images
@@ -378,6 +380,7 @@ $totalImages = count($allImageFiles);
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="post" enctype="multipart/form-data">
+                    <?php csrf_field(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="action" value="replace">
                         <input type="hidden" name="rel_path" id="replacePath">

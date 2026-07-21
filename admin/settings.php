@@ -37,6 +37,8 @@ $fileFields = [
 ];
 
 if (isset($_POST['ajax_upload']) && isset($_POST['field_key'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); die('Method not allowed'); }
+    verify_csrf();
     ob_clean();
     header('Content-Type: application/json');
     try {
@@ -67,6 +69,7 @@ if (isset($_POST['ajax_upload']) && isset($_POST['field_key'])) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     // Text settings
     $textFields = [
         'site_name', 'site_tagline', 'site_email', 'site_phone', 
@@ -265,6 +268,7 @@ foreach ($textSettings as $key) {
                     <div class="card mb-4">
                         <div class="card-body">
                             <form method="POST" enctype="multipart/form-data">
+                                <?php csrf_field(); ?>
                                 <!-- Tabs -->
                                 <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
                                     <li class="nav-item">
@@ -931,6 +935,7 @@ foreach ($textSettings as $key) {
             formData.append('ajax_upload', '1');
             formData.append('field_key', key);
             formData.append(key, file);
+            formData.append('csrf_token', '<?php echo $_SESSION['csrf_token'] ?? ''; ?>');
             
             $.ajax({
                 url: '',

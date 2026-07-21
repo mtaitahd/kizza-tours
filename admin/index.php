@@ -12,6 +12,7 @@ if (isset($_SESSION['admin_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
@@ -152,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
             
             <form method="POST">
+                <?php csrf_field(); ?>
                 <div class="mb-3">
                     <label class="form-label">Username or Email</label>
                     <input type="text" class="form-control" name="username" placeholder="Enter username" required autofocus>

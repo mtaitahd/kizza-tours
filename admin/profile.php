@@ -21,6 +21,7 @@ $flash = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'update_profile') {
@@ -249,6 +250,7 @@ $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
                                     <hr>
                                     <form method="POST" enctype="multipart/form-data">
                                         <input type="hidden" name="action" value="upload_image">
+                                        <?php csrf_field(); ?>
                                         <div class="custom-file mb-2 text-left">
                                             <input type="file" class="custom-file-input" id="profile_image" name="profile_image" accept="image/*">
                                             <label class="custom-file-label" for="profile_image">Choose image</label>
@@ -258,6 +260,7 @@ $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
                                     <?php if ($admin['profile_image']): ?>
                                     <form method="POST" class="mt-2">
                                         <input type="hidden" name="action" value="remove_image">
+                                        <?php csrf_field(); ?>
                                         <button type="submit" class="btn btn-outline-danger btn-sm btn-block">Remove Photo</button>
                                     </form>
                                     <?php endif; ?>
@@ -272,6 +275,7 @@ $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
                                 <div class="card-body">
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_profile">
+                                        <?php csrf_field(); ?>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
@@ -306,6 +310,7 @@ $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
                                 <div class="card-body">
                                     <form method="POST">
                                         <input type="hidden" name="action" value="change_password">
+                                        <?php csrf_field(); ?>
                                         <div class="form-group">
                                             <label class="profile-label">Current Password</label>
                                             <input type="password" class="form-control" name="current_password" required>

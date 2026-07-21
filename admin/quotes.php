@@ -72,6 +72,7 @@ function recalcQuote(&$db, $quoteId) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verify_csrf();
     if ($_POST['action'] === 'save_quote') {
         $sourceType = $_POST['source_type'] ?? '';
         $sourceId = intval($_POST['source_id'] ?? 0);
@@ -429,6 +430,7 @@ if (!empty($quoteIds)) {
                                                     <?php if (in_array($q['status'], ['confirmed', 'sent'])): ?>
                                                         <?php if (empty($q['pdf_path'])): ?>
                                                             <form method="POST" enctype="multipart/form-data" style="display:inline;">
+                                                                <?php csrf_field(); ?>
                                                                 <input type="hidden" name="action" value="upload_pdf">
                                                                 <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                                                 <input type="file" name="pdf_file" accept=".pdf" style="display:none;" id="pdfUpload_<?php echo $q['id']; ?>" onchange="this.form.submit()">
@@ -437,6 +439,7 @@ if (!empty($quoteIds)) {
                                                         <?php else: ?>
                                                             <a href="../<?php echo $q['pdf_path']; ?>" class="btn btn-outline-primary" target="_blank" title="View PDF"><i class="fas fa-file-pdf"></i></a>
                                                             <form method="POST" enctype="multipart/form-data" style="display:inline;">
+                                                                <?php csrf_field(); ?>
                                                                 <input type="hidden" name="action" value="upload_pdf">
                                                                 <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                                                 <input type="file" name="pdf_file" accept=".pdf" style="display:none;" id="pdfUpload_<?php echo $q['id']; ?>" onchange="this.form.submit()">
@@ -445,6 +448,7 @@ if (!empty($quoteIds)) {
                                                             <button class="btn btn-outline-info" title="Edit Subject" onclick="editSubject(<?php echo $q['id']; ?>, '<?php echo htmlspecialchars($q['email_subject'] ?? '', ENT_QUOTES); ?>')"><i class="fas fa-pen"></i></button>
                                                         <?php endif; ?>
                                                         <form method="POST" style="display:inline;">
+                                                            <?php csrf_field(); ?>
                                                             <input type="hidden" name="action" value="send_quote_email">
                                                             <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                                             <button type="submit" class="btn btn-outline-success" title="Send Email"><i class="fas fa-envelope"></i></button>
@@ -452,6 +456,7 @@ if (!empty($quoteIds)) {
                                                     <?php endif; ?>
                                                     <?php if ($q['status'] === 'draft' || $q['status'] === 'prepared'): ?>
                                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this quote?');">
+                                                            <?php csrf_field(); ?>
                                                             <input type="hidden" name="action" value="delete_quote">
                                                             <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                                             <button type="submit" class="btn btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
@@ -512,12 +517,14 @@ if (!empty($quoteIds)) {
                                     <button type="button" class="btn btn-outline-primary" onclick="openQuoteEditor(<?php echo $q['id']; ?>)"><i class="fas fa-edit"></i> Edit</button>
                                     <?php if ($q['status'] === 'draft'): ?>
                                         <form method="POST" style="display:inline;">
+                                            <?php csrf_field(); ?>
                                             <input type="hidden" name="action" value="prepare_quote">
                                             <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                             <button type="submit" class="btn btn-info"><i class="fas fa-check"></i> Mark Prepared</button>
                                         </form>
                                     <?php elseif ($q['status'] === 'prepared'): ?>
                                         <form method="POST" style="display:inline;">
+                                            <?php csrf_field(); ?>
                                             <input type="hidden" name="action" value="confirm_quote">
                                             <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                             <button type="submit" class="btn btn-success"><i class="fas fa-check-double"></i> Confirm Quote</button>
@@ -526,6 +533,7 @@ if (!empty($quoteIds)) {
                                         <button class="btn btn-outline-info" onclick="editSubject(<?php echo $q['id']; ?>, '<?php echo htmlspecialchars($q['email_subject'] ?? '', ENT_QUOTES); ?>')"><i class="fas fa-pen"></i> Subject</button>
                                         <?php if (empty($q['pdf_path'])): ?>
                                             <form method="POST" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:4px;">
+                                                <?php csrf_field(); ?>
                                                 <input type="hidden" name="action" value="upload_pdf">
                                                 <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                                 <input type="file" name="pdf_file" accept=".pdf" required style="font-size:0.8rem;max-width:130px;" onchange="this.form.submit()">
@@ -533,12 +541,14 @@ if (!empty($quoteIds)) {
                                         <?php else: ?>
                                             <a href="../<?php echo $q['pdf_path']; ?>" class="btn btn-outline-primary" target="_blank"><i class="fas fa-file-pdf"></i> View PDF</a>
                                             <form method="POST" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:4px;">
+                                                <?php csrf_field(); ?>
                                                 <input type="hidden" name="action" value="upload_pdf">
                                                 <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                                 <input type="file" name="pdf_file" accept=".pdf" style="font-size:0.8rem;max-width:130px;" onchange="this.form.submit()">
                                             </form>
                                         <?php endif; ?>
                                         <form method="POST" style="display:inline;">
+                                            <?php csrf_field(); ?>
                                             <input type="hidden" name="action" value="send_quote_email">
                                             <input type="hidden" name="quote_id" value="<?php echo $q['id']; ?>">
                                             <button type="submit" class="btn btn-success"><i class="fas fa-envelope"></i> <?php echo $q['status'] === 'sent' ? 'Resend' : 'Send via'; ?> Email</button>
@@ -571,6 +581,7 @@ if (!empty($quoteIds)) {
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="POST" id="quoteForm">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="save_quote">
                     <input type="hidden" name="source_type" id="qSourceType" value="">
                     <input type="hidden" name="source_id" id="qSourceId" value="0">
@@ -654,6 +665,7 @@ if (!empty($quoteIds)) {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="POST">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="update_subject">
                     <input type="hidden" name="quote_id" id="subjQuoteId" value="0">
                     <div class="modal-header">

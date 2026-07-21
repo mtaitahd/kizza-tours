@@ -35,6 +35,7 @@ function ensurePagesTable() {
 ensurePagesTable();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
 
     if (in_array($action, ['add', 'edit'])) {
@@ -252,6 +253,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                     <div>
                         <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#pageModal" onclick="openAdd()"><i class="fas fa-plus mr-1"></i> Add Page</button>
                         <form method="POST" action="" class="d-inline">
+                            <?php csrf_field(); ?>
                             <input type="hidden" name="action" value="generate_sitemap">
                             <button type="submit" class="btn btn-primary btn-sm ml-1"><i class="fas fa-sitemap mr-1"></i> Generate Sitemap</button>
                         </form>
@@ -309,6 +311,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                                             <a href="../<?= htmlspecialchars($p['slug']) ?>" target="_blank" class="btn btn-secondary btn-sm" title="Preview"><i class="fas fa-eye"></i></a>
                                             <button class="btn btn-info btn-sm" onclick='editPage(<?= htmlspecialchars(json_encode($p), ENT_QUOTES) ?>)'><i class="fas fa-edit"></i></button>
                                             <form method="POST" action="" class="d-inline" onsubmit="return confirm('Delete this page?');">
+                                                <?php csrf_field(); ?>
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="page_id" value="<?= $p['id'] ?>">
                                                 <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
@@ -332,6 +335,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <form method="POST" action="" enctype="multipart/form-data">
+                <?php csrf_field(); ?>
                 <input type="hidden" name="action" id="pageAction" value="add">
                 <input type="hidden" name="page_id" id="pageId" value="0">
                 <div class="modal-header">

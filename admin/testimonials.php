@@ -17,6 +17,7 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
     
     if (in_array($action, ['add', 'edit'])) {
@@ -237,7 +238,8 @@ $testimonials = $db->fetchAll("SELECT * FROM testimonials ORDER BY created_at DE
                                                     <button class="btn btn-sm btn-outline-secondary mr-1" onclick='editTestimonial(<?php echo json_encode($t); ?>)'>
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete?');">
+                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete?');">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="action" value="delete">
                                                         <input type="hidden" name="id" value="<?php echo $t['id']; ?>">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -276,6 +278,7 @@ $testimonials = $db->fetchAll("SELECT * FROM testimonials ORDER BY created_at DE
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="POST" enctype="multipart/form-data">
+                    <?php csrf_field(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="action" id="testimonialAction" value="add">
                         <input type="hidden" name="id" id="testimonialId" value="0">

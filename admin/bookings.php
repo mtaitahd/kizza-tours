@@ -78,6 +78,7 @@ $quotesTablesOk = ensureQuoteTables();
 
 // Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verify_csrf();
     $bookingId = intval($_POST['booking_id'] ?? 0);
     if ($_POST['action'] === 'update_status') {
         $status = trim($_POST['status'] ?? 'pending');
@@ -539,6 +540,7 @@ if ($quotesTablesOk) {
                                     <i class="fas fa-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
                                 </button>
                                 <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to DELETE ALL bookings? This cannot be undone.');">
+                                    <?php csrf_field(); ?>
                                     <input type="hidden" name="action" value="delete_all">
                                     <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Delete All</button>
                                 </form>
@@ -601,12 +603,14 @@ if ($quotesTablesOk) {
                                                     </button>
                                                     <?php if ($b['status'] === 'pending'): ?>
                                                     <form method="POST" style="display:inline;">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="confirmed">
                                                         <button type="submit" class="btn btn-outline-success" title="Confirm"><i class="fas fa-check"></i></button>
                                                     </form>
                                                     <form method="POST" style="display:inline;">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="cancelled">
@@ -614,12 +618,14 @@ if ($quotesTablesOk) {
                                                     </form>
                                                     <?php elseif ($b['status'] === 'confirmed'): ?>
                                                     <form method="POST" style="display:inline;">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="completed">
                                                         <button type="submit" class="btn btn-outline-success" title="Complete"><i class="fas fa-check-double"></i></button>
                                                     </form>
                                                     <form method="POST" style="display:inline;">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="cancelled">
@@ -627,6 +633,7 @@ if ($quotesTablesOk) {
                                                     </form>
                                                     <?php elseif (in_array($b['status'], ['completed', 'cancelled'])): ?>
                                                     <form method="POST" style="display:inline;">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                         <input type="hidden" name="action" value="update_status">
                                                         <input type="hidden" name="status" value="pending">
@@ -634,19 +641,21 @@ if ($quotesTablesOk) {
                                                     </form>
                                                     <?php endif; ?>
                                                     <?php if ($b['payment_status'] !== 'paid'): ?>
-                                                    <form method="POST" style="display:inline;">
-                                                        <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
-                                                        <input type="hidden" name="action" value="update_payment">
-                                                        <input type="hidden" name="payment_status" value="paid">
-                                                        <button type="submit" class="btn btn-outline-primary" title="Mark as Paid"><i class="fas fa-credit-card"></i> Pay</button>
-                                                    </form>
+                                                <form method="POST" style="display:inline;">
+                                                    <?php csrf_field(); ?>
+                                                    <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                                    <input type="hidden" name="action" value="update_payment">
+                                                    <input type="hidden" name="payment_status" value="paid">
+                                                    <button type="submit" class="btn btn-outline-primary" title="Mark as Paid"><i class="fas fa-credit-card"></i> Pay</button>
+                                                </form>
                                                     <?php else: ?>
-                                                    <form method="POST" style="display:inline;">
-                                                        <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
-                                                        <input type="hidden" name="action" value="update_payment">
-                                                        <input type="hidden" name="payment_status" value="unpaid">
-                                                        <button type="submit" class="btn btn-outline-warning" title="Mark as Unpaid"><i class="fas fa-undo"></i></button>
-                                                    </form>
+                                                <form method="POST" style="display:inline;">
+                                                    <?php csrf_field(); ?>
+                                                    <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                                    <input type="hidden" name="action" value="update_payment">
+                                                    <input type="hidden" name="payment_status" value="unpaid">
+                                                    <button type="submit" class="btn btn-outline-warning" title="Mark as Unpaid"><i class="fas fa-undo"></i></button>
+                                                </form>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -707,6 +716,7 @@ if ($quotesTablesOk) {
                                                 </span>
                                                 <?php if ($b['payment_status'] !== 'paid'): ?>
                                                 <form method="POST" style="display:inline;">
+                                                    <?php csrf_field(); ?>
                                                     <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                                                     <input type="hidden" name="action" value="update_payment">
                                                     <input type="hidden" name="payment_status" value="paid">
@@ -738,6 +748,7 @@ if ($quotesTablesOk) {
                                                     <span class="reply-admin"><?php echo htmlspecialchars($r['admin_name'] ?? 'Admin'); ?></span>
                                                     <span class="reply-date"><?php echo date('M d, Y \a\t h:i A', strtotime($r['created_at'])); ?></span>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this reply?');">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="action" value="delete_reply">
                                                         <input type="hidden" name="reply_id" value="<?php echo $r['id']; ?>">
                                                         <button type="submit" class="btn btn-sm btn-link text-danger p-0 ml-2" title="Delete reply"><i class="fas fa-trash-alt"></i></button>
@@ -757,6 +768,7 @@ if ($quotesTablesOk) {
                                             <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Send Quote</h6>
                                             <div class="quote-section">
                                                 <form method="POST" enctype="multipart/form-data" id="sendQuoteForm<?php echo $b['id']; ?>">
+                                                    <?php csrf_field(); ?>
                                                     <input type="hidden" name="action" value="send_quote_email">
                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id'] ?? 0; ?>">
                                                     <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
@@ -799,6 +811,7 @@ if ($quotesTablesOk) {
                                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                                 </div>
                                 <form method="POST">
+                                    <?php csrf_field(); ?>
                                     <div class="modal-body">
                                         <input type="hidden" name="action" value="send_booking_reply">
                                         <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
@@ -878,6 +891,7 @@ if ($quotesTablesOk) {
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="POST" id="bookingQuoteForm">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="save_quote">
                     <input type="hidden" name="booking_id" id="qBookingId" value="0">
                     <input type="hidden" name="quote_id" id="qQuoteId" value="0">
@@ -960,6 +974,7 @@ if ($quotesTablesOk) {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="POST">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="update_subject">
                     <input type="hidden" name="quote_id" id="subjQuoteId" value="0">
                     <div class="modal-header">
@@ -1162,7 +1177,7 @@ if ($quotesTablesOk) {
             if (!confirm('Delete ' + ids.length + ' selected booking(s)? This cannot be undone.')) return;
             var form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = '<input type="hidden" name="action" value="delete_selected">';
+            form.innerHTML = '<input type="hidden" name="csrf_token" value="<?php echo csrf_token(); ?>"><input type="hidden" name="action" value="delete_selected">';
             ids.forEach(function(id) {
                 form.innerHTML += '<input type="hidden" name="booking_ids[]" value="' + id + '">';
             });

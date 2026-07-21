@@ -74,6 +74,7 @@ function recalcQuote(&$db, $quoteId) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verify_csrf();
     $id = intval($_POST['id'] ?? 0);
 
     if ($_POST['action'] === 'mark_read') {
@@ -447,6 +448,7 @@ if ($quotesTablesOk) {
                                     <i class="fas fa-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
                                 </button>
                                 <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to DELETE ALL inquiries? This cannot be undone.');">
+                                    <?php csrf_field(); ?>
                                     <input type="hidden" name="action" value="delete_all">
                                     <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Delete All</button>
                                 </form>
@@ -500,11 +502,13 @@ if ($quotesTablesOk) {
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <form method="POST" style="display:inline;" class="mr-1">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="id" value="<?php echo $inq['id']; ?>">
                                                         <input type="hidden" name="action" value="mark_read">
                                                         <button type="submit" class="btn btn-sm btn-outline-info" title="Mark as read"><i class="fas fa-check"></i></button>
                                                     </form>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this inquiry?');">
+                                                        <?php csrf_field(); ?>
                                                         <input type="hidden" name="id" value="<?php echo $inq['id']; ?>">
                                                         <input type="hidden" name="action" value="delete">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -553,6 +557,7 @@ if ($quotesTablesOk) {
                                         <div class="col-md-6">
                                             <h6 class="text-primary"><i class="fas fa-reply mr-2"></i>Send Email Reply</h6>
                                             <form method="POST">
+                                                <?php csrf_field(); ?>
                                                 <input type="hidden" name="action" value="send_reply">
                                                 <input type="hidden" name="inq_id" value="<?php echo $inq['id']; ?>">
                                                 <div class="form-group">
@@ -582,6 +587,7 @@ if ($quotesTablesOk) {
                                             <h6 class="text-success"><i class="fas fa-file-invoice mr-2"></i>Send Quote</h6>
                                             <div class="quote-section">
                                                 <form method="POST" enctype="multipart/form-data" id="sendQuoteForm<?php echo $inq['id']; ?>">
+                                                    <?php csrf_field(); ?>
                                                     <input type="hidden" name="action" value="send_quote_email">
                                                     <input type="hidden" name="quote_id" value="<?php echo $quoteData['id'] ?? 0; ?>">
                                                     <input type="hidden" name="inquiry_id" value="<?php echo $inq['id']; ?>">
@@ -641,6 +647,7 @@ if ($quotesTablesOk) {
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form method="POST" id="quoteForm">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="save_quote">
                     <input type="hidden" name="inq_id" id="qInqId" value="0">
                     <input type="hidden" name="quote_id" id="qQuoteId" value="0">
@@ -723,6 +730,7 @@ if ($quotesTablesOk) {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="POST">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="update_subject">
                     <input type="hidden" name="quote_id" id="subjQuoteId" value="0">
                     <div class="modal-header">
@@ -935,7 +943,7 @@ if ($quotesTablesOk) {
             if (!confirm('Delete ' + ids.length + ' selected inquiry(ies)? This cannot be undone.')) return;
             var form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = '<input type="hidden" name="action" value="delete_selected">';
+            form.innerHTML = '<input type="hidden" name="csrf_token" value="<?php echo csrf_token(); ?>"><input type="hidden" name="action" value="delete_selected">';
             ids.forEach(function(id) {
                 form.innerHTML += '<input type="hidden" name="inquiry_ids[]" value="' + id + '">';
             });

@@ -28,6 +28,7 @@ try {
 
 // Regenerate static sitemap.xml (optional, for backward compat)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'regenerate_cache') {
         $ok = seoGenerateSitemap();
@@ -117,6 +118,7 @@ $sitemapUrl = SITE_URL . '/sitemap.xml';
                     <div>
                         <a href="<?= htmlspecialchars($sitemapUrl) ?>" target="_blank" class="btn btn-success btn-sm"><i class="fas fa-external-link-alt mr-1"></i> View Live Sitemap</a>
                         <form method="POST" action="" class="d-inline">
+                            <?php csrf_field(); ?>
                             <input type="hidden" name="action" value="regenerate_cache">
                             <button type="submit" class="btn btn-outline-primary btn-sm ml-1"><i class="fas fa-sync mr-1"></i> Regenerate Static Cache</button>
                         </form>
