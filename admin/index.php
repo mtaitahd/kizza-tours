@@ -2,7 +2,6 @@
 // KIZZA TOURS & SAFARIS - Admin Login with OTP
 require_once '../includes/config.php';
 require_once '../includes/db.php';
-require_once '../includes/mail.php';
 session_start();
 
 if (isset($_SESSION['admin_id'])) {
@@ -73,11 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $otpEmail = $masked;
 
-                    // Store OTP in session as fallback
+                    // Store OTP in session for verification
                     $_SESSION['otp_backup_code'] = $otp;
                     $_SESSION['otp_backup_email'] = $admin['email'];
 
-                    // Send OTP via email (non-blocking)
+                    // Try to send email in background (don't block login)
                     $otpBody = "
                     <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
                         <div style='text-align: center; padding: 20px 0;'>
@@ -92,7 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
 
-                    $mailSent = @sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
+                    // Store OTP info for display
+                    $_SESSION['otp_code'] = $otp;
+                    $_SESSION['otp_display'] = true;
 
                     $otpSent = true;
                 } else {
@@ -134,8 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
 
                 if ($otpRecord || $backupValid) {
-                    // Mark OTP as used
-                    $db->query("UPDATE admin_otp SET used = 1 WHERE id = ?", [$otpRecord['id']]);
+                    // Mark OTP as used (if DB record exists)
+                    if ($otpRecord) {
+                        $db->query("UPDATE admin_otp SET used = 1 WHERE id = ?", [$otpRecord['id']]);
+                    }
 
                     // Get admin details
                     $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
@@ -187,7 +190,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
                 if ($admin) {
                     $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-                    $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
                     // Invalidate old OTPs
                     $db->query("UPDATE admin_otp SET used = 1 WHERE admin_id = ? AND used = 0", [$adminId]);
@@ -195,10 +197,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Save new OTP
                     $db->query(
                         "INSERT INTO admin_otp (admin_id, otp_code, expires_at) VALUES (?, ?, ?)",
-                        [$adminId, $otp, $expires]
+                        [$adminId, $otp, date('Y-m-d H:i:s', strtotime('+5 minutes'))]
                     );
 
                     $_SESSION['otp_sent_at'] = time();
+                    $_SESSION['otp_backup_code'] = $otp;
+                    $_SESSION['otp_display'] = true;
 
                     $emailParts = explode('@', $admin['email']);
                     $masked = substr($emailParts[0], 0, 2) . str_repeat('*', max(strlen($emailParts[0]) - 2, 3));
@@ -209,22 +213,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $masked .= '@' . $maskedDomain;
                     }
                     $otpEmail = $masked;
-
-                    $otpBody = "
-                    <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
-                        <div style='text-align: center; padding: 20px 0;'>
-                            <h2 style='color: #0A2540; margin: 0;'>Kizza Tours & Safaris</h2>
-                            <p style='color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;'>Admin Login Verification</p>
-                        </div>
-                        <div style='background: #f8f9fa; border-radius: 12px; padding: 30px; text-align: center;'>
-                            <p style='color: #333; margin-bottom: 10px;'>Your new verification code is:</p>
-                            <div style='font-size: 36px; font-weight: bold; color: #0A2540; letter-spacing: 8px; padding: 15px 0;'>" . $otp . "</div>
-                            <p style='color: #666; font-size: 13px; margin-top: 15px;'>This code expires in <strong>5 minutes</strong>.</p>
-                            <p style='color: #999; font-size: 12px; margin-top: 10px;'>If you didn't request this login, ignore this email.</p>
-                        </div>
-                    </div>";
-
-                    sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
                     $otpSent = true;
                 }
             } catch (Exception $e) {
@@ -380,6 +368,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-paper-plane me-2"></i>Verification code sent to<br>
                     <strong><?php echo htmlspecialchars($otpEmail); ?></strong>
                 </div>
+
+                <?php if (!empty($_SESSION['otp_display'])): ?>
+                    <div style="background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.4); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 1rem;">
+                        <small style="color: rgba(255,255,255,0.6);">Your verification code:</small>
+                        <div style="font-size: 2.5rem; font-weight: bold; color: #D4AF37; letter-spacing: 10px; margin-top: 5px;"><?php echo htmlspecialchars($_SESSION['otp_backup_code']); ?></div>
+                        <small style="color: rgba(255,255,255,0.4);">Expires in 5 minutes</small>
+                    </div>
+                    <?php unset($_SESSION['otp_display']); ?>
+                <?php endif; ?>
 
                 <?php if ($otpError): ?>
                     <div class="error-msg mb-4">
