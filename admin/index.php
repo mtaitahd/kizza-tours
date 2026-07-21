@@ -73,7 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $otpEmail = $masked;
 
-                    // Send OTP via email
+                    // Store OTP in session as fallback
+                    $_SESSION['otp_backup_code'] = $otp;
+                    $_SESSION['otp_backup_email'] = $admin['email'];
+
+                    // Send OTP via email (non-blocking)
                     $otpBody = "
                     <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
                         <div style='text-align: center; padding: 20px 0;'>
@@ -88,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
 
-                    sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
+                    $mailSent = @sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
 
                     $otpSent = true;
                 } else {
@@ -116,13 +120,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Session expired. Please login again.';
         } else {
             try {
-                // Find valid OTP
+                // Find valid OTP (from DB or backup session)
                 $otpRecord = $db->fetchOne(
                     "SELECT * FROM admin_otp WHERE admin_id = ? AND otp_code = ? AND used = 0 AND expires_at > NOW() ORDER BY id DESC LIMIT 1",
                     [$adminId, $otpInput]
                 );
 
-                if ($otpRecord) {
+                // Also check session backup if DB fails
+                $backupValid = (
+                    !empty($_SESSION['otp_backup_code']) &&
+                    $_SESSION['otp_backup_code'] === $otpInput &&
+                    (time() - intval($_SESSION['otp_sent_at'] ?? 0)) < 300
+                );
+
+                if ($otpRecord || $backupValid) {
                     // Mark OTP as used
                     $db->query("UPDATE admin_otp SET used = 1 WHERE id = ?", [$otpRecord['id']]);
 
@@ -142,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $db->query("UPDATE admin_users SET last_login = NOW() WHERE id = ?", [$admin['id']]);
 
                     // Clean up OTP session
-                    unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at']);
+                    unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_backup_code'], $_SESSION['otp_backup_email']);
 
                     header('Location: dashboard');
                     exit;

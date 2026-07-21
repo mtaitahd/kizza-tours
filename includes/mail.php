@@ -60,6 +60,7 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
             $mail->Password   = $smtpPass;
             $mail->SMTPSecure = $smtpEnc === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = (int) $smtpPort;
+            $mail->Timeout    = 10;
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer'       => false,
