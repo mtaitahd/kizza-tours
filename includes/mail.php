@@ -47,7 +47,7 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
         $mail = new PHPMailer(true);
 
         $smtpHost = getSetting('smtp_host', '');
-        $smtpPort = getSetting('smtp_port', '587');
+        $smtpPort = (int)getSetting('smtp_port', '587');
         $smtpUser = getSetting('smtp_user', '');
         $smtpPass = getSetting('smtp_pass', '');
         $smtpEnc  = getSetting('smtp_encryption', 'tls');
@@ -58,9 +58,17 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
             $mail->SMTPAuth   = true;
             $mail->Username   = $smtpUser;
             $mail->Password   = $smtpPass;
-            $mail->SMTPSecure = $smtpEnc === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = (int) $smtpPort;
-            $mail->Timeout    = 10;
+            $mail->Port       = $smtpPort;
+            $mail->Timeout    = 15;
+            $mail->SMTPKeepAlive = false;
+
+            // Auto-detect encryption from port
+            if ($smtpPort === 465 || strtolower($smtpEnc) === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            } else {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            }
+
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer'       => false,
