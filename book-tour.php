@@ -42,17 +42,16 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
                                 <label class="form-label fw-semibold"><?php echo __('book_form_destination_label'); ?> <span style="color: red;">*</span></label>
                                 <select class="form-select form-select-lg" name="destination" required>
                                     <option value=""><?php echo __('book_form_destination_select'); ?></option>
-                                    <option value="serengeti"><?php echo __('book_form_dest_serengeti'); ?></option>
-                                    <option value="maasai-mara"><?php echo __('book_form_dest_maasai_mara'); ?></option>
-                                    <option value="ngorongoro"><?php echo __('book_form_dest_ngorongoro'); ?></option>
-                                    <option value="kilimanjaro"><?php echo __('book_form_dest_kilimanjaro'); ?></option>
-                                    <option value="zanzibar"><?php echo __('book_form_dest_zanzibar'); ?></option>
-                                    <option value="bwindi"><?php echo __('book_form_dest_bwindi'); ?></option>
-                                    <option value="volcanoes"><?php echo __('book_form_dest_volcanoes'); ?></option>
-                                    <option value="amboseli"><?php echo __('book_form_dest_amboseli'); ?></option>
-                                    <option value="tarangire"><?php echo __('book_form_dest_tarangire'); ?></option>
-                                    <option value="mount-kenya"><?php echo __('book_form_dest_mount_kenya'); ?></option>
-                                    <option value="multiple"><?php echo __('book_form_dest_multiple'); ?></option>
+                                    <?php
+                                    $bookingDests = getDestinations();
+                                    if (!empty($bookingDests)):
+                                        foreach ($bookingDests as $bd):
+                                    ?>
+                                    <option value="<?php echo htmlspecialchars($bd['slug'] ?? $bd['name']); ?>"><?php echo htmlspecialchars($bd['name']); ?></option>
+                                    <?php
+                                        endforeach;
+                                    endif;
+                                    ?>
                                 </select>
                             </div>
                             <div class="col-12">

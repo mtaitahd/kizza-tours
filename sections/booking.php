@@ -69,16 +69,16 @@ BOOKING MODAL - Premium Popup Form
                         <label class="form-label"><?php echo __('booking_label_destination'); ?> <span style="color: red;">*</span></label>
                         <select class="form-select" name="destination" required>
                             <option value=""><?php echo __('booking_opt_select_dest'); ?></option>
-                            <option value="serengeti"><?php echo __('booking_opt_serengeti'); ?></option>
-                            <option value="maasai-mara"><?php echo __('booking_opt_maasai_mara'); ?></option>
-                            <option value="ngorongoro"><?php echo __('booking_opt_ngorongoro'); ?></option>
-                            <option value="kilimanjaro"><?php echo __('booking_opt_kilimanjaro'); ?></option>
-                            <option value="zanzibar"><?php echo __('booking_opt_zanzibar'); ?></option>
-                            <option value="bwindi"><?php echo __('booking_opt_bwindi'); ?></option>
-                            <option value="volcanoes"><?php echo __('booking_opt_volcanoes'); ?></option>
-                            <option value="amboseli"><?php echo __('booking_opt_amboseli'); ?></option>
-                            <option value="tarangire"><?php echo __('booking_opt_tarangire'); ?></option>
-                            <option value="multiple"><?php echo __('booking_opt_multiple'); ?></option>
+                            <?php
+                            $bookingDests = getDestinations();
+                            if (!empty($bookingDests)):
+                                foreach ($bookingDests as $bd):
+                            ?>
+                            <option value="<?php echo htmlspecialchars($bd['slug'] ?? $bd['name']); ?>"><?php echo htmlspecialchars($bd['name']); ?></option>
+                            <?php
+                                endforeach;
+                            endif;
+                            ?>
                         </select>
                     </div>
                     <div class="col-12">
