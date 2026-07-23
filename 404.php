@@ -18,7 +18,7 @@ $pageSeo['robots'] = 'noindex, follow';
         </p>
         <div class="d-flex flex-wrap justify-content-center gap-3">
             <a href="<?php echo SITE_URL; ?>/" class="btn btn-premium btn-gold btn-lg"><i class="fas fa-home"></i> <?php echo __('404_home'); ?></a>
-            <a href="<?php echo SITE_URL; ?>/tanzania-safari" class="btn btn-premium btn-outline btn-lg"><i class="fas fa-safari"></i> <?php echo __('404_tours'); ?></a>
+            <a href="<?php echo SITE_URL; ?>/book-tour" class="btn btn-premium btn-outline btn-lg"><i class="fas fa-safari"></i> <?php echo __('404_tours'); ?></a>
             <a href="<?php echo SITE_URL; ?>/contact-us" class="btn btn-premium btn-outline btn-lg"><i class="fas fa-envelope"></i> <?php echo __('404_contact'); ?></a>
         </div>
     </div>

@@ -54,15 +54,7 @@ if (!file_exists(BASE_PATH . ltrim(parse_url($img, PHP_URL_PATH), '/'))) {
     $img = 'assets/images/placeholder.svg';
 }
 
-$countryPageMap = [
-    'tanzania' => 'tanzania-safari',
-    'kenya' => 'kenya-tanzania-safari',
-    'uganda' => 'uganda-tours',
-    'rwanda' => 'rwanda-gorilla-trekking',
-    'zanzibar' => 'zanzibar-holidays',
-    'burundi' => 'burundi-tours',
-];
-$countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
+$countryPage = '#destinations';
 $heroBgImg = getMediaUrl('hero_poster', '');
 $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%, rgba(13,46,74,0.7) 100%), url('{$heroBgImg}') center/cover no-repeat; padding: 140px 0 80px;" : "background: linear-gradient(135deg, var(--primary) 0%, #0D2E4A 100%); padding: 140px 0 80px;";
 ?>

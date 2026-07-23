@@ -241,7 +241,7 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
             <?php endif; ?>
         </div>
         <div class="text-center mt-4" data-aos="fade-up">
-            <a href="<?php echo SITE_URL; ?>/tanzania-safari" class="btn btn-premium btn-outline-gold"><i class="fas fa-safari"></i> <?php echo __('book_view_all'); ?></a>
+            <a href="<?php echo SITE_URL; ?>/" class="btn btn-premium btn-outline-gold"><i class="fas fa-safari"></i> <?php echo __('book_view_all'); ?></a>
         </div>
     </div>
 </section>

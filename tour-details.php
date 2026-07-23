@@ -51,15 +51,7 @@ $includesArr = array_filter(array_map('trim', explode(',', $tour['includes'] ?? 
 $excludesArr = array_filter(array_map('trim', explode(',', $tour['excludes'] ?? '')));
 $itineraryLines = array_filter(array_map('trim', explode("\n", $tour['itinerary'] ?? '')));
 
-$countryPageMap = [
-    'tanzania' => 'tanzania-safari',
-    'kenya' => 'kenya-tanzania-safari',
-    'uganda' => 'uganda-tours',
-    'rwanda' => 'rwanda-gorilla-trekking',
-    'zanzibar' => 'zanzibar-holidays',
-    'burundi' => 'burundi-tours',
-];
-$countryPage = $countryPageMap[$countrySlug] ?? 'tanzania-safari';
+$countryPage = '#destinations';
 ?>
 <?php include 'includes/header.php'; ?>
 <script type="application/ld+json"><?php echo json_encode(seoBreadcrumbSchema([

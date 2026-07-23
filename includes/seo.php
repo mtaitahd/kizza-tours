@@ -56,6 +56,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Discover premium Tanzania safari packages. Serengeti, Ngorongoro, Tarangire & more. Luxury & budget options available.',
             'h1' => 'Tanzania Safari Packages',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'kenya-tanzania-safari' => [
             'title' => 'Kenya & Tanzania Safari - East Africa Tours' . $suffix,
@@ -65,6 +66,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Combine Kenya and Tanzania on one epic safari. Serengeti, Maasai Mara, great migration, luxury lodges.',
             'h1' => 'Kenya & Tanzania Safari Packages',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'rwanda-gorilla' => [
             'title' => 'Rwanda Gorilla Trekking - Safari Packages' . $suffix,
@@ -74,6 +76,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Trek mountain gorillas in Volcanoes National Park, Rwanda. Luxury gorilla safari packages with premium lodges.',
             'h1' => 'Rwanda Gorilla Trekking Safaris',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'uganda-tours' => [
             'title' => 'Uganda Tours & Safari Packages' . $suffix,
@@ -83,6 +86,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Discover Uganda - the Pearl of Africa. Gorilla trekking, primate safaris, and wildlife tours with expert guides.',
             'h1' => 'Uganda Tour Packages',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'zanzibar-holidays' => [
             'title' => 'Zanzibar Beach Holidays - Tour Packages' . $suffix,
@@ -92,6 +96,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Relax on Zanzibar\'s pristine beaches. Honeymoon packages, luxury resorts, spice tours, and all-inclusive deals.',
             'h1' => 'Zanzibar Beach Holidays',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'burundi-tours' => [
             'title' => 'Burundi Tours & Travel Packages' . $suffix,
@@ -101,6 +106,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Discover Burundi - a hidden gem in East Africa. Wildlife tours, cultural experiences, and adventure travel.',
             'h1' => 'Burundi Tour Packages',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'mount-kenya' => [
             'title' => 'Mount Kenya Climbing - Trekking Tours' . $suffix,
@@ -110,6 +116,7 @@ function seoPageData($pageKey) {
             'ogDesc' => 'Conquer Mount Kenya via Sirimon, Chogoria, or Naro Moru routes. Expert guides, premium equipment.',
             'h1' => 'Mount Kenya Climbing Tours',
             'schema' => 'Tour',
+            'robots' => 'noindex, nofollow',
         ],
         'search' => [
             'title' => 'Search Tours' . $suffix,
@@ -316,13 +323,6 @@ function seoGenerateSitemap() {
         ['file' => 'about-us.php', 'loc' => '/about-us', 'priority' => '0.9', 'changefreq' => 'monthly'],
         ['file' => 'contact-us.php', 'loc' => '/contact-us', 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['file' => 'book-tour.php', 'loc' => '/book-tour', 'priority' => '0.9', 'changefreq' => 'monthly'],
-        ['file' => 'tanzania-safari.php', 'loc' => '/tanzania-safari', 'priority' => '0.9', 'changefreq' => 'weekly'],
-        ['file' => 'kenya-tanzania-safari.php', 'loc' => '/kenya-tanzania-safari', 'priority' => '0.9', 'changefreq' => 'weekly'],
-        ['file' => 'rwanda-gorilla.php', 'loc' => '/rwanda-gorilla-trekking', 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ['file' => 'uganda-tours.php', 'loc' => '/uganda-tours', 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ['file' => 'zanzibar-holidays.php', 'loc' => '/zanzibar-holidays', 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ['file' => 'burundi-tours.php', 'loc' => '/burundi-tours', 'priority' => '0.7', 'changefreq' => 'monthly'],
-        ['file' => 'mount-kenya.php', 'loc' => '/mount-kenya-climbing', 'priority' => '0.8', 'changefreq' => 'weekly'],
     ];
 
     $pages = [];
