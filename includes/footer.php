@@ -35,13 +35,20 @@ $taUrl = getSetting('tripadvisor_url', '#');
             <div class="col-lg-2 col-md-4">
                 <h5><?php echo __('footer_tours'); ?></h5>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/tanzania-safari"><?php echo __('footer_tour_tz'); ?></a></li>
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/kenya-tanzania-safari"><?php echo __('footer_tour_ke_tz'); ?></a></li>
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/uganda-tours"><?php echo __('footer_tour_ug'); ?></a></li>
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/zanzibar-holidays"><?php echo __('footer_tour_zanzibar'); ?></a></li>
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/burundi-tours"><?php echo __('footer_tour_bi'); ?></a></li>
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/rwanda-gorilla-trekking"><?php echo __('footer_tour_rw'); ?></a></li>
-                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/mount-kenya-climbing"><?php echo __('footer_tour_kenya'); ?></a></li>
+                    <?php
+                    $footerTours = [];
+                    try {
+                        $footerDb = Database::getInstance();
+                        $footerTours = $footerDb->fetchAll("SELECT title, slug FROM tour_packages WHERE status = 'active' AND slug IS NOT NULL AND slug != '' ORDER BY created_at DESC LIMIT 10");
+                    } catch (\Throwable $e) {}
+                    if (!empty($footerTours)):
+                        foreach ($footerTours as $ft):
+                    ?>
+                    <li class="mb-2"><a href="<?php echo SITE_URL; ?>/safari/<?php echo htmlspecialchars($ft['slug']); ?>"><?php echo htmlspecialchars($ft['title']); ?></a></li>
+                    <?php
+                        endforeach;
+                    endif;
+                    ?>
                 </ul>
             </div>
             <div class="col-lg-4 col-md-4">

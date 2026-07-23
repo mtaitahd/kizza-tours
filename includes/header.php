@@ -258,13 +258,6 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="toursDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><?php echo __('nav_tours'); ?></a>
                     <ul class="dropdown-menu dropdown-menu-dark tours-dropdown-menu" aria-labelledby="toursDropdown">
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/tanzania-safari"><?php echo __('nav_tour_tz'); ?></a></li>
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/kenya-tanzania-safari"><?php echo __('nav_tour_ke_tz'); ?></a></li>
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/uganda-tours"><?php echo __('nav_tour_ug'); ?></a></li>
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/zanzibar-holidays"><?php echo __('nav_tour_zanzibar'); ?></a></li>
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/burundi-tours"><?php echo __('nav_tour_bi'); ?></a></li>
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/rwanda-gorilla-trekking"><?php echo __('nav_tour_rw'); ?></a></li>
-                        <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/mount-kenya-climbing"><?php echo __('nav_tour_kenya'); ?></a></li>
                         <?php
                         $navTours = [];
                         try {
