@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC");
+$pages = $db->fetchAll("SELECT * FROM pages ORDER BY created_at DESC");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -280,7 +280,6 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                             <table class="table table-bordered table-hover" id="pagesTable">
                                 <thead class="thead-light">
                                     <tr>
-                                        <th style="width:50px">#</th>
                                         <th style="width:60px">Image</th>
                                         <th>Title</th>
                                         <th>Slug</th>
@@ -291,11 +290,10 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY sort_order ASC, title ASC")
                                 </thead>
                                 <tbody>
                                     <?php if (empty($pages)): ?>
-                                    <tr><td colspan="7" class="text-center text-muted">No pages yet.</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">No pages yet.</td></tr>
                                     <?php else: ?>
                                     <?php foreach ($pages as $p): ?>
                                     <tr>
-                                        <td><?= $p['id'] ?></td>
                                         <td>
                                             <?php if ($p['image'] && file_exists(BASE_PATH . $p['image'])): ?>
                                                 <img src="../<?= $p['image'] ?>" class="img-preview" alt="">
