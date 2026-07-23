@@ -33,6 +33,8 @@ if (!empty($tour['meta_keywords'])) {
 }
 if (!empty($tour['no_robots'])) {
     $pageSeo['robots'] = 'noindex, follow';
+} else {
+    $pageSeo['robots'] = 'index, follow';
 }
 
 $siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
@@ -64,7 +66,7 @@ $countryPage = '#destinations';
     'description' => htmlspecialchars(substr($tour['description'] ?? '', 0, 200)),
     'price' => $tour['price'] ?? null,
     'currency' => 'USD',
-    'duration' => !empty($tour['duration']) ? 'P' . preg_replace('/[^0-9]/', '', $tour['duration']) . 'D' : null,
+    'duration' => !empty($tour['duration']) && preg_match('/(\d+)/', $tour['duration'], $m) ? 'P' . $m[1] . 'D' : null,
     'itinerary' => $itineraryLines ? array_slice(array_values($itineraryLines), 0, 10) : [],
 ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 
@@ -227,7 +229,17 @@ $tourHeroBg = $heroBgUrl
 <?php endif; ?>
 
 <!-- FAQ Section -->
-<?php $tourFaqs = getFAQs(6); ?>
+<?php $tourFaqs = getFAQs(6);
+$tourFaqs = array_values(array_unique($tourFaqs, SORT_REGULAR));
+$seenQuestions = [];
+$tourFaqs = array_filter($tourFaqs, function($f) use (&$seenQuestions) {
+    $key = strtolower(trim($f['question']));
+    if (isset($seenQuestions[$key])) return false;
+    $seenQuestions[$key] = true;
+    return true;
+});
+$tourFaqs = array_values($tourFaqs);
+?>
 <?php if (!empty($tourFaqs)): ?>
 <script type="application/ld+json"><?php echo json_encode(seoFaqSchema(array_map(function($f) {
     return ['question' => $f['question'], 'answer' => $f['answer']];
