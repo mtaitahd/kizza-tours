@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once 'includes/config.php';
 require_once 'includes/db.php';
 $pageSeo = seoPageMeta('mount-kenya');
@@ -82,20 +82,11 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
 <section class="section-padding" style="background: var(--off-white);">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-8" data-aos="fade-up">
+            <div class="col-lg-10" data-aos="fade-up">
                 <span class="section-subtitle"><?php echo __('tour_ke_faq_subtitle'); ?></span>
                 <h2 class="section-title"><?php echo __('tour_ke_faq_title'); ?></h2>
-                <div class="accordion faq-accordion mt-4" id="faqAccordion">
-                    <?php foreach ($faqs as $idx => $faq): ?>
-                    <div class="accordion-item">
-                        <h3 class="accordion-header">
-                            <button class="accordion-button <?php echo $idx > 0 ? 'collapsed' : ''; ?>" type="button" data-bs-toggle="collapse" data-bs-target="#faq<?php echo $idx; ?>"><?php echo htmlspecialchars($faq['question']); ?></button>
-                        </h3>
-                        <div id="faq<?php echo $idx; ?>" class="accordion-collapse collapse <?php echo $idx === 0 ? 'show' : ''; ?>" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body"><?php echo htmlspecialchars($faq['answer']); ?></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
+                <div class="accordion faq-accordion" id="faqAccordion">
+                    <?php $n = 'faq'; include __DIR__ . '/includes/faq-accordion.php'; ?>
                 </div>
             </div>
         </div>

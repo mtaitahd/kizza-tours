@@ -36,6 +36,13 @@ $staticPages = [
     ['file' => 'about-us.php', 'loc' => '/about-us', 'priority' => '0.9', 'changefreq' => 'monthly'],
     ['file' => 'contact-us.php', 'loc' => '/contact-us', 'priority' => '0.8', 'changefreq' => 'monthly'],
     ['file' => 'book-tour.php', 'loc' => '/book-tour', 'priority' => '0.9', 'changefreq' => 'monthly'],
+    ['file' => 'tanzania-safari.php', 'loc' => '/tanzania-safari', 'priority' => '0.8', 'changefreq' => 'weekly'],
+    ['file' => 'kenya-tanzania-safari.php', 'loc' => '/kenya-tanzania-safari', 'priority' => '0.8', 'changefreq' => 'weekly'],
+    ['file' => 'uganda-tours.php', 'loc' => '/uganda-tours', 'priority' => '0.8', 'changefreq' => 'weekly'],
+    ['file' => 'zanzibar-holidays.php', 'loc' => '/zanzibar-holidays', 'priority' => '0.8', 'changefreq' => 'weekly'],
+    ['file' => 'rwanda-gorilla.php', 'loc' => '/rwanda-gorilla-trekking', 'priority' => '0.8', 'changefreq' => 'weekly'],
+    ['file' => 'burundi-tours.php', 'loc' => '/burundi-tours', 'priority' => '0.8', 'changefreq' => 'weekly'],
+    ['file' => 'mount-kenya.php', 'loc' => '/mount-kenya-climbing', 'priority' => '0.8', 'changefreq' => 'weekly'],
 ];
 
 $pages = [];
@@ -72,7 +79,7 @@ try {
     $tours = $pdo->query("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND (no_robots IS NULL OR no_robots = 0) AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($tours as $tour) {
         $pages[] = [
-            'loc' => $baseUrl . '/safari/' . $tour['slug'],
+            'loc' => $baseUrl . '/safari/' . urlencode($tour['slug']),
             'lastmod' => !empty($tour['updated_at']) ? date('Y-m-d', strtotime($tour['updated_at'])) : $today,
             'priority' => '0.7',
             'changefreq' => 'monthly',
@@ -82,7 +89,7 @@ try {
     $dests = $pdo->query("SELECT slug, updated_at FROM destinations WHERE status = 'active' AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($dests as $dest) {
         $pages[] = [
-            'loc' => $baseUrl . '/destination/' . $dest['slug'],
+            'loc' => $baseUrl . '/destination/' . urlencode($dest['slug']),
             'lastmod' => !empty($dest['updated_at']) ? date('Y-m-d', strtotime($dest['updated_at'])) : $today,
             'priority' => '0.6',
             'changefreq' => 'monthly',
@@ -92,7 +99,7 @@ try {
     $dbPages = $pdo->query("SELECT slug, updated_at FROM pages WHERE status = 'active' AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($dbPages as $p) {
         $pages[] = [
-            'loc' => $baseUrl . '/' . $p['slug'],
+            'loc' => $baseUrl . '/' . urlencode($p['slug']),
             'lastmod' => !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : $today,
             'priority' => '0.6',
             'changefreq' => 'monthly',

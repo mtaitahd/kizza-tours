@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 session_start();
@@ -27,7 +27,35 @@ function ensureToursTable() {
         return true;
     } catch (\Throwable $e) { return false; }
 }
+
+function ensureItineraryDaysTable() {
+    try {
+        $db = db();
+        $tables = $db->fetchAll("SHOW TABLES");
+        foreach ($tables as $row) {
+            if (in_array('itinerary_days', array_values($row))) return true;
+        }
+        $db->query("CREATE TABLE IF NOT EXISTS itinerary_days (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tour_id INT NOT NULL,
+            day_number INT NOT NULL DEFAULT 1,
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            image_path VARCHAR(255) DEFAULT NULL,
+            image_alt VARCHAR(255) DEFAULT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_itinerary_days_tour (tour_id, sort_order),
+            CONSTRAINT fk_itinerary_days_tour FOREIGN KEY (tour_id) REFERENCES tour_packages(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        return true;
+    } catch (\Throwable $e) { return false; }
+}
 ensureToursTable();
+ensureItineraryDaysTable();
+
+require_once __DIR__ . '/../includes/itinerary-days-save.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -50,7 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $includes = trim($_POST['includes'] ?? '');
         $excludes = trim($_POST['excludes'] ?? '');
         $gallery = trim($_POST['gallery'] ?? '');
-        $itinerary = trim($_POST['itinerary'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
         $meta_title = trim($_POST['meta_title'] ?? '');
         $meta_description = trim($_POST['meta_description'] ?? '');
@@ -77,23 +104,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
+        // ---- Structured itinerary days ----
+        $dayIds = array_map('intval', $_POST['day_id'] ?? []);
+        $dayNumbers = $_POST['day_number'] ?? [];
+        $dayTitles = $_POST['day_title'] ?? [];
+        $dayDescs = $_POST['day_description'] ?? [];
+        $dayAlts = $_POST['day_alt'] ?? [];
+        $dayExistingImgs = $_POST['day_existing_image'] ?? [];
+        $dayRemoveImgs = $_POST['day_remove_image'] ?? [];
+        $dayFiles = $_FILES['day_image'] ?? null;
+
+        $submittedDays = [];
+        for ($i = 0; $i < count($dayTitles); $i++) {
+            $submittedDays[] = [
+                'day_id'        => intval($dayIds[$i] ?? 0),
+                'day_number'    => isset($dayNumbers[$i]) ? intval($dayNumbers[$i]) : ($i + 1),
+                'title'         => trim($dayTitles[$i] ?? ''),
+                'description'   => trim($dayDescs[$i] ?? ''),
+                'alt'           => trim($dayAlts[$i] ?? ''),
+                'existing_image'=> trim($dayExistingImgs[$i] ?? ''),
+                'remove_image'  => !empty($dayRemoveImgs[$i]),
+                'new_image'     => ($dayFiles && $dayFiles['error'][$i] === UPLOAD_ERR_OK) ? [
+                                    'tmp_name' => $dayFiles['tmp_name'][$i],
+                                    'name'     => $dayFiles['name'][$i],
+                                    'size'     => $dayFiles['size'][$i],
+                                    'error'    => $dayFiles['error'][$i],
+                                  ] : null,
+            ];
+        }
+
+        // Upload new images now (track them so we can clean up if save fails).
+        $uploadedNewImages = [];
+        $dayImageErrors = [];
+        foreach ($submittedDays as &$d) {
+            $finalImage = null;
+            if ($d['new_image']) {
+                $ext = strtolower(pathinfo($d['new_image']['name'], PATHINFO_EXTENSION));
+                $dayImgAllowed = ['jpg', 'jpeg', 'png', 'webp'];
+                $isImage = in_array($ext, $dayImgAllowed, true)
+                    && (getimagesize($d['new_image']['tmp_name']) !== false)
+                    && $d['new_image']['size'] <= MAX_FILE_SIZE;
+                if (!$isImage) {
+                    $dayImageErrors[] = ($d['title'] !== '' ? $d['title'] : ('Day ' . $d['day_number']))
+                        . ': image must be JPG, PNG or WebP and under ' . round(MAX_FILE_SIZE / 1048576) . ' MB.';
+                    $finalImage = $d['remove_image'] ? null : $d['existing_image'];
+                } else {
+                    $up = uploadFile($d['new_image'], BASE_PATH . 'uploads/tours/', 'day_' . $slug);
+                    if ($up) {
+                        $finalImage = $up;
+                        $uploadedNewImages[] = $up;
+                    } else {
+                        $finalImage = $d['remove_image'] ? null : $d['existing_image'];
+                    }
+                }
+            } elseif ($d['remove_image']) {
+                $finalImage = null;
+            } else {
+                $finalImage = $d['existing_image'];
+            }
+            $d['final_image'] = $finalImage;
+        }
+        unset($d);
+
         if ($action === 'add') {
-            $db->insert(
-                "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status, meta_title, meta_description, meta_keywords, no_robots) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status, $meta_title, $meta_description, $meta_keywords, $no_robots]
-            );
+            $itinerary = '';
+            try {
+                $newTourId = $db->insert(
+                    "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status, meta_title, meta_description, meta_keywords, no_robots) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status, $meta_title, $meta_description, $meta_keywords, $no_robots]
+                );
+                saveItineraryDays($newTourId, $submittedDays, $uploadedNewImages);
+            } catch (\Throwable $e) {
+                // Roll back the tour we just created and clean up new uploads.
+                foreach ($uploadedNewImages as $p) deleteFile($p);
+                try { $db->query("DELETE FROM tour_packages WHERE id = ?", [$newTourId]); } catch (\Throwable $ignore) {}
+                error_log("Tour add error: " . $e->getMessage());
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Could not save the tour with its itinerary days.'];
+                header('Location: tours');
+                exit;
+            }
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour added successfully'];
+            if (!empty($dayImageErrors)) {
+                $_SESSION['flash']['message'] .= ' Removed invalid image uploads: ' . implode(' ', $dayImageErrors);
+            }
         } else {
-            if ($hasNewImage) {
-                $old = $db->fetchOne("SELECT image FROM tour_packages WHERE id = ?", [$tourId]);
-                if ($old && $old['image']) deleteFile($old['image']);
-            }
-            if ($hasNewHero) {
-                $old = $db->fetchOne("SELECT hero_image FROM tour_packages WHERE id = ?", [$tourId]);
-                if ($old && $old['hero_image']) deleteFile($old['hero_image']);
-            }
+            // Preserve existing legacy itinerary text (never overwrite old tours).
+            $existingRow = $db->fetchOne("SELECT itinerary, image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
+            $itinerary = $existingRow['itinerary'] ?? '';
+
             $sql = "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, status=?, meta_title=?, meta_description=?, meta_keywords=?, no_robots=?";
             $params = [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status, $meta_title, $meta_description, $meta_keywords, $no_robots];
             if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
@@ -101,14 +201,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql .= " WHERE id=?";
             $params[] = $tourId;
             $db->query($sql, $params);
+
+            // days: save submitted rows; helper cleans up replaced/removed images
+            try {
+                saveItineraryDays($tourId, $submittedDays, $uploadedNewImages);
+            } catch (\Throwable $e) {
+                error_log("Tour update day-save error: " . $e->getMessage());
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'The tour was updated, but its itinerary days could not be saved.'];
+                header('Location: tours');
+                exit;
+            }
+
+            // cleanup tour-level images after successful update
+            if ($hasNewImage && !empty($existingRow['image'])) deleteFile($existingRow['image']);
+            if ($hasNewHero && !empty($existingRow['hero_image'])) deleteFile($existingRow['hero_image']);
+
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
+            if (!empty($dayImageErrors)) {
+                $_SESSION['flash']['message'] .= ' Removed invalid image uploads: ' . implode(' ', $dayImageErrors);
+            }
         }
     } elseif ($action === 'delete') {
         $tourId = intval($_POST['tour_id'] ?? 0);
         $tour = $db->fetchOne("SELECT image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
         if ($tour && $tour['image']) deleteFile($tour['image']);
         if ($tour && $tour['hero_image']) deleteFile($tour['hero_image']);
+        foreach ($db->fetchAll("SELECT image_path FROM itinerary_days WHERE tour_id = ?", [$tourId]) as $day) {
+            if (!empty($day['image_path'])) deleteFile($day['image_path']);
+        }
         $db->query("DELETE FROM tour_packages WHERE id = ?", [$tourId]);
         try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour deleted successfully'];
@@ -120,6 +241,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $tours = $db->fetchAll("SELECT p.*, d.name as dest_name FROM tour_packages p LEFT JOIN destinations d ON p.destination_id = d.id ORDER BY p.created_at DESC");
 $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE status = 'active' ORDER BY name");
+
+// Load all itinerary days once, grouped by tour, for the edit modal.
+$allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, image_path, image_alt FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
+$daysByTour = [];
+foreach ($allDays as $day) {
+    $daysByTour[$day['tour_id']][] = $day;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -168,6 +296,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
             <li class="nav-item"><a class="nav-link" href="destinations"><i class="fas fa-fw fa-map-marker-alt"></i><span>Destinations</span></a></li>
             <li class="nav-item"><a class="nav-link" href="gallery"><i class="fas fa-fw fa-images"></i><span>Gallery</span></a></li>
             <li class="nav-item"><a class="nav-link" href="testimonials"><i class="fas fa-fw fa-star"></i><span>Testimonials</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="faqs"><i class="fas fa-fw fa-question-circle"></i><span>FAQs</span></a></li>
             <li class="nav-item"><a class="nav-link" href="inquiries"><i class="fas fa-fw fa-envelope"></i><span>Inquiries</span></a></li>
             <li class="nav-item"><a class="nav-link" href="quotes"><i class="fas fa-fw fa-file-invoice"></i><span>Quotes</span></a></li>
             <hr class="sidebar-divider">
@@ -262,7 +391,10 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($tours as $tour): ?>
+                                        <?php foreach ($tours as $tour):
+                                            $editTourData = $tour;
+                                            $editTourData['days'] = $daysByTour[$tour['id']] ?? [];
+                                        ?>
                                         <tr>
                                             <td>
                                                 <?php if ($tour['image'] && file_exists(BASE_PATH . $tour['image'])): ?>
@@ -295,7 +427,7 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                                                     <a href="../safari/<?php echo htmlspecialchars($tour['slug']); ?>" target="_blank" class="btn btn-sm btn-outline-info mr-1" title="View Tour">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <button class="btn btn-sm btn-outline-secondary mr-1" onclick="editTour(<?php echo htmlspecialchars(json_encode($tour)); ?>)">
+                                                    <button class="btn btn-sm btn-outline-secondary mr-1" onclick="editTour(<?php echo htmlspecialchars(json_encode($editTourData)); ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this tour?');">
@@ -458,8 +590,15 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Itinerary</label>
-                            <textarea class="form-control" name="itinerary" id="tourItinerary" rows="4"></textarea>
+                            <label><i class="fas fa-map-signs mr-1"></i> Itinerary Days</label>
+                            <p class="text-muted small">Add each day of the tour with a title, description and an optional image. Days are shown in the order listed — use the up/down buttons to reorder.</p>
+                            <div id="itineraryDaysContainer" class="mb-2"></div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addItineraryDay()">
+                                <i class="fas fa-plus"></i> Add Day
+                            </button>
+                            <small class="d-block text-muted mt-2" id="legacyItineraryNote" style="display:none;">
+                                <i class="fas fa-info-circle"></i> This tour has legacy itinerary text still shown on the frontend until you add structured days above.
+                            </small>
                         </div>
                         <hr>
                         <h6 class="font-weight-bold"><i class="fas fa-search mr-1"></i> SEO & Meta</h6>
@@ -525,14 +664,143 @@ $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE 
             document.getElementById('tourIncludes').value = t.includes || '';
             document.getElementById('tourExcludes').value = t.excludes || '';
             document.getElementById('tourGallery').value = t.gallery || '';
-            document.getElementById('tourItinerary').value = t.itinerary || '';
             document.getElementById('tourMetaTitle').value = t.meta_title || '';
             document.getElementById('tourMetaDesc').value = t.meta_description || '';
             document.getElementById('tourMetaKeywords').value = t.meta_keywords || '';
             document.getElementById('tourNoRobots').value = t.no_robots || 0;
             document.getElementById('tourModalTitle').textContent = 'Edit Tour';
+            loadItineraryDays(t.days || []);
+            document.getElementById('legacyItineraryNote').style.display = (t.itinerary && (!t.days || !t.days.length)) ? 'block' : 'none';
             $('#tourModal').modal('show');
         }
+
+        function addItineraryDay(day) {
+            day = day || {};
+            var container = document.getElementById('itineraryDaysContainer');
+            var index = container.children.length;
+            var wrap = document.createElement('div');
+            wrap.className = 'itinerary-day-row border rounded p-3 mb-3 bg-white';
+            wrap.setAttribute('data-index', index);
+
+            var dayNo = day.day_number ? day.day_number : (index + 1);
+            var title = day.title || '';
+            var desc = day.description || '';
+            var alt = day.alt || day.image_alt || '';
+            var existing = day.image_path || day.existing_image || '';
+            var dayId = day.id || 0;
+
+            var esc = function(v, m) {
+                if (typeof v !== 'string') v = String(v == null ? '' : v);
+                var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+                return (m ? v : v.replace(/[&<>"']/g, function(c) { return map[c]; }));
+            };
+
+            var html = '';
+            html += '<input type="hidden" name="day_id[]" value="' + esc(dayId) + '">';
+            html += '<div class="d-flex justify-content-between mb-2">';
+            html += '<strong class="itinerary-day-label">Day ' + esc(dayNo) + '</strong>';
+            html += '<div class="btn-group btn-group-sm">';
+            html += '<button type="button" class="btn btn-outline-secondary" title="Move up" onclick="moveDay(this, -1)"><i class="fas fa-arrow-up"></i></button>';
+            html += '<button type="button" class="btn btn-outline-secondary" title="Move down" onclick="moveDay(this, 1)"><i class="fas fa-arrow-down"></i></button>';
+            html += '<button type="button" class="btn btn-outline-danger" title="Remove day" onclick="removeDay(this)"><i class="fas fa-trash"></i></button>';
+            html += '</div></div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="col-md-2"><div class="form-group"><label>Day #</label><input type="number" class="form-control itinerary-day-number" name="day_number[]" value="' + esc(dayNo) + '" min="1"></div></div>';
+            html += '<div class="col-md-10"><div class="form-group"><label>Title</label><input type="text" class="form-control" name="day_title[]" value="' + esc(title) + '" placeholder="e.g. Day 1: Arusha - Tarangire National Park"></div></div>';
+            html += '</div>';
+
+            html += '<div class="form-group"><label>Description</label><textarea class="form-control" name="day_description[]" rows="3">' + esc(desc) + '</textarea></div>';
+
+            html += '<div class="form-row align-items-end">';
+            html += '<div class="col-md-6"><div class="form-group"><label>Image</label><input type="file" class="form-control-file itinerary-day-file" name="day_image[]" accept="image/*" onchange="previewDayImage(this)"></div></div>';
+            html += '<div class="col-md-6"><div class="form-group"><label>Image Alt Text</label><input type="text" class="form-control" name="day_alt[]" value="' + esc(alt) + '"></div></div>';
+            html += '</div>';
+
+            html += '<input type="hidden" class="itinerary-day-existing" name="day_existing_image[]" value="' + esc(existing) + '">';
+            html += '<input type="hidden" name="day_remove_image[]" class="itinerary-day-remove-value" value="0">';
+
+            html += '<div class="itinerary-day-preview" style="display:none;"></div>';
+
+            if (existing) {
+                html += '<div class="mt-2 d-flex align-items-center">';
+                html += '<img src="../' + esc(existing) + '" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:4px;margin-right:10px;">';
+                html += '<div class="form-check">';
+                html += '<input class="form-check-input" type="checkbox" onchange="this.closest(\'.itinerary-day-row\').querySelector(\'.itinerary-day-remove-value\').value = this.checked ? 1 : 0" ' + (existing && false ? 'checked' : '') + '>';
+                html += '<label class="form-check-label small">Remove current image</label>';
+                html += '</div></div>';
+            }
+
+            wrap.innerHTML = html;
+            container.appendChild(wrap);
+            renumberDays();
+        }
+
+        function removeDay(btn) {
+            var wrap = btn.closest('.itinerary-day-row');
+            if (wrap) wrap.remove();
+            renumberDays();
+        }
+
+        function moveDay(btn, dir) {
+            var wrap = btn.closest('.itinerary-day-row');
+            if (!wrap) return;
+            var container = wrap.parentNode;
+            var rows = Array.prototype.slice.call(container.children);
+            var idx = rows.indexOf(wrap);
+            var target = idx + dir;
+            if (target < 0 || target >= rows.length) return;
+            if (dir < 0) { container.insertBefore(wrap, rows[target]); }
+            else { container.insertBefore(rows[target], wrap); }
+            renumberDays();
+        }
+
+        function renumberDays() {
+            var container = document.getElementById('itineraryDaysContainer');
+            Array.prototype.forEach.call(container.children, function(row) {
+                var num = row.querySelector('.itinerary-day-number');
+                var label = row.querySelector('.itinerary-day-label');
+                if (label && num) label.textContent = 'Day ' + num.value;
+            });
+        }
+
+        function previewDayImage(input) {
+            var row = input.closest('.itinerary-day-row');
+            if (!row) return;
+            var preview = row.querySelector('.itinerary-day-preview');
+            preview.innerHTML = '';
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.style.display = 'block';
+                    preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function loadItineraryDays(days) {
+            var container = document.getElementById('itineraryDaysContainer');
+            container.innerHTML = '';
+            if (!days || !days.length) {
+                addItineraryDay({ day_number: 1 });
+                return;
+            }
+            days.forEach(function(d) { addItineraryDay(d); });
+        }
+
+        (function() {
+            $('#tourModal').on('show.bs.modal', function() {
+                if (document.getElementById('tourAction').value === 'add') {
+                    var container = document.getElementById('itineraryDaysContainer');
+                    container.innerHTML = '';
+                    addItineraryDay({ day_number: 1 });
+                    document.getElementById('legacyItineraryNote').style.display = 'none';
+                }
+            });
+        })();
     </script>
     <script>
         function filterTable(val) {

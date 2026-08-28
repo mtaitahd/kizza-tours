@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once '../includes/mail.php';
@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $body .= '<strong>Customer Message:</strong><br><em>' . nl2br(htmlspecialchars($booking['message'])) . '</em>';
             }
             $body .= '</p>';
-            $body .= '<p style="color:#6c757d;font-size:0.8em;">— Kizza Tours &amp; Safaris Team</p>';
+            $body .= '<p style="color:#6c757d;font-size:0.8em;">â€” Kizza Tours &amp; Safaris Team</p>';
             $body .= '</body></html>';
 
             if (sendMail($booking['email'], $subject, $body)) {
@@ -456,6 +456,7 @@ if ($quotesTablesOk) {
             <li class="nav-item"><a class="nav-link" href="destinations"><i class="fas fa-fw fa-map-marker-alt"></i><span>Destinations</span></a></li>
             <li class="nav-item"><a class="nav-link" href="gallery"><i class="fas fa-fw fa-images"></i><span>Gallery</span></a></li>
             <li class="nav-item"><a class="nav-link" href="testimonials"><i class="fas fa-fw fa-star"></i><span>Testimonials</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="faqs"><i class="fas fa-fw fa-question-circle"></i><span>FAQs</span></a></li>
             <li class="nav-item"><a class="nav-link" href="inquiries"><i class="fas fa-fw fa-envelope"></i><span>Inquiries</span></a></li>
             <li class="nav-item"><a class="nav-link" href="quotes"><i class="fas fa-fw fa-file-invoice"></i><span>Quotes</span></a></li>
             <hr class="sidebar-divider">

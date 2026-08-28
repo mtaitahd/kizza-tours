@@ -52,6 +52,7 @@ $highlightsArr = array_filter(array_map('trim', explode(',', $tour['highlights']
 $includesArr = array_filter(array_map('trim', explode(',', $tour['includes'] ?? '')));
 $excludesArr = array_filter(array_map('trim', explode(',', $tour['excludes'] ?? '')));
 $itineraryLines = array_filter(array_map('trim', explode("\n", $tour['itinerary'] ?? '')));
+$itineraryDays = getItineraryDays($tour['id'] ?? 0);
 
 $countryPage = '#destinations';
 ?>
@@ -67,7 +68,9 @@ $countryPage = '#destinations';
     'price' => $tour['price'] ?? null,
     'currency' => 'USD',
     'duration' => !empty($tour['duration']) && preg_match('/(\d+)/', $tour['duration'], $m) ? 'P' . $m[1] . 'D' : null,
-    'itinerary' => $itineraryLines ? array_slice(array_values($itineraryLines), 0, 10) : [],
+    'itinerary' => !empty($itineraryDays)
+        ? array_slice(array_values(array_column($itineraryDays, 'title')), 0, 10)
+        : ($itineraryLines ? array_slice(array_values($itineraryLines), 0, 10) : []),
 ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 
 <?php
@@ -142,16 +145,19 @@ $tourHeroBg = $heroBgUrl
                 </div>
                 <?php endif; ?>
 
-                <?php if (!empty($itineraryLines)): ?>
+                <?php if (!empty($itineraryDays) || !empty($itineraryLines)): ?>
                 <h3 class="mt-4"><?php echo __('tour_details_itinerary'); ?></h3>
-                <div class="mt-3">
-                    <?php foreach ($itineraryLines as $line): ?>
-                    <div class="d-flex align-items-start gap-3 mb-2 p-2" style="border-left: 3px solid var(--secondary);">
-                        <i class="fas fa-route mt-1" style="color: var(--secondary);"></i>
-                        <span><?php echo htmlspecialchars($line); ?></span>
+                <?php if (!empty($itineraryDays)): ?>
+                    <?php include 'includes/itinerary-days.php'; ?>
+                <?php else: ?>
+                <div class="tour-itinerary-section legacy">
+                    <div class="itinerary-legacy">
+                        <?php foreach ($itineraryLines as $line): ?>
+                        <p><?php echo htmlspecialchars($line); ?></p>
+                        <?php endforeach; ?>
                     </div>
-                    <?php endforeach; ?>
                 </div>
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
 
@@ -229,8 +235,11 @@ $tourHeroBg = $heroBgUrl
 <?php endif; ?>
 
 <!-- FAQ Section -->
-<?php $tourFaqs = getFAQs(6);
-$tourFaqs = array_values(array_unique($tourFaqs, SORT_REGULAR));
+<?php
+$tourFaqs = getFAQsByTour($tour['id'] ?? 0);
+if (empty($tourFaqs)) {
+    $tourFaqs = getFAQs(6);
+}
 $seenQuestions = [];
 $tourFaqs = array_filter($tourFaqs, function($f) use (&$seenQuestions) {
     $key = strtolower(trim($f['question']));
@@ -239,32 +248,22 @@ $tourFaqs = array_filter($tourFaqs, function($f) use (&$seenQuestions) {
     return true;
 });
 $tourFaqs = array_values($tourFaqs);
+$faqs = $tourFaqs;
 ?>
 <?php if (!empty($tourFaqs)): ?>
 <script type="application/ld+json"><?php echo json_encode(seoFaqSchema(array_map(function($f) {
     return ['question' => $f['question'], 'answer' => $f['answer']];
 }, $tourFaqs)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-<section class="section-padding" style="background: var(--off-white);">
+<section class="section-padding" style="background: var(--off-white);" id="faq-section">
     <div class="container">
         <div class="text-center mb-5" data-aos="fade-up">
             <span class="section-subtitle"><?php echo __('faq_subtitle'); ?></span>
             <h2 class="section-title"><?php echo __('tour_details_overview'); ?> FAQs</h2>
         </div>
         <div class="row justify-content-center">
-            <div class="col-lg-8" data-aos="fade-up">
-                <div class="accordion faq-accordion" id="faqAccordion">
-                    <?php foreach ($tourFaqs as $idx => $faq): ?>
-                    <div class="accordion-item">
-                        <h3 class="accordion-header">
-                            <button class="accordion-button <?php echo $idx > 0 ? 'collapsed' : ''; ?>" type="button" data-bs-toggle="collapse" data-bs-target="#faq<?php echo $faq['id']; ?>">
-                                <?php echo htmlspecialchars($faq['question']); ?>
-                            </button>
-                        </h3>
-                        <div id="faq<?php echo $faq['id']; ?>" class="accordion-collapse collapse <?php echo $idx === 0 ? 'show' : ''; ?>" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body"><?php echo nl2br(htmlspecialchars($faq['answer'])); ?></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
+            <div class="col-lg-10" data-aos="fade-up">
+                <div class="faq-accordion" id="faqAccordion">
+                    <?php $n = 'faq'; include __DIR__ . '/includes/faq-accordion.php'; ?>
                 </div>
             </div>
         </div>

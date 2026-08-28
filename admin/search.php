@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 session_start();
@@ -103,6 +103,7 @@ if ($q !== '') {
             <li class="nav-item"><a class="nav-link" href="destinations"><i class="fas fa-fw fa-map-marker-alt"></i><span>Destinations</span></a></li>
             <li class="nav-item"><a class="nav-link" href="gallery"><i class="fas fa-fw fa-images"></i><span>Gallery</span></a></li>
             <li class="nav-item"><a class="nav-link" href="testimonials"><i class="fas fa-fw fa-star"></i><span>Testimonials</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="faqs"><i class="fas fa-fw fa-question-circle"></i><span>FAQs</span></a></li>
             <li class="nav-item"><a class="nav-link" href="inquiries"><i class="fas fa-fw fa-envelope"></i><span>Inquiries</span></a></li>
             <li class="nav-item"><a class="nav-link" href="quotes"><i class="fas fa-fw fa-file-invoice"></i><span>Quotes</span></a></li>
             <hr class="sidebar-divider">
@@ -266,7 +267,7 @@ if ($q !== '') {
                                         <tr>
                                             <td><?php echo htmlspecialchars($r['full_name']); ?></td>
                                             <td><?php echo htmlspecialchars($r['email']); ?></td>
-                                            <td><?php echo htmlspecialchars($r['subject'] ?? '—'); ?></td>
+                                            <td><?php echo htmlspecialchars($r['subject'] ?? 'â€”'); ?></td>
                                             <td><span class="badge badge-<?php echo $r['status'] === 'new' ? 'danger' : ($r['status'] === 'read' ? 'info' : 'success'); ?>"><?php echo $r['status']; ?></span></td>
                                             <td><a href="inquiries" class="btn btn-sm btn-outline-primary">View</a></td>
                                         </tr>

@@ -139,32 +139,21 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
 <?php endif; ?>
 
 <!-- FAQ Section -->
-<?php $destFaqs = getFAQs(6); ?>
+<?php $destFaqs = getFAQs(6); $destFaqs = array_values($destFaqs); $faqs = $destFaqs; ?>
 <?php if (!empty($destFaqs)): ?>
 <script type="application/ld+json"><?php echo json_encode(seoFaqSchema(array_map(function($f) {
     return ['question' => $f['question'], 'answer' => $f['answer']];
 }, $destFaqs)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-<section class="section-padding" style="background: var(--off-white);">
+<section class="section-padding" style="background: var(--off-white);" id="faq-section">
     <div class="container">
         <div class="text-center mb-5" data-aos="fade-up">
             <span class="section-subtitle"><?php echo __('faq_subtitle'); ?></span>
             <h2 class="section-title"><?php echo htmlspecialchars($dest['name']); ?> FAQs</h2>
         </div>
         <div class="row justify-content-center">
-            <div class="col-lg-8" data-aos="fade-up">
-                <div class="accordion faq-accordion" id="faqAccordion">
-                    <?php foreach ($destFaqs as $idx => $faq): ?>
-                    <div class="accordion-item">
-                        <h3 class="accordion-header">
-                            <button class="accordion-button <?php echo $idx > 0 ? 'collapsed' : ''; ?>" type="button" data-bs-toggle="collapse" data-bs-target="#faq<?php echo $faq['id']; ?>">
-                                <?php echo htmlspecialchars($faq['question']); ?>
-                            </button>
-                        </h3>
-                        <div id="faq<?php echo $faq['id']; ?>" class="accordion-collapse collapse <?php echo $idx === 0 ? 'show' : ''; ?>" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body"><?php echo nl2br(htmlspecialchars($faq['answer'])); ?></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
+            <div class="col-lg-10" data-aos="fade-up">
+                <div class="faq-accordion" id="faqAccordion">
+                    <?php $n = 'faq'; include __DIR__ . '/includes/faq-accordion.php'; ?>
                 </div>
             </div>
         </div>

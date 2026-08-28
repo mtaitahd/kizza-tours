@@ -326,11 +326,37 @@ function getTestimonials($limit = null) {
 function getFAQs($limit = null) {
     try {
         $db = Database::getInstance();
-        $sql = "SELECT * FROM faq WHERE status = 'active' ORDER BY sort_order ASC";
+        $sql = "SELECT * FROM faq WHERE status = 'active' AND tour_id IS NULL ORDER BY sort_order ASC";
         if ($limit) {
             $sql .= " LIMIT " . intval($limit);
         }
         return $db->fetchAll($sql);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function getFAQsByTour($tourId, $limit = null) {
+    try {
+        $db = Database::getInstance();
+        $tourId = intval($tourId);
+        if ($tourId <= 0) return [];
+        $sql = "SELECT * FROM faq WHERE status = 'active' AND tour_id = ? ORDER BY sort_order ASC, id ASC";
+        if ($limit) {
+            $sql .= " LIMIT " . intval($limit);
+        }
+        return $db->fetchAll($sql, [$tourId]);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
+function getItineraryDays($tourId) {
+    try {
+        $db = Database::getInstance();
+        $tourId = intval($tourId);
+        if ($tourId <= 0) return [];
+        return $db->fetchAll("SELECT * FROM itinerary_days WHERE tour_id = ? ORDER BY sort_order ASC, id ASC", [$tourId]);
     } catch (Exception $e) {
         return [];
     }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 ob_start();
 require_once '../includes/config.php';
 require_once '../includes/db.php';
@@ -191,6 +191,7 @@ foreach ($textSettings as $key) {
             <li class="nav-item"><a class="nav-link" href="destinations"><i class="fas fa-fw fa-map-marker-alt"></i><span>Destinations</span></a></li>
             <li class="nav-item"><a class="nav-link" href="gallery"><i class="fas fa-fw fa-images"></i><span>Gallery</span></a></li>
             <li class="nav-item"><a class="nav-link" href="testimonials"><i class="fas fa-fw fa-star"></i><span>Testimonials</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="faqs"><i class="fas fa-fw fa-question-circle"></i><span>FAQs</span></a></li>
             <li class="nav-item"><a class="nav-link" href="inquiries"><i class="fas fa-fw fa-envelope"></i><span>Inquiries</span></a></li>
             <li class="nav-item"><a class="nav-link" href="quotes"><i class="fas fa-fw fa-file-invoice"></i><span>Quotes</span></a></li>
             <hr class="sidebar-divider">
@@ -431,7 +432,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_hero_poster" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -450,7 +451,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_about_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -467,7 +468,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_cta_background" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -486,7 +487,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb-sm">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_og_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -503,7 +504,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb-sm">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_site_favicon" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -579,7 +580,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_tanzania_safari_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_tanzania_safari_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -602,7 +603,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_kenya_tanzania_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_kenya_tanzania_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -627,7 +628,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_rwanda_gorilla_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_rwanda_gorilla_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -650,7 +651,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_uganda_tours_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_uganda_tours_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -675,7 +676,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_zanzibar_holidays_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_zanzibar_holidays_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -698,7 +699,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_burundi_tours_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_burundi_tours_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -723,7 +724,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_mount_kenya_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_mount_kenya_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -751,7 +752,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_maasai_mara_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_maasai_mara_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -774,7 +775,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_uganda_gorilla_adventure_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_uganda_gorilla_adventure_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -799,7 +800,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_rwanda_luxury_gorilla_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_rwanda_luxury_gorilla_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
@@ -822,7 +823,7 @@ foreach ($textSettings as $key) {
                                                         <img src="<?php echo SITE_URL . '/' . $v; ?>" class="preview-thumb" id="preview_amboseli_kilimanjaro_image">
                                                         <span class="text-muted small ml-2"><?php echo basename($v); ?></span>
                                                         <?php else: ?>
-                                                        <span class="text-muted small">File missing — re-upload</span>
+                                                        <span class="text-muted small">File missing â€” re-upload</span>
                                                         <?php endif; ?>
                                                         <button type="submit" name="remove_amboseli_kilimanjaro_image" value="1" class="btn btn-sm btn-outline-danger ml-2" onclick="return confirm('Remove?');"><i class="fas fa-times"></i> Remove</button>
                                                     </div>
