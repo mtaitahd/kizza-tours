@@ -2696,71 +2696,67 @@ body.topbar-hidden .navbar {
 /*===== TOUR ITINERARY SECTION =====*/
 /* Full-width editorial itinerary. Scoped exclusively under .tour-itinerary-section
    so no other page component is affected. The section is moved OUT of the col-lg-8
-   tour skeleton so it spans the entire page width on a warm ivory band. */
+   tour skeleton so it spans the full usable page width on a warm ivory band. */
 .tour-itinerary-section {
-    background: var(--off-white);
-    padding: clamp(3.5rem, 7vw, 6rem) 0;
-    margin: 0;
     width: 100%;
+    max-width: 1536px;
+    margin-inline: auto;
+    background: #fbfaf7;
 }
 
-/* Centered inner wrapper — full usable width up to ~1536px, not the old col-lg-8. */
+/* Inner wrapper carries no extra gutters — the header and the text columns supply
+   their own required horizontal padding, so the full width stays usable. */
 .tour-itinerary-section .tour-itinerary-inner {
-    max-width: 1536px;
-    margin: 0 auto;
-    padding: 0 var(--bs-gutter-x, 24px);
+    width: 100%;
 }
 
 /* --- Section header --- */
-.tour-itinerary-header {
-    padding: 0 clamp(0rem, 4vw, 4rem) 0 clamp(0rem, 4vw, 4rem);
-    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+.tour-itinerary-section .tour-itinerary-header {
+    padding: 35px 68px 24px;
 }
 
-.tour-itinerary-eyebrow {
+.tour-itinerary-section .tour-itinerary-eyebrow {
     display: inline-flex;
     align-items: center;
-    gap: 1rem;
     font-family: var(--font-secondary);
-    font-size: 0.9rem;               /* ~14.4px */
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--secondary);
-    margin-bottom: 1.25rem;
+    color: #b88720;
 }
-.tour-itinerary-eyebrow::after {
-    content: '';
+.tour-itinerary-section .tour-itinerary-eyebrow-line {
     display: inline-block;
-    width: 48px;
+    width: 28px;
     height: 2px;
-    background: var(--secondary);
-    flex: 0 0 auto;
+    background: #b88720;
+    margin-left: 14px;
 }
 
-.tour-itinerary-title {
+.tour-itinerary-section .tour-itinerary-title {
     font-family: var(--font-primary);   /* elegant serif for the main heading only */
-    color: var(--primary);
-    font-weight: 600;
+    font-size: clamp(2.6rem, 5vw, 4.25rem);
+    font-weight: 500;
     line-height: 1.05;
-    font-size: clamp(2.6rem, 5vw, 4.25rem);   /* ~60-68px on desktop */
-    margin: 0;
+    color: #082744;
+    margin: 16px 0 0;
 }
 
-/* --- Day rows: one continuous two-column editorial row per day --- */
+/* --- Day rows: one continuous two-column editorial row (approx 294px tall) --- */
 .tour-itinerary-section .itinerary-day {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
-    align-items: stretch;
-    min-height: 300px;
-    border-top: 1px solid rgba(10, 39, 68, 0.10);
+    grid-template-columns: minmax(0, 48%) minmax(0, 52%);
     width: 100%;
-}
-.tour-itinerary-section .itinerary-day:first-child {
-    border-top: none;
+    height: 294px;
+    min-height: 294px;
+    align-items: stretch;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid rgba(8, 39, 68, 0.10);
 }
 
-/* No image -> text column spans the full row. */
+/* No image -> text column spans the full row (still 294px, content centered). */
 .tour-itinerary-section .itinerary-day--no-image {
     grid-template-columns: 1fr;
 }
@@ -2770,127 +2766,180 @@ body.topbar-hidden .navbar {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 36px 64px 38px 68px;
     min-width: 0;
+    height: 100%;
+    padding: 30px 60px 30px 68px;
+    background: #fbfaf7;
 }
 
-.tour-itinerary-section .itinerary-day-title {
+/* Day title: bold navy sans-serif, natural capitalization (no uppercase). */
+.tour-itinerary-section .itinerary-day__title {
+    margin: 0 0 18px;
+    color: #082744;
     font-family: var(--font-secondary);   /* modern sans-serif day headings */
+    font-size: clamp(1.55rem, 2.2vw, 2rem);
     font-weight: 700;
-    color: var(--primary);
     line-height: 1.2;
-    font-size: clamp(1.6rem, 2.2vw, 2.125rem);   /* ~29-34px desktop */
-    margin: 0 0 1.25rem;
+    letter-spacing: -0.02em;
     text-transform: none;
 }
 
-.tour-itinerary-section .itinerary-day-desc {
+/* Description: 16px body text with a comfortable 1.65 line-height. */
+.tour-itinerary-section .itinerary-day__description {
+    max-width: 590px;
+    color: #172737;
     font-family: var(--font-body);
-    color: #1f2d3d;                       /* dark navy/charcoal, not light grey */
-    font-size: 1.05rem;                   /* ~16.8px desktop */
-    line-height: 1.7;
-    max-width: 60ch;
-    margin: 0 0 1.5rem;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.65;
+}
+/* Neutralize any paragraph margins nl2br introduces so they don't inflate row
+   height, while still preserving separation between multiple paragraphs. */
+.tour-itinerary-section .itinerary-day__description p {
+    margin: 0 0 1em;
+}
+.tour-itinerary-section .itinerary-day__description p:last-child {
+    margin-bottom: 0;
 }
 
-/* --- Metadata row --- */
-.tour-itinerary-section .itinerary-day-meta {
+/* --- Metadata row: plain, no boxes/pills, gold icons, values only when present --- */
+.tour-itinerary-section .itinerary-day__meta {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 0.9rem 2rem;
+    gap: 12px 28px;
+    margin-top: 24px;
+    color: #172737;
+    font-size: 13px;
+    line-height: 1.4;
     font-family: var(--font-body);
-    font-size: 0.875rem;                  /* ~14px */
-    color: #33455a;
 }
-.tour-itinerary-section .itinerary-day-meta-item {
+.tour-itinerary-section .itinerary-day__meta-item {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 9px;
 }
-.tour-itinerary-section .itinerary-day-meta-item i {
-    color: var(--secondary);
-    font-size: 0.95rem;
+.tour-itinerary-section .itinerary-day__meta-item i,
+.tour-itinerary-section .itinerary-day__meta-icon {
+    color: #b88720;
+    font-size: 17px;
 }
-.tour-itinerary-section .itinerary-day-meta-item strong {
-    font-weight: 600;                     /* semi-bold label, normal-weight value */
+.tour-itinerary-section .itinerary-day__meta-label {
+    font-weight: 700;
 }
 
-/* --- Media column: landscape image fills the entire right side --- */
+/* --- Media column: landscape image fills the entire right side ---
+   The cell stretches to the (294px) row height via align-items: stretch, so the
+   image is always cropped into a wide landscape panel — never its natural height. */
 .tour-itinerary-section .itinerary-day__media {
+    width: 100%;
     min-width: 0;
-    min-height: 300px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
-    background: var(--off-white);
+    background: #fbfaf7;
 }
 .tour-itinerary-section .itinerary-day__media img {
     display: block;
     width: 100%;
     height: 100%;
-    min-height: 300px;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     object-fit: cover;
     object-position: center;
+    border: 0;
     border-radius: 0;
+    box-shadow: none;
+}
+
+/* Long-description exception: only a row whose text overflows is allowed to grow
+   past 294px (height:auto); its image stretches to match the resulting height.
+   The .itinerary-day--tall class is added by a tiny script in tour-details.php. */
+.tour-itinerary-section .itinerary-day--tall {
+    height: auto;
 }
 
 /* --- Legacy fallback (tours without structured days) --- */
 .tour-itinerary-section .itinerary-legacy {
-    padding: 0 clamp(0rem, 4vw, 4rem) 0 clamp(0rem, 4vw, 4rem);
+    padding: 0 68px 40px;
 }
 .tour-itinerary-section .itinerary-legacy p {
     font-family: var(--font-body);
-    color: #1f2d3d;
-    font-size: 1.05rem;
-    line-height: 1.7;
+    color: #172737;
+    font-size: 16px;
+    line-height: 1.65;
     margin-bottom: 1rem;
     max-width: 76ch;
 }
 
-/* --- Tablet (768 < width < 992): keep two columns, tighten text padding --- */
-@media (max-width: 991.98px) and (min-width: 768px) {
+/* --- Tablet (768px - 991px): keep two columns, tighten text padding, and let
+   rows grow only as needed while images keep filling their columns. --- */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .tour-itinerary-section .tour-itinerary-header {
+        padding: 30px 30px 20px;
+    }
+    .tour-itinerary-section .itinerary-day {
+        height: auto;
+        min-height: 294px;
+    }
     .tour-itinerary-section .itinerary-day__content {
-        padding: 28px 30px 30px 34px;
+        padding: 28px 30px;
     }
-    .tour-itinerary-section .itinerary-day-title {
-        font-size: 1.7rem;
+    .tour-itinerary-section .itinerary-day__title {
+        font-size: 1.6rem;
     }
-    .tour-itinerary-section .itinerary-day-meta {
-        gap: 0.8rem 1.25rem;
+    .tour-itinerary-section .itinerary-legacy {
+        padding: 0 30px 34px;
     }
 }
 
 /* --- Mobile (< 768px): stack in order title -> description -> meta -> image --- */
 @media (max-width: 767.98px) {
-    .tour-itinerary-section .tour-itinerary-inner {
-        padding: 0;
+    .tour-itinerary-section .tour-itinerary-header {
+        padding: 28px 22px 22px;
     }
-    .tour-itinerary-header {
-        padding: 0 24px;
-    }
-    .tour-itinerary-title {
+    .tour-itinerary-section .tour-itinerary-title {
         font-size: clamp(2.2rem, 8vw, 2.75rem);
+    }
+    .tour-itinerary-section .tour-itinerary-eyebrow {
+        font-size: 14px;
     }
     .tour-itinerary-section .itinerary-day {
         grid-template-columns: 1fr;
+        height: auto;
         min-height: 0;
     }
     .tour-itinerary-section .itinerary-day__content {
-        padding: 24px;
+        height: auto;
+        padding: 28px 22px;
     }
-    .tour-itinerary-section .itinerary-day-title {
+    .tour-itinerary-section .itinerary-day__title {
         font-size: 1.5rem;               /* ~24px */
     }
-    .tour-itinerary-section .itinerary-day-desc {
-        font-size: 1rem;                 /* ~16px */
+    .tour-itinerary-section .itinerary-day__description {
+        font-size: 15px;
     }
+    .tour-itinerary-section .itinerary-day__meta {
+        margin-top: 20px;
+    }
+    /* Image moves after text + metadata (it is already last in the DOM). */
     .tour-itinerary-section .itinerary-day__media {
-        min-height: auto;
+        width: 100%;
+        height: auto;
+        min-height: 0;
         aspect-ratio: 16 / 10;
-        order: 4;                        /* image after text + metadata (already last in DOM) */
+        order: 4;
     }
     .tour-itinerary-section .itinerary-day__media img {
+        width: 100%;
+        height: 100%;
         min-height: 0;
+        object-fit: cover;
     }
     .tour-itinerary-section .itinerary-legacy {
-        padding: 0 24px;
+        padding: 0 22px 30px;
     }
 }

@@ -5,6 +5,7 @@ return [
     'lang_name' => '中文',
     'lang_flag' => 'cn',
     'lang_dir' => 'ltr',
+    'tour_details_itinerary' => 'Safari Itinerary',
 
     // Navigation
     'nav_home' => '首页',

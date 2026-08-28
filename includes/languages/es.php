@@ -5,6 +5,7 @@ return [
     'lang_name' => 'Español',
     'lang_flag' => 'es',
     'lang_dir' => 'ltr',
+    'tour_details_itinerary' => 'Safari Itinerary',
 
     // Navigation
     'nav_home' => 'Inicio',

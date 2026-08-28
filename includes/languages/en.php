@@ -872,7 +872,7 @@ return [
     // Tour Details Page
     'tour_details_overview' => 'Tour Overview',
     'tour_details_highlights' => 'Highlights',
-    'tour_details_itinerary' => 'Itinerary',
+    'tour_details_itinerary' => 'Safari Itinerary',
     'tour_details_price' => 'Price',
     'tour_details_book_now' => 'Book This Tour',
     'tour_details_chat' => 'Chat on WhatsApp',

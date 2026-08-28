@@ -193,7 +193,10 @@ $tourHeroBg = $heroBgUrl
 <section class="tour-itinerary-section" id="tour-itinerary" data-aos="fade-up">
     <div class="tour-itinerary-inner">
         <header class="tour-itinerary-header">
-            <span class="tour-itinerary-eyebrow">YOUR JOURNEY</span>
+            <div class="tour-itinerary-eyebrow">
+                <span>YOUR JOURNEY</span>
+                <span class="tour-itinerary-eyebrow-line"></span>
+            </div>
             <h2 class="tour-itinerary-title"><?php echo __('tour_details_itinerary'); ?></h2>
         </header>
 
@@ -209,6 +212,39 @@ $tourHeroBg = $heroBgUrl
     </div>
 </section>
 <?php endif; ?>
+
+<script>
+// Only expand an itinerary row past its 294px height when its description text
+// genuinely overflows; the image column stretches to match that row. No-op on
+// mobile (<768px) where rows are already auto-height.
+(function () {
+    var section = document.getElementById('tour-itinerary');
+    if (!section) return;
+    function fitRows() {
+        if (window.innerWidth < 768) {
+            section.querySelectorAll('.itinerary-day--tall').forEach(function (el) { el.classList.remove('itinerary-day--tall'); });
+            return;
+        }
+        section.querySelectorAll('.itinerary-day').forEach(function (day) {
+            var content = day.querySelector('.itinerary-day__content');
+            if (!content) return;
+            if (content.scrollHeight > content.clientHeight + 1) {
+                day.classList.add('itinerary-day--tall');
+            } else {
+                day.classList.remove('itinerary-day--tall');
+            }
+        });
+    }
+    if (document.readyState === 'complete') { fitRows(); }
+    else { window.addEventListener('load', fitRows); }
+    window.addEventListener('resize', fitRows);
+    var t = null;
+    window.addEventListener('scroll', function () {
+        clearTimeout(t);
+        t = setTimeout(fitRows, 150);
+    }, { passive: true });
+})();
+</script>
 
 <!-- Related Tours -->
 <?php if (!empty($relatedTours)): ?>

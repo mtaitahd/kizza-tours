@@ -7,31 +7,56 @@
  *   day_number, title, description, drive_time, meals, accommodation,
  *   image_path, image_alt
  *
- * Renders one continuous, full-width editorial row per day:
- *   text (title, description, metadata) on the left, landscape image on the
- *   right. Scoped under .tour-itinerary-section so it never affects other
- *   page components.
+ * Renders one continuous, full-width editorial row per day: text (title,
+ * description, metadata) on the left and a landscape image on the right.
+ * Scoped under .tour-itinerary-section so it never affects other components.
  *
  * The displayed title is always built as "Day {number} — {destination}".
- * Any "Day N:" / "DAY N –" prefix already stored in the title is stripped
- * first so admins never need to type it manually.
+ * Any "Day N:" / "DAY N –" prefix already stored is stripped first, and a
+ * stray trailing full stop is removed, so admins never need to type the prefix
+ * or worry about punctuation. Natural capitalization entered by the admin is
+ * preserved (no automatic upper/lower-case conversion).
  */
 if (empty($itineraryDays)) {
     return;
 }
 
-function itineraryStripDayPrefix($title) {
+function itineraryHumanizeTitle($title) {
     $t = trim((string)$title);
     if ($t === '') return '';
+    // Strip a leading "Day N:" / "DAY N –" prefix stored by legacy data.
     if (preg_match('/^Day\s+\d+\s*[-:–—]\s*/i', $t, $m)) {
-        return trim(substr($t, strlen($m[0])));
+        $t = trim(substr($t, strlen($m[0])));
     }
-    return $t;
+    // Remove a single trailing full stop (avoid mangling initials / acronyms).
+    $t = preg_replace('/\.\s*$/', '', trim($t));
+
+    // Only when the ENTIRE title is ALL-CAPS (shouting) do we convert it to
+    // natural title case. This undoes the old uppercased DB values without ever
+    // touching correctly mixed-case names or acronyms (left untouched).
+    if ($t !== '' && mb_strtoupper($t, 'UTF-8') === $t && preg_match('/[A-Za-z]{3,}/', $t)) {
+        $small = ['to', 'the', 'a', 'an', 'and', 'of', 'for', 'in', 'on', 'at', 'by', 'with', 'from', 'or', 'nor', 'but', '&'];
+        $parts = preg_split('/([\s–—\-]+)/', mb_strtolower($t, 'UTF-8'), -1, PREG_SPLIT_DELIM_CAPTURE);
+        $out = '';
+        $first = true;
+        foreach ($parts as $w) {
+            if ($w === '') continue;
+            if (preg_match('/^[\s–—\-]+$/', $w)) { $out .= $w; continue; }
+            if (!$first && in_array($w, $small, true)) {
+                $out .= $w;
+            } else {
+                $out .= mb_strtoupper(mb_substr($w, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($w, 1, null, 'UTF-8');
+            }
+            $first = false;
+        }
+        $t = $out;
+    }
+    return trim($t);
 }
 ?>
 <?php foreach ($itineraryDays as $i => $day):
     $dayNumber  = isset($day['day_number']) ? intval($day['day_number']) : ($i + 1);
-    $destination = itineraryStripDayPrefix($day['title'] ?? '');
+    $destination = itineraryHumanizeTitle($day['title'] ?? '');
     $dayDesc    = trim($day['description'] ?? '');
     $drive      = trim($day['drive_time'] ?? '');
     $meals      = trim($day['meals'] ?? '');
@@ -52,33 +77,33 @@ function itineraryStripDayPrefix($title) {
     <article class="itinerary-day<?php echo $hasImage ? '' : ' itinerary-day--no-image'; ?>" id="itinerary-day-<?php echo $dayNumber; ?>">
         <div class="itinerary-day__content">
             <?php if ($destination !== ''): ?>
-            <h3 class="itinerary-day-title"><?php echo htmlspecialchars('Day ' . $dayNumber . ' — ' . $destination); ?></h3>
+            <h3 class="itinerary-day__title"><?php echo htmlspecialchars('Day ' . $dayNumber . ' — ' . $destination); ?></h3>
             <?php else: ?>
-            <h3 class="itinerary-day-title"><?php echo htmlspecialchars('Day ' . $dayNumber); ?></h3>
+            <h3 class="itinerary-day__title"><?php echo htmlspecialchars('Day ' . $dayNumber); ?></h3>
             <?php endif; ?>
 
             <?php if ($dayDesc !== ''): ?>
-            <div class="itinerary-day-desc"><?php echo nl2br(htmlspecialchars($dayDesc)); ?></div>
+            <div class="itinerary-day__description"><?php echo nl2br(htmlspecialchars($dayDesc)); ?></div>
             <?php endif; ?>
 
             <?php if ($drive !== '' || $meals !== '' || $accom !== ''): ?>
-            <div class="itinerary-day-meta">
+            <div class="itinerary-day__meta">
                 <?php if ($drive !== ''): ?>
-                <span class="itinerary-day-meta-item">
-                    <i class="fas fa-car" aria-hidden="true"></i>
-                    <span><strong>Drive:</strong> <?php echo htmlspecialchars($drive); ?></span>
+                <span class="itinerary-day__meta-item">
+                    <i class="fas fa-car itinerary-day__meta-icon" aria-hidden="true"></i>
+                    <span><span class="itinerary-day__meta-label">Drive:</span> <?php echo htmlspecialchars($drive); ?></span>
                 </span>
                 <?php endif; ?>
                 <?php if ($meals !== ''): ?>
-                <span class="itinerary-day-meta-item">
-                    <i class="fas fa-utensils" aria-hidden="true"></i>
-                    <span><strong>Meals:</strong> <?php echo htmlspecialchars($meals); ?></span>
+                <span class="itinerary-day__meta-item">
+                    <i class="fas fa-utensils itinerary-day__meta-icon" aria-hidden="true"></i>
+                    <span><span class="itinerary-day__meta-label">Meals:</span> <?php echo htmlspecialchars($meals); ?></span>
                 </span>
                 <?php endif; ?>
                 <?php if ($accom !== ''): ?>
-                <span class="itinerary-day-meta-item">
-                    <i class="fas fa-bed" aria-hidden="true"></i>
-                    <span><strong>Accommodation:</strong> <?php echo htmlspecialchars($accom); ?></span>
+                <span class="itinerary-day__meta-item">
+                    <i class="fas fa-bed itinerary-day__meta-icon" aria-hidden="true"></i>
+                    <span><span class="itinerary-day__meta-label">Accommodation:</span> <?php echo htmlspecialchars($accom); ?></span>
                 </span>
                 <?php endif; ?>
             </div>
