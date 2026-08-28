@@ -26,9 +26,15 @@ if (isset($_GET['lang']) && array_key_exists($_GET['lang'], $available_languages
 $lang_file = __DIR__ . '/languages/' . $available_languages[$current_lang]['file'];
 $lang = file_exists($lang_file) ? require $lang_file : require __DIR__ . '/languages/en.php';
 
+// English fallback: missing keys fall back to English text instead of raw keys.
+$lang_en = require __DIR__ . '/languages/en.php';
+
 function __($key) {
-    global $lang;
-    return $lang[$key] ?? $key;
+    global $lang, $lang_en;
+    if (isset($lang[$key])) {
+        return $lang[$key];
+    }
+    return $lang_en[$key] ?? $key;
 }
 
 function t($key) {

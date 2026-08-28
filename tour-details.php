@@ -301,7 +301,7 @@ $faqs = $tourFaqs;
     <div class="container">
         <div class="text-center mb-5" data-aos="fade-up">
             <span class="section-subtitle"><?php echo __('faq_subtitle'); ?></span>
-            <h2 class="section-title"><?php echo __('tour_details_overview'); ?> FAQs</h2>
+            <h2 class="section-title"><?php echo __('faq_title'); ?></h2>
         </div>
         <div class="row justify-content-center">
             <div class="col-lg-10" data-aos="fade-up">
