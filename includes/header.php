@@ -174,7 +174,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
     <!-- Full Stylesheet (critical) -->
-    <link rel="stylesheet" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=6">
+    <link rel="stylesheet" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=7">
 
     <!-- Font Awesome (non-blocking) -->
     <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">

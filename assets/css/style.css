@@ -1851,160 +1851,170 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
 }
 
 /*===== FAQ =====*/
+/* Premium full-width accordion. Scoped under .faq-accordion (the existing,
+   FAQ-only wrapper, equivalent to a .tour-faq-section scope) so no other
+   Bootstrap accordion or page section is affected. Bootstrap 5 manages the
+   collapse behaviour (one-open-at-a-time, keyboard activation, aria, smooth
+   animation); this block only restyles its classes. */
 .faq-accordion {
-    --faq-question: #3A2E26;
-    --faq-olive: #6B7A3F;
-    --faq-border: rgba(107, 122, 63, 0.35);
-    --faq-bg: var(--white);
-    background: var(--faq-bg);
+    width: min(100% - 40px, 1400px);
+    margin-inline: auto;
+    padding: 0;
+    background: #fff;
 }
 
 .faq-accordion .accordion-item {
-    background: transparent;
-    border: none;
+    margin: 0;
+    border: 0;
+    border-top: 1px solid rgba(77, 99, 45, 0.55);
     border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+.faq-accordion .accordion-item:last-child {
+    border-bottom: 1px solid rgba(77, 99, 45, 0.55);
 }
 
 .faq-accordion .accordion-header {
+    margin: 0;
     line-height: 1.4;
 }
 
+/* Question button: entire row clickable, bold modern sans-serif, navy text. */
 .faq-accordion .accordion-button {
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 1.75rem 4.5rem 1.75rem 0;
-    font-family: var(--font-primary);
-    font-size: 1.55rem;
+    min-height: 96px;
+    margin: 0;
+    padding: 26px 38px 26px 30px;
+    border: 0;
+    background: transparent;
+    color: #17212b;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-secondary);   /* modern sans-serif questions */
+    font-size: clamp(1.2rem, 1.7vw, 1.75rem);
     font-weight: 700;
     line-height: 1.35;
-    color: var(--faq-question);
-    background: transparent;
-    border: 0;
-    border-top: 1px solid var(--faq-border);
-    box-shadow: none;
-    cursor: pointer;
-    text-align: left;
-    transition: color 0.25s ease;
+    letter-spacing: 0;
+    text-transform: none;
     white-space: normal;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    box-shadow: none;
+    transition: color 0.25s ease;
 }
-
-.faq-accordion .accordion-button::after {
-    content: "+";
-    position: absolute;
-    top: 50%;
-    right: 0.25rem;
-    transform: translateY(-50%);
-    width: 2.6rem;
-    height: 2.6rem;
-    margin-left: 1.25rem;
-    background-image: none;
-    background-color: transparent;
-    border: 1.5px solid var(--faq-olive);
-    border-radius: 50%;
-    font-family: var(--font-body);
-    font-weight: 400;
-    font-size: 1.6rem;
-    line-height: 2.3rem;
-    text-align: center;
-    color: var(--faq-olive);
-    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-}
-
-.faq-accordion .accordion-button:hover::after,
-.faq-accordion .accordion-button:focus-visible::after {
-    background-color: var(--faq-olive);
-    color: var(--white);
-}
-
 .faq-accordion .accordion-button:not(.collapsed) {
-    color: var(--faq-question);
+    color: #17212b;
     background: transparent;
     box-shadow: none;
 }
 
+/* Question text: keeps a safe clear space before the icon, never clipped. */
+.faq-accordion .faq-question-text {
+    min-width: 0;
+    padding-right: 40px;
+}
+
+/* Plus/minus icon: simple standalone sign — no circle, no outline, no shadow.
+   Closed shows +, open shows -. Positioned at the far right via flex. */
+.faq-accordion .accordion-button::after {
+    content: "+";
+    flex: 0 0 auto;
+    position: static;
+    transform: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    margin-left: 12px;
+    background-image: none;
+    background-color: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #4d632d;
+    font-family: sans-serif;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1;
+    text-align: center;
+    transition: color 0.25s ease;
+}
 .faq-accordion .accordion-button:not(.collapsed)::after {
-    content: "\2212";
-    font-size: 1.7rem;
-    line-height: 2.3rem;
-    transform: translateY(-50%);
+    content: "\2212";   /* minus */
+}
+.faq-accordion .accordion-button:hover::after,
+.faq-accordion .accordion-button:focus-visible::after {
+    color: #3a4a24;
 }
 
 .faq-accordion .accordion-button:focus {
     outline: none;
     box-shadow: none;
 }
-
 .faq-accordion .accordion-button:focus-visible {
-    outline: 2px solid var(--faq-olive);
+    outline: 2px solid #4d632d;
     outline-offset: 2px;
 }
 
+/* Answer: readable 17px body text, comfortable line-height, capped width. */
 .faq-accordion .accordion-collapse {
     background: transparent;
 }
-
 .faq-accordion .accordion-body {
-    padding: 0 4.5rem 1.75rem 0;
-    color: var(--text-light);
-    line-height: 1.85;
-    font-size: 1.05rem;
+    padding: 0 90px 30px 30px;
+    color: #4c5663;
+    font-family: var(--font-body);
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.75;
+    max-width: 1050px;
 }
-
-.faq-accordion .accordion-item:last-child .accordion-button {
-    border-bottom: 1px solid var(--faq-border);
+.faq-accordion .accordion-body > *:first-child {
+    margin-top: 0;
+}
+.faq-accordion .accordion-body > *:last-child {
+    margin-bottom: 0;
 }
 
 @media (max-width: 991.98px) {
     .faq-accordion .accordion-button {
-        font-size: 1.3rem;
-        padding: 1.45rem 3.75rem 1.45rem 0;
-    }
-    .faq-accordion .accordion-button::after {
-        width: 2.3rem;
-        height: 2.3rem;
-        line-height: 2rem;
-        font-size: 1.4rem;
-    }
-    .faq-accordion .accordion-button:not(.collapsed)::after {
-        font-size: 1.5rem;
-        line-height: 2rem;
+        padding-right: 30px;
     }
     .faq-accordion .accordion-body {
-        padding: 0 3.75rem 1.45rem 0;
-        font-size: 1rem;
+        padding-right: 60px;
     }
 }
 
-@media (max-width: 575.98px) {
+/* Mobile (< 768px): compact spacing, no overflow, icon stays right. */
+@media (max-width: 767.98px) {
+    .faq-accordion {
+        width: min(100% - 28px, 1400px);
+    }
     .faq-accordion .accordion-button {
-        font-size: 1.1rem;
-        padding: 1.15rem 3.25rem 1.15rem 0;
+        min-height: 78px;
+        padding: 20px 16px;
+        font-size: 19px;
+        line-height: 1.4;
+    }
+    .faq-accordion .faq-question-text {
+        padding-right: 20px;
     }
     .faq-accordion .accordion-button::after {
-        right: 0;
-        width: 2rem;
-        height: 2rem;
-        line-height: 1.7rem;
-        font-size: 1.2rem;
-    }
-    .faq-accordion .accordion-button:not(.collapsed)::after {
-        font-size: 1.3rem;
-        line-height: 1.7rem;
+        width: 25px;
+        height: 25px;
+        font-size: 30px;
+        margin-left: 8px;
     }
     .faq-accordion .accordion-body {
-        padding: 0 2.75rem 1.15rem 0;
-        font-size: 0.95rem;
-    }
-}
-
-@media (max-width: 360px) {
-    .faq-accordion .accordion-button {
-        padding-right: 2.9rem;
+        padding: 0 16px 24px;
+        font-size: 16px;
+        line-height: 1.7;
+        max-width: 100%;
     }
 }
 
