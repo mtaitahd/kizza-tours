@@ -28,12 +28,31 @@ function ensureToursTable() {
     } catch (\Throwable $e) { return false; }
 }
 
+function ensureItineraryDayColumns() {
+    try {
+        $db = db();
+        $existing = [];
+        foreach ($db->fetchAll("SHOW COLUMNS FROM itinerary_days") as $row) {
+            $existing[$row['Field']] = true;
+        }
+        $additions = [
+            'drive_time'     => "ALTER TABLE itinerary_days ADD COLUMN drive_time VARCHAR(255) DEFAULT NULL AFTER description",
+            'meals'          => "ALTER TABLE itinerary_days ADD COLUMN meals VARCHAR(255) DEFAULT NULL AFTER drive_time",
+            'accommodation'  => "ALTER TABLE itinerary_days ADD COLUMN accommodation VARCHAR(255) DEFAULT NULL AFTER meals",
+        ];
+        foreach ($additions as $field => $sql) {
+            if (!isset($existing[$field])) $db->query($sql);
+        }
+        return true;
+    } catch (\Throwable $e) { return false; }
+}
+
 function ensureItineraryDaysTable() {
     try {
         $db = db();
         $tables = $db->fetchAll("SHOW TABLES");
         foreach ($tables as $row) {
-            if (in_array('itinerary_days', array_values($row))) return true;
+            if (in_array('itinerary_days', array_values($row))) return ensureItineraryDayColumns();
         }
         $db->query("CREATE TABLE IF NOT EXISTS itinerary_days (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,6 +60,9 @@ function ensureItineraryDaysTable() {
             day_number INT NOT NULL DEFAULT 1,
             title VARCHAR(255) NOT NULL,
             description TEXT,
+            drive_time VARCHAR(255) DEFAULT NULL,
+            meals VARCHAR(255) DEFAULT NULL,
+            accommodation VARCHAR(255) DEFAULT NULL,
             image_path VARCHAR(255) DEFAULT NULL,
             image_alt VARCHAR(255) DEFAULT NULL,
             sort_order INT NOT NULL DEFAULT 0,
@@ -109,6 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dayNumbers = $_POST['day_number'] ?? [];
         $dayTitles = $_POST['day_title'] ?? [];
         $dayDescs = $_POST['day_description'] ?? [];
+        $dayDrives = $_POST['day_drive_time'] ?? [];
+        $dayMeals = $_POST['day_meals'] ?? [];
+        $dayAccoms = $_POST['day_accommodation'] ?? [];
         $dayAlts = $_POST['day_alt'] ?? [];
         $dayExistingImgs = $_POST['day_existing_image'] ?? [];
         $dayRemoveImgs = $_POST['day_remove_image'] ?? [];
@@ -121,6 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'day_number'    => isset($dayNumbers[$i]) ? intval($dayNumbers[$i]) : ($i + 1),
                 'title'         => trim($dayTitles[$i] ?? ''),
                 'description'   => trim($dayDescs[$i] ?? ''),
+                'drive_time'    => trim($dayDrives[$i] ?? ''),
+                'meals'         => trim($dayMeals[$i] ?? ''),
+                'accommodation' => trim($dayAccoms[$i] ?? ''),
                 'alt'           => trim($dayAlts[$i] ?? ''),
                 'existing_image'=> trim($dayExistingImgs[$i] ?? ''),
                 'remove_image'  => !empty($dayRemoveImgs[$i]),
@@ -685,6 +713,9 @@ foreach ($allDays as $day) {
             var dayNo = day.day_number ? day.day_number : (index + 1);
             var title = day.title || '';
             var desc = day.description || '';
+            var drive = day.drive_time || '';
+            var meals = day.meals || '';
+            var accommodation = day.accommodation || '';
             var alt = day.alt || day.image_alt || '';
             var existing = day.image_path || day.existing_image || '';
             var dayId = day.id || 0;
@@ -711,6 +742,12 @@ foreach ($allDays as $day) {
             html += '</div>';
 
             html += '<div class="form-group"><label>Description</label><textarea class="form-control" name="day_description[]" rows="3">' + esc(desc) + '</textarea></div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="col-md-4"><div class="form-group"><label>Drive Time</label><input type="text" class="form-control" name="day_drive_time[]" value="' + esc(drive) + '" placeholder="e.g. ~2.5 hrs"></div></div>';
+            html += '<div class="col-md-4"><div class="form-group"><label>Meals</label><input type="text" class="form-control" name="day_meals[]" value="' + esc(meals) + '" placeholder="e.g. L, D"></div></div>';
+            html += '<div class="col-md-4"><div class="form-group"><label>Accommodation</label><input type="text" class="form-control" name="day_accommodation[]" value="' + esc(accommodation) + '" placeholder="e.g. Serengeti Lodge"></div></div>';
+            html += '</div>';
 
             html += '<div class="form-row align-items-end">';
             html += '<div class="col-md-6"><div class="form-group"><label>Image</label><input type="file" class="form-control-file itinerary-day-file" name="day_image[]" accept="image/*" onchange="previewDayImage(this)"></div></div>';

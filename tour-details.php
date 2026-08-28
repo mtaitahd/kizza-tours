@@ -144,21 +144,6 @@ $tourHeroBg = $heroBgUrl
                     <?php endforeach; ?>
                 </div>
                 <?php endif; ?>
-
-                <?php if (!empty($itineraryDays) || !empty($itineraryLines)): ?>
-                <h3 class="mt-4"><?php echo __('tour_details_itinerary'); ?></h3>
-                <?php if (!empty($itineraryDays)): ?>
-                    <?php include 'includes/itinerary-days.php'; ?>
-                <?php else: ?>
-                <div class="tour-itinerary-section legacy">
-                    <div class="itinerary-legacy">
-                        <?php foreach ($itineraryLines as $line): ?>
-                        <p><?php echo htmlspecialchars($line); ?></p>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-                <?php endif; ?>
             </div>
 
             <div class="col-lg-4">
@@ -202,6 +187,28 @@ $tourHeroBg = $heroBgUrl
         </div>
     </div>
 </section>
+
+<!-- Tour Itinerary (full-width editorial section) -->
+<?php if (!empty($itineraryDays) || !empty($itineraryLines)): ?>
+<section class="tour-itinerary-section" id="tour-itinerary" data-aos="fade-up">
+    <div class="tour-itinerary-inner">
+        <header class="tour-itinerary-header">
+            <span class="tour-itinerary-eyebrow">YOUR JOURNEY</span>
+            <h2 class="tour-itinerary-title"><?php echo __('tour_details_itinerary'); ?></h2>
+        </header>
+
+        <?php if (!empty($itineraryDays)): ?>
+            <?php include 'includes/itinerary-days.php'; ?>
+        <?php else: ?>
+            <div class="itinerary-legacy">
+                <?php foreach ($itineraryLines as $line): ?>
+                <p><?php echo htmlspecialchars($line); ?></p>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</section>
+<?php endif; ?>
 
 <!-- Related Tours -->
 <?php if (!empty($relatedTours)): ?>

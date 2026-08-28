@@ -7,9 +7,10 @@
  *
  * @param int   $tourId            The tour id the days belong to.
  * @param array $submittedDays     Each item: day_number, title, description,
- *                                 alt, final_image. final_image = the resolved
- *                                 image path (uploaded new, kept existing, or
- *                                 null when removed). Prepared by the admin form.
+ *                                 drive_time, meals, accommodation, alt,
+ *                                 final_image. final_image = the resolved image
+ *                                 path (uploaded new, kept existing, or null
+ *                                 when removed). Prepared by the admin form.
  * @param array $uploadedNewImages Paths of files just uploaded during this
  *                                 request; removed again if the DB save fails so
  *                                 we never leave orphaned uploads.
@@ -36,13 +37,16 @@ function saveItineraryDays($tourId, $submittedDays, $uploadedNewImages) {
         $sort = 0;
         foreach ($submittedDays as $d) {
             $db->insert(
-                "INSERT INTO itinerary_days (tour_id, day_number, title, description, image_path, image_alt, sort_order)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO itinerary_days (tour_id, day_number, title, description, drive_time, meals, accommodation, image_path, image_alt, sort_order)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $tourId,
                     intval($d['day_number']),
                     mb_substr(trim($d['title'] ?? ''), 0, 255),
                     trim($d['description'] ?? ''),
+                    mb_substr(trim($d['drive_time'] ?? ''), 0, 255),
+                    mb_substr(trim($d['meals'] ?? ''), 0, 255),
+                    mb_substr(trim($d['accommodation'] ?? ''), 0, 255),
                     trim($d['final_image'] ?? '') ?: null,
                     mb_substr(trim($d['alt'] ?? ''), 0, 255),
                     $sort++,
