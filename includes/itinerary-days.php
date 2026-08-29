@@ -7,14 +7,19 @@
  *   day_number, title, description, drive_time, meals, accommodation,
  *   image_path, image_alt
  *
- * Renders one continuous, full-width editorial row per day: text (title,
- * description, metadata) on the left and a landscape image on the right.
- * Scoped under .tour-itinerary-section so it never affects other components.
+ * Renders one two-column editorial card per day: text (title, description,
+ * metadata) on the left and a cropped image on the right. Every card uses a
+ * controlled collapsed height so the image never drives the row height and
+ * portrait/oversized images are cropped with object-fit: cover. Long
+ * descriptions get a per-day "Read More / Show Less" control that is created
+ * entirely client-side: it is shown only when the text really overflows its
+ * collapsed preview area (after render, font load, and resize).
  *
- * Nothing is hard-coded: each day is rendered purely from the stored row. If a
- * day has no image the text spans the full row. Long descriptions get a
- * per-day "Read More / Show Less" control so rows never overflow into the next
- * day or the following sections.
+ * The toggle is a real <button> with aria-expanded/aria-controls, uses unique
+ * IDs per day, expands the clicked card through normal document flow (pushing
+ * the following days down), and never overlaps the next day or later sections.
+ * Nothing is hard-coded: any number of days, any text length, any image shape,
+ * and days without an image (which render as a clean full-width layout).
  */
 if (empty($itineraryDays)) {
     return;
@@ -52,18 +57,6 @@ function itineraryHumanizeTitle($title) {
     }
     return trim($t);
 }
-
-/**
- * Decides whether a day description is long enough to need the Read More/Show
- * Less control. Uses a character-count threshold OR multiple paragraph breaks.
- */
-function itineraryDescriptionNeedsToggle($description) {
-    $text = trim((string)$description);
-    if ($text === '') return false;
-    if (mb_strlen($text, 'UTF-8') > 380) return true;
-    if (substr_count($text, "\n") >= 3) return true;
-    return false;
-}
 ?>
 <?php foreach ($itineraryDays as $i => $day):
     $rowKey     = $i + 1;
@@ -87,7 +80,6 @@ function itineraryDescriptionNeedsToggle($description) {
     }
 
     $dayPrefix  = __('itinerary_day_prefix');
-    $needsToggle = ($dayDesc !== '') && itineraryDescriptionNeedsToggle($dayDesc);
     $descId = 'itinerary-day-' . $rowKey . '-description';
 ?>
     <article class="itinerary-day<?php echo $hasImage ? '' : ' itinerary-day--no-image'; ?>" id="itinerary-day-<?php echo $rowKey; ?>">
@@ -99,17 +91,9 @@ function itineraryDescriptionNeedsToggle($description) {
             <?php endif; ?>
 
             <?php if ($dayDesc !== ''): ?>
-            <div class="itinerary-day__description-wrap<?php echo $needsToggle ? ' itinerary-day__description-wrap--clamped' : ''; ?>">
+            <div class="itinerary-day__description-wrap">
                 <div class="itinerary-day__description" id="<?php echo $descId; ?>"><?php echo nl2br(htmlspecialchars($dayDesc)); ?></div>
             </div>
-            <?php if ($needsToggle): ?>
-            <button type="button" class="itinerary-day__toggle" aria-expanded="false" aria-controls="<?php echo $descId; ?>"
-                data-label-more="<?php echo htmlspecialchars(__('read_more')); ?>"
-                data-label-less="<?php echo htmlspecialchars(__('show_less')); ?>">
-                <span class="itinerary-day__toggle-label"><?php echo htmlspecialchars(__('read_more')); ?></span>
-                <i class="fas fa-chevron-down itinerary-day__toggle-icon" aria-hidden="true"></i>
-            </button>
-            <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($drive !== '' || $meals !== '' || $accom !== ''): ?>
@@ -134,6 +118,15 @@ function itineraryDescriptionNeedsToggle($description) {
                 <?php endif; ?>
             </div>
             <?php endif; ?>
+
+            <?php if ($dayDesc !== ''): ?>
+            <button type="button" class="itinerary-day__toggle" hidden aria-expanded="false" aria-controls="<?php echo $descId; ?>"
+                data-label-more="<?php echo htmlspecialchars(__('read_more')); ?>"
+                data-label-less="<?php echo htmlspecialchars(__('show_less')); ?>">
+                <span class="itinerary-day__toggle-label"><?php echo htmlspecialchars(__('read_more')); ?></span>
+                <i class="fas fa-chevron-down itinerary-day__toggle-icon" aria-hidden="true"></i>
+            </button>
+            <?php endif; ?>
         </div>
 
         <?php if ($hasImage): ?>
@@ -143,34 +136,216 @@ function itineraryDescriptionNeedsToggle($description) {
         <?php endif; ?>
     </article>
 <?php endforeach; ?>
+
+<noscript>
+    <style>
+        /* No-JS fallback: never clip text we cannot expand, never show a dead
+           toggle. Days simply render at their natural content height. */
+        .tour-itinerary-section .itinerary-day { height: auto !important; min-height: 0 !important; }
+        .tour-itinerary-section .itinerary-day__description-wrap { flex: none !important; max-height: none !important; overflow: visible !important; }
+        .tour-itinerary-section .itinerary-day__description-wrap::after { display: none !important; }
+        .tour-itinerary-section .itinerary-day__toggle { display: none !important; }
+    </style>
+</noscript>
+
 <script>
-// Per-day "Read More / Show Less" for long itinerary descriptions. Works
-// independently for every day, is keyboard-usable (it is a real <button>),
-// updates aria-expanded/aria-controls, and only toggles the row it belongs to.
+// Itinerary day "Read More / Show Less". Fully client-side: the button stays
+// hidden until the description actually overflows its collapsed preview area,
+// re-checked on load, font load, resize, and content resize (debounced via
+// requestAnimationFrame + ResizeObserver, no expensive resize loops).
+//
+// Each day is independent and driven by two marker classes:
+//   itinerary-day--has-toggle : description overflows -> fixed compact height
+//                               with a preview + visible Read More button.
+//   itinerary-day--no-toggle  : everything fits -> the card hugs its content
+//                               (auto height) so short text never leaves a big
+//                               blank area, and the image still crops to match.
+// Expanding swaps to `.is-expanded`: fixed height is replaced by natural
+// content-driven height in normal flow, so later days are pushed down and the
+// image column keeps filling with object-fit: cover. Height changes animate
+// smoothly and never create horizontal overflow.
 (function () {
-    function initItineraryToggles() {
-        var toggles = document.querySelectorAll('.itinerary-day__toggle');
-        toggles.forEach(function (btn) {
-            if (btn.getAttribute('data-initialized') === '1') return;
-            btn.setAttribute('data-initialized', '1');
-            btn.addEventListener('click', function () {
-                var wrap = btn.closest('.itinerary-day__description-wrap');
-                var expanded = btn.getAttribute('aria-expanded') === 'true';
-                if (wrap) {
-                    wrap.classList.toggle('itinerary-day__description-wrap--expanded', !expanded);
-                }
-                btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-                var label = btn.querySelector('.itinerary-day__toggle-label');
-                if (label) {
-                    label.textContent = expanded ? btn.getAttribute('data-label-more') : btn.getAttribute('data-label-less');
-                }
-            });
+    'use strict';
+
+    var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function each(list, fn) {
+        Array.prototype.forEach.call(list, fn);
+    }
+
+    function getDays() {
+        return document.querySelectorAll('.tour-itinerary-section .itinerary-day');
+    }
+
+    function wrapOf(day) { return day.querySelector('.itinerary-day__description-wrap'); }
+    function toggleOf(day) { return day.querySelector('.itinerary-day__toggle'); }
+
+    // Force the pure collapsed geometry (fixed compact height, bounded preview
+    // area, hidden toggle) so overflow can be measured. Called synchronously in
+    // the same frame and instantly reverted, so it never paints or flickers.
+    function measureOverflow(day) {
+        var wrap = wrapOf(day);
+        var desc = day.querySelector('.itinerary-day__description');
+        if (!wrap || !desc) return false;
+        day.classList.remove('itinerary-day--has-toggle');
+        day.classList.remove('itinerary-day--no-toggle');
+        void day.offsetHeight;
+        return desc.scrollHeight > wrap.clientHeight + 1;
+    }
+
+    function setLabel(btn, collapsed) {
+        if (!btn) return;
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        var label = btn.querySelector('.itinerary-day__toggle-label');
+        var txt = btn.getAttribute(collapsed ? 'data-label-more' : 'data-label-less');
+        if (label && txt) label.textContent = txt;
+    }
+
+    function evaluate(day) {
+        // Open days keep their state; closed days re-classify cheaply.
+        if (day.classList.contains('is-expanded')) return;
+        var btn = toggleOf(day);
+        var show = measureOverflow(day);
+        day.classList.remove('itinerary-day--has-toggle');
+        day.classList.remove('itinerary-day--no-toggle');
+        day.classList.add(show ? 'itinerary-day--has-toggle' : 'itinerary-day--no-toggle');
+        if (btn) {
+            btn.hidden = !show;
+            if (!show) setLabel(btn, true);
+        }
+    }
+
+    function evaluateAll() {
+        each(getDays(), evaluate);
+    }
+
+    var rafPending = false;
+    function scheduleEvaluate() {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(function () {
+            rafPending = false;
+            evaluateAll();
         });
     }
+
+    // Lightweight height animation between two explicit px endpoints, with a
+    // safety timer in case transitionend does not fire. An .itinerary-day--
+    // animating class keeps the description clipped to the box while it is
+    // shrinking/growing so it never spills over the next day.
+    function animateHeight(day, from, to) {
+        var animating = 'itinerary-day--animating';
+        day.style.transition = 'height 0.38s ease';
+        day.classList.add(animating);
+        day.style.height = from + 'px';
+        void day.offsetHeight;
+        day.style.height = to + 'px';
+
+        function finish() {
+            day.classList.remove(animating);
+            day.style.transition = '';
+            day.style.height = '';
+            day.removeEventListener('transitionend', onEnd);
+            clearTimeout(timer);
+        }
+        function onEnd(e) {
+            if (e.target !== day || e.propertyName !== 'height') return;
+            finish();
+        }
+        day.addEventListener('transitionend', onEnd);
+        var timer = setTimeout(function () {
+            if (day.classList.contains(animating)) finish();
+        }, 550);
+    }
+
+    function toggleDay(day, btn) {
+        if (day.classList.contains('itinerary-day--animating')) return;
+        var expanding = btn.getAttribute('aria-expanded') !== 'true';
+
+        if (REDUCED) {
+            day.classList.toggle('is-expanded', expanding);
+            setLabel(btn, !expanding);
+            scheduleEvaluate();
+            return;
+        }
+
+        var from = day.offsetHeight;
+
+        if (!expanding) {
+            // Collapse: read the collapsed target height without a visible
+            // change, then animate from the current open height to it while
+            // the expanded class stays on (inline height wins over auto).
+            var savedClass = day.classList.contains('is-expanded');
+            day.classList.remove('is-expanded');
+            var collapsedH = day.offsetHeight;
+            day.classList.add('is-expanded');
+            void day.offsetHeight;
+            day.classList.remove('is-expanded');
+            animateHeight(day, from, collapsedH);
+            setLabel(btn, true);
+            return;
+        }
+
+        // Expand to natural height.
+        day.classList.add('is-expanded');
+        var to = day.offsetHeight;
+        if (to <= from) {
+            day.classList.remove('is-expanded');
+            return;
+        }
+        animateHeight(day, from, to);
+        setLabel(btn, false);
+    }
+
+    function wireDay(day) {
+        var btn = toggleOf(day);
+        if (btn && !btn.getAttribute('data-initialized')) {
+            btn.setAttribute('data-initialized', '1');
+            btn.addEventListener('click', function () { toggleDay(day, btn); });
+        }
+    }
+
+    function init() {
+        each(getDays(), wireDay);
+        evaluateAll();
+
+        // Re-check whenever a card is resized (includes collapsing/expanding)
+        // and on window resize — both debounced through rAF.
+        if (window.ResizeObserver) {
+            var ro = new ResizeObserver(scheduleEvaluate);
+            function observeDay(day) {
+                if (!day.getAttribute('data-observed')) {
+                    day.setAttribute('data-observed', '1');
+                    ro.observe(day);
+                }
+            }
+            each(getDays(), observeDay);
+
+            // Cards injected into the section after load (AJAX etc.) get the
+            // same wiring + observation automatically.
+            var section = document.querySelector('.tour-itinerary-section');
+            if (section && window.MutationObserver) {
+                var mo = new MutationObserver(function () {
+                    each(getDays(), function (day) { wireDay(day); observeDay(day); });
+                    scheduleEvaluate();
+                });
+                mo.observe(section, { childList: true, subtree: true });
+            }
+        }
+        window.addEventListener('resize', scheduleEvaluate);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(scheduleEvaluate);
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', evaluateAll);
+        }
+        window.addEventListener('load', evaluateAll);
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initItineraryToggles);
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        initItineraryToggles();
+        init();
     }
 })();
 </script>

@@ -2449,6 +2449,15 @@ body.topbar-hidden .navbar {
     overflow: hidden;
 }
 
+/* Keep footer columns and the copyright bar clear of the floating WhatsApp
+   button (which sits at the bottom-right corner) on tablets and phones. */
+@media (max-width: 1199.98px) {
+    .footer {
+        padding-bottom: 88px;
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 .footer::after {
     content: 'Kizza Tours & Safaris';
     position: absolute;
@@ -2725,11 +2734,18 @@ body.topbar-hidden .navbar {
     color: var(--secondary) !important;
 }
 
-/*===== WHATSAPP FLOAT =====*/
+/*===== WHATSAPP FLOAT =====
+   The anchor is a direct child of <body>, so no overflow/transform/filter/
+   opacity ancestor can trap it in a lower stacking context. It is painted
+   above every page-content element — including the right-side sticky cards
+   (Bootstrap sticky-top = 1020), top-bar (1031) and navbar (1030) — via this
+   one deliberate z-index tier, while on-page modals (Bootstrap 1055 backdrop
+   1050, custom 10000/11000 overlays, toasts 99999) still win over it. */
 .whatsapp-float {
     position: fixed;
-    bottom: 30px;
     right: 30px;
+    bottom: 30px;
+    bottom: calc(30px + env(safe-area-inset-bottom, 0px));
     width: 60px;
     height: 60px;
     background: #25D366;
@@ -2740,7 +2756,7 @@ body.topbar-hidden .navbar {
     font-size: 1.8rem;
     color: var(--white);
     box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
-    z-index: 999;
+    z-index: 1040;
     transition: var(--transition);
     cursor: pointer;
     text-decoration: none;
@@ -2750,6 +2766,55 @@ body.topbar-hidden .navbar {
     transform: scale(1.1);
     color: var(--white);
     box-shadow: 0 8px 30px rgba(37, 211, 102, 0.5);
+}
+
+.whatsapp-float:focus {
+    outline: none;
+}
+
+.whatsapp-float:focus-visible {
+    outline: 3px solid var(--secondary);
+    outline-offset: 4px;
+}
+
+/* Small desktops / tablets: tighter offsets, slightly smaller button so it
+   stays clear of edge content without losing visibility. */
+@media (max-width: 1199.98px) {
+    .whatsapp-float {
+        right: 24px;
+        bottom: 24px;
+        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        width: 56px;
+        height: 56px;
+        font-size: 1.65rem;
+    }
+}
+
+/* Phones: keep clear of menus/content, still comfortably tappable. */
+@media (max-width: 575.98px) {
+    .whatsapp-float {
+        right: 16px;
+        bottom: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: 54px;
+        height: 54px;
+        font-size: 1.55rem;
+    }
+}
+
+/* Right-side sticky cards (tour details booking card, book tour panel): keep
+   the last action button above the WhatsApp circle so it is never hidden.
+   Overrides Bootstrap's .p-4 spacing utility (!important). */
+.tour-booking-card {
+    padding-bottom: 112px !important;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+@media (max-width: 575.98px) {
+    .tour-booking-card {
+        padding-bottom: 88px !important;
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    }
 }
 
 /*===== TOAST NOTIFICATION =====*/
@@ -2782,6 +2847,7 @@ body.topbar-hidden .navbar {
    so no other page component is affected. The section is moved OUT of the col-lg-8
    tour skeleton so it spans the full usable page width on a warm ivory band. */
 .tour-itinerary-section {
+    --itinerary-collapsed-h: 360px;
     width: 100%;
     max-width: 1536px;
     margin-inline: auto;
@@ -2826,15 +2892,30 @@ body.topbar-hidden .navbar {
     margin: 16px 0 0;
 }
 
-/* --- Day rows: one continuous two-column editorial row per day ---
-   Rows are auto-height and live in normal flow: a row can never be shorter than
-   its content, so text can never overflow into the next day or into the
-   Related Tours / FAQ / footer sections. The image column stretches to match. */
+/* --- Responsive collapsed-card heights ---
+   These design heights apply while a day is collapsed, so the row size NEVER
+   depends on the natural height/aspect ratio of the uploaded image. */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .tour-itinerary-section {
+        --itinerary-collapsed-h: 340px;
+    }
+}
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .tour-itinerary-section {
+        --itinerary-collapsed-h: 320px;
+    }
+}
+
+/* --- Day cards: balanced two-column grid with a controlled collapsed height ---
+   The row lives in normal flow. While collapsed it uses the fixed design height
+   so text and image columns share an identical visible height. Expanding swaps
+   it for height:auto (with the collapsed height as a floor), so the row grows
+   with the full text and pushes every following day downward — nothing overlays. */
 .tour-itinerary-section .itinerary-day {
     display: grid;
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
     width: 100%;
-    height: auto;
+    height: var(--itinerary-collapsed-h, 360px);
     min-height: 0;
     align-items: stretch;
     gap: 0;
@@ -2848,14 +2929,14 @@ body.topbar-hidden .navbar {
     grid-template-columns: minmax(0, 1fr);
 }
 
-/* --- Text column --- */
+/* --- Text column: a flexible column so the preview area fills the available
+   space and the toggle stays in a predictable bottom position. --- */
 .tour-itinerary-section .itinerary-day__content {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     align-items: stretch;
     min-width: 0;
-    height: auto;
+    min-height: 0;
     padding: 34px 60px 34px 68px;
     background: #fbfaf7;
 }
@@ -2872,9 +2953,31 @@ body.topbar-hidden .navbar {
     text-transform: none;
 }
 
-/* Description: 16px body text with a comfortable 1.65 line-height. */
+/* --- Description preview area ---
+   While collapsed this region flexes to fill everything between the title and
+   the bottom controls, is clipped to that box, and fades softly at its edge so
+   a partially-cut line never looks broken. --- */
+.tour-itinerary-section .itinerary-day__description-wrap {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.tour-itinerary-section .itinerary-day__description-wrap::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 44px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(251, 250, 247, 0), #fbfaf7);
+}
+
 .tour-itinerary-section .itinerary-day__description {
     max-width: 590px;
+    overflow-wrap: break-word;
     color: #172737;
     font-family: var(--font-body);
     font-size: 16px;
@@ -2890,33 +2993,61 @@ body.topbar-hidden .navbar {
     margin-bottom: 0;
 }
 
-/* --- Read More / Show Less preview state ---
-   Long descriptions are clamped to a preview. Toggling the expanded state on
-   the wrapper removes the clamp in normal flow, so the full text naturally
-   grows its row and pushes everything below it downward — nothing overlays.
-   Kept server-side in the initial HTML, so there is no flash of full content. */
-.tour-itinerary-section .itinerary-day__description-wrap {
-    min-width: 0;
+/* --- Compact verified-fit state (JS adds itinerary-day--no-toggle) ---
+   When the whole description fits inside the collapsed preview box the card
+   stops using the fixed design height and hugs its content with a modest floor,
+   the preview stops clipping, and the column centers its content so a short
+   description never leaves a large blank area. The image still crops to match. */
+.tour-itinerary-section .itinerary-day--no-toggle {
+    height: auto;
+    min-height: 320px;
 }
-.tour-itinerary-section .itinerary-day__description-wrap--clamped .itinerary-day__description {
-    display: -webkit-box;
-    -webkit-line-clamp: 6;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.tour-itinerary-section .itinerary-day--no-toggle .itinerary-day__content {
+    justify-content: center;
 }
-.tour-itinerary-section .itinerary-day__description-wrap--expanded .itinerary-day__description {
-    display: block;
-    -webkit-line-clamp: none;
+.tour-itinerary-section .itinerary-day--no-toggle .itinerary-day__description-wrap {
+    flex: none;
     overflow: visible;
 }
+.tour-itinerary-section .itinerary-day--no-toggle .itinerary-day__description-wrap::after {
+    display: none;
+}
 
-/* Accessible per-day toggle button. */
+/* --- Expanded state (JS adds is-expanded) ---
+   Fixed height is replaced by natural content-driven height (collapsed height
+   becomes a minimum), the preview stops clipping, and the image column keeps
+   filling the whole row with object-fit: cover. */
+.tour-itinerary-section .itinerary-day.is-expanded {
+    height: auto;
+    min-height: var(--itinerary-collapsed-h, 360px);
+}
+.tour-itinerary-section .itinerary-day.is-expanded .itinerary-day__content {
+    justify-content: flex-start;
+}
+.tour-itinerary-section .itinerary-day.is-expanded .itinerary-day__description-wrap {
+    flex: none;
+    overflow: visible;
+}
+.tour-itinerary-section .itinerary-day.is-expanded .itinerary-day__description-wrap::after {
+    display: none;
+}
+
+/* While a card is animating, keep the description clipped to the box so text
+   never spills over the next day (declared after the expanded rule above so it
+   wins during the transition). */
+.tour-itinerary-section .itinerary-day--animating .itinerary-day__description-wrap {
+    overflow: hidden;
+}
+
+/* --- Accessible per-day toggle button. Hidden ([hidden]) until the JS
+   overflow check proves extra content is clipped, so a short description never
+   shows a dead Read More control. --- */
 .tour-itinerary-section .itinerary-day__toggle {
     display: inline-flex;
     align-items: center;
     gap: 7px;
     align-self: flex-start;
-    margin: 14px 0 0;
+    margin: 16px 0 0;
     padding: 6px 0;
     border: 0;
     background: transparent;
@@ -2929,6 +3060,12 @@ body.topbar-hidden .navbar {
     line-height: 1.2;
     cursor: pointer;
     transition: color 0.25s ease;
+}
+.tour-itinerary-section .itinerary-day__toggle[hidden] {
+    display: none;
+}
+.tour-itinerary-section .itinerary-day--has-toggle .itinerary-day__toggle {
+    margin-top: auto;   /* pin the control to the bottom of the text column */
 }
 .tour-itinerary-section .itinerary-day__toggle:hover {
     color: #8a6a17;
@@ -2975,11 +3112,14 @@ body.topbar-hidden .navbar {
     font-weight: 700;
 }
 
-/* --- Media column: landscape image fills the entire right side ---
-   The cell stretches to the row height via align-items: stretch, so the image is
-   always cropped into a wide landscape panel matching the text column — never
-   its natural height, and never smaller than its row. */
+/* --- Media column ---
+   The wrapper stretches to the row's visible height so both columns are always
+   equal. The loaded <img> is absolutely positioned inside it, which stops the
+   image's intrinsic dimensions from ever inflating the row: it simply crops
+   (object-fit: cover) into whatever height the text column finally has —
+   landscape, portrait, square, or oversized files alike. */
 .tour-itinerary-section .itinerary-day__media {
+    position: relative;
     width: 100%;
     min-width: 0;
     min-height: 0;
@@ -2989,18 +3129,16 @@ body.topbar-hidden .navbar {
     background: #fbfaf7;
 }
 .tour-itinerary-section .itinerary-day__media img {
-    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    min-height: 0;
     max-width: none;
     margin: 0;
     padding: 0;
     object-fit: cover;
     object-position: center;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
 }
 
 /* --- Legacy fallback (tours without structured days) --- */
@@ -3016,8 +3154,8 @@ body.topbar-hidden .navbar {
     max-width: 76ch;
 }
 
-/* --- Tablet (768px - 991px): keep two columns, tighten text padding and let
-   rows grow naturally while images keep filling their columns. --- */
+/* --- Tablet (768px - 991px): keep two columns, tighten text padding; the
+   collapsed height is already reduced to 320px via the CSS variable above. --- */
 @media (min-width: 768px) and (max-width: 991.98px) {
     .tour-itinerary-section .tour-itinerary-header {
         padding: 30px 30px 20px;
@@ -3028,6 +3166,9 @@ body.topbar-hidden .navbar {
     .tour-itinerary-section .itinerary-day__title {
         font-size: 1.6rem;
     }
+    .tour-itinerary-section .itinerary-day--no-toggle {
+        min-height: 280px;
+    }
     .tour-itinerary-section .itinerary-day__toggle {
         margin-top: 12px;
     }
@@ -3036,7 +3177,10 @@ body.topbar-hidden .navbar {
     }
 }
 
-/* --- Mobile (< 768px): stack in order title -> description -> meta -> image --- */
+/* --- Mobile (< 768px): stack in order title -> description -> meta -> toggle
+   -> image. No desktop equal-column height is enforced; the image uses a
+   controlled 16/10 aspect ratio and the description gets a fixed max-height
+   preview so Read More / Show Less keeps working on phones too. --- */
 @media (max-width: 767.98px) {
     .tour-itinerary-section .tour-itinerary-header {
         padding: 28px 22px 22px;
@@ -3052,6 +3196,10 @@ body.topbar-hidden .navbar {
         height: auto;
         min-height: 0;
     }
+    .tour-itinerary-section .itinerary-day.is-expanded,
+    .tour-itinerary-section .itinerary-day--no-toggle {
+        min-height: 0;
+    }
     .tour-itinerary-section .itinerary-day__content {
         height: auto;
         padding: 28px 22px;
@@ -3062,7 +3210,29 @@ body.topbar-hidden .navbar {
     .tour-itinerary-section .itinerary-day__description {
         font-size: 15px;
     }
-    .tour-itinerary-section .itinerary-day__toggle {
+    /* Collapsed preview on phones: bounded by max-height (Read More reveals the
+       rest). Applies to every collapsed day for a consistent look. */
+    .tour-itinerary-section .itinerary-day__description-wrap,
+    .tour-itinerary-section .itinerary-day--no-toggle .itinerary-day__description-wrap {
+        flex: none;
+        max-height: 9em;
+        overflow: hidden;
+    }
+    .tour-itinerary-section .itinerary-day.is-expanded .itinerary-day__description-wrap {
+        flex: none;
+        max-height: none;
+        overflow: visible;
+    }
+    /* No fade over fully-visible text on phones either. */
+    .tour-itinerary-section .itinerary-day--no-toggle .itinerary-day__description-wrap::after,
+    .tour-itinerary-section .itinerary-day.is-expanded .itinerary-day__description-wrap::after {
+        display: none;
+    }
+    .tour-itinerary-section .itinerary-day--animating .itinerary-day__description-wrap {
+        overflow: hidden;
+    }
+    .tour-itinerary-section .itinerary-day__toggle,
+    .tour-itinerary-section .itinerary-day--has-toggle .itinerary-day__toggle {
         margin-top: 12px;
         padding: 8px 0;
         font-size: 0.82rem;
@@ -3070,18 +3240,19 @@ body.topbar-hidden .navbar {
     .tour-itinerary-section .itinerary-day__meta {
         margin-top: 20px;
     }
-    /* Image moves after text + metadata (it is already last in the DOM). */
     .tour-itinerary-section .itinerary-day__media {
+        position: relative;
         width: 100%;
         height: auto;
         min-height: 0;
         aspect-ratio: 16 / 10;
-        order: 4;
     }
     .tour-itinerary-section .itinerary-day__media img {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        min-height: 0;
         object-fit: cover;
     }
     .tour-itinerary-section .itinerary-legacy {

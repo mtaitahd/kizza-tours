@@ -160,7 +160,7 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
             </div>
 
             <div class="col-lg-5" data-aos="fade-left">
-                <div class="rounded-0 p-4" style="background: var(--primary); color: var(--white); position: sticky; top: 120px;">
+                <div class="rounded-0 p-4 tour-booking-card" style="background: var(--primary); color: var(--white); position: sticky; top: 120px;">
                     <h4 style="color: var(--secondary); font-family: var(--font-secondary);"><?php echo __('book_why_title'); ?></h4>
                     <ul class="list-unstyled mt-4">
                         <li class="mb-3 d-flex align-items-start gap-3">
