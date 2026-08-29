@@ -48,9 +48,9 @@ if (empty($img)) {
     $img = file_exists(BASE_PATH . $fallback) ? SITE_URL . '/' . $fallback : 'assets/images/placeholder.svg';
 }
 
-$highlightsArr = array_filter(array_map('trim', explode(',', $tour['highlights'] ?? '')));
-$includesArr = array_filter(array_map('trim', explode(',', $tour['includes'] ?? '')));
-$excludesArr = array_filter(array_map('trim', explode(',', $tour['excludes'] ?? '')));
+$highlightsArr = tourListItems($tour['highlights'] ?? '');
+$includesArr = tourListItems($tour['includes'] ?? '');
+$excludesArr = tourListItems($tour['excludes'] ?? '');
 $itineraryLines = array_filter(array_map('trim', explode("\n", $tour['itinerary'] ?? '')));
 $itineraryDays = getItineraryDays($tour['id'] ?? 0);
 
@@ -133,16 +133,14 @@ $tourHeroBg = $heroBgUrl
 
                 <?php if (!empty($highlightsArr)): ?>
                 <h3 class="mt-4"><?php echo __('tour_details_highlights'); ?></h3>
-                <div class="row g-2 mt-2">
+                <ul class="tour-list tour-list--highlights mt-3">
                     <?php foreach ($highlightsArr as $hl): ?>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-2 p-2">
-                            <i class="fas fa-check-circle" style="color: var(--secondary);"></i>
-                            <span><?php echo htmlspecialchars($hl); ?></span>
-                        </div>
-                    </div>
+                    <li class="tour-list__item">
+                        <i class="fas fa-check-circle tour-list__icon tour-list__icon--highlight" aria-hidden="true"></i>
+                        <span class="tour-list__text"><?php echo htmlspecialchars($hl); ?></span>
+                    </li>
                     <?php endforeach; ?>
-                </div>
+                </ul>
                 <?php endif; ?>
             </div>
 
@@ -162,18 +160,24 @@ $tourHeroBg = $heroBgUrl
 
                     <?php if (!empty($includesArr)): ?>
                     <h5 class="mt-3"><?php echo __('tour_details_includes'); ?></h5>
-                    <ul class="list-unstyled">
+                    <ul class="tour-list tour-list--includes">
                         <?php foreach ($includesArr as $inc): ?>
-                        <li class="mb-1"><i class="fas fa-check text-success me-2"></i> <?php echo htmlspecialchars($inc); ?></li>
+                        <li class="tour-list__item">
+                            <i class="fas fa-check tour-list__icon tour-list__icon--include" aria-hidden="true"></i>
+                            <span class="tour-list__text"><?php echo htmlspecialchars($inc); ?></span>
+                        </li>
                         <?php endforeach; ?>
                     </ul>
                     <?php endif; ?>
 
                     <?php if (!empty($excludesArr)): ?>
                     <h5 class="mt-3"><?php echo __('tour_details_excludes'); ?></h5>
-                    <ul class="list-unstyled">
+                    <ul class="tour-list tour-list--excludes">
                         <?php foreach ($excludesArr as $exc): ?>
-                        <li class="mb-1"><i class="fas fa-times text-danger me-2"></i> <?php echo htmlspecialchars($exc); ?></li>
+                        <li class="tour-list__item">
+                            <i class="fas fa-times tour-list__icon tour-list__icon--exclude" aria-hidden="true"></i>
+                            <span class="tour-list__text"><?php echo htmlspecialchars($exc); ?></span>
+                        </li>
                         <?php endforeach; ?>
                     </ul>
                     <?php endif; ?>
@@ -213,42 +217,9 @@ $tourHeroBg = $heroBgUrl
 </section>
 <?php endif; ?>
 
-<script>
-// Only expand an itinerary row past its 294px height when its description text
-// genuinely overflows; the image column stretches to match that row. No-op on
-// mobile (<768px) where rows are already auto-height.
-(function () {
-    var section = document.getElementById('tour-itinerary');
-    if (!section) return;
-    function fitRows() {
-        if (window.innerWidth < 768) {
-            section.querySelectorAll('.itinerary-day--tall').forEach(function (el) { el.classList.remove('itinerary-day--tall'); });
-            return;
-        }
-        section.querySelectorAll('.itinerary-day').forEach(function (day) {
-            var content = day.querySelector('.itinerary-day__content');
-            if (!content) return;
-            if (content.scrollHeight > content.clientHeight + 1) {
-                day.classList.add('itinerary-day--tall');
-            } else {
-                day.classList.remove('itinerary-day--tall');
-            }
-        });
-    }
-    if (document.readyState === 'complete') { fitRows(); }
-    else { window.addEventListener('load', fitRows); }
-    window.addEventListener('resize', fitRows);
-    var t = null;
-    window.addEventListener('scroll', function () {
-        clearTimeout(t);
-        t = setTimeout(fitRows, 150);
-    }, { passive: true });
-})();
-</script>
-
 <!-- Related Tours -->
 <?php if (!empty($relatedTours)): ?>
-<section class="section-padding" style="background: var(--off-white);">
+<section class="section-padding tour-details-related" style="background: var(--off-white);">
     <div class="container">
         <div class="text-center mb-5" data-aos="fade-up">
             <span class="section-subtitle"><?php echo __('tour_details_related_subtitle'); ?></span>
@@ -265,8 +236,8 @@ $tourHeroBg = $heroBgUrl
                         <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt['title'] ?? ''); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
                     </div>
                     <div class="package-card-body">
-                        <h3 class="package-card-title" style="font-size: 1rem;"><?php echo htmlspecialchars($rt['title'] ?? ''); ?></h3>
-                        <p style="color: var(--text-light); font-size: 0.85rem;"><?php echo htmlspecialchars(substr($rt['description'] ?? '', 0, 80)); ?>...</p>
+                        <h3 class="package-card-title"><?php echo htmlspecialchars($rt['title'] ?? ''); ?></h3>
+                        <p class="tour-details-related__desc"><?php echo htmlspecialchars($rt['description'] ?? ''); ?></p>
                         <a href="<?php echo SITE_URL; ?>/safari/<?php echo htmlspecialchars($rt['slug'] ?? ''); ?>" class="btn btn-premium btn-outline-gold btn-sm w-100"><?php echo __('tour_details_view'); ?></a>
                     </div>
                 </div>
@@ -280,9 +251,6 @@ $tourHeroBg = $heroBgUrl
 <!-- FAQ Section -->
 <?php
 $tourFaqs = getFAQsByTour($tour['id'] ?? 0);
-if (empty($tourFaqs)) {
-    $tourFaqs = getFAQs(6);
-}
 $seenQuestions = [];
 $tourFaqs = array_filter($tourFaqs, function($f) use (&$seenQuestions) {
     $key = strtolower(trim($f['question']));

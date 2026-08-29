@@ -1051,6 +1051,80 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     font-size: 0.75rem;
 }
 
+/*===== TOUR DETAILS: RELATED TOUR CARDS =====
+   Scoped to the related-tours strip on the tour details page. Titles and
+   descriptions are clamped to keep cards in one visual row; the wrapper is
+   normal flow (no absolute positioning, no hidden overflow on the section). */
+.tour-details-related .package-card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+.tour-details-related .package-card-body .btn {
+    margin-top: auto;
+}
+.tour-details-related .package-card-title {
+    font-size: 1.1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.4em;
+}
+.tour-details-related__desc {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 3.5em;
+    margin-bottom: 1rem;
+}
+
+/*===== TOUR LISTS (highlights / includes / excludes) ===== */
+.tour-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.tour-list__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    min-width: 0;
+}
+.tour-list__icon {
+    flex: 0 0 auto;
+    font-size: 0.95rem;
+    margin-top: 0.28rem;
+}
+.tour-list__icon--include {
+    color: #16a34a;
+}
+.tour-list__icon--exclude {
+    color: #dc2626;
+}
+.tour-list__icon--highlight {
+    color: var(--secondary);
+}
+.tour-list__text {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+.tour-list--highlights .tour-list__item {
+    gap: 0.75rem;
+}
+.tour-list--highlights .tour-list__text {
+    font-size: 1.05rem;
+    color: var(--primary);
+    font-family: var(--font-primary);
+}
+
 /*===== PACKAGE DETAIL MODAL =====*/
 .pkg-modal-overlay {
     position: fixed;
@@ -2752,13 +2826,16 @@ body.topbar-hidden .navbar {
     margin: 16px 0 0;
 }
 
-/* --- Day rows: one continuous two-column editorial row (approx 294px tall) --- */
+/* --- Day rows: one continuous two-column editorial row per day ---
+   Rows are auto-height and live in normal flow: a row can never be shorter than
+   its content, so text can never overflow into the next day or into the
+   Related Tours / FAQ / footer sections. The image column stretches to match. */
 .tour-itinerary-section .itinerary-day {
     display: grid;
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
     width: 100%;
-    height: 294px;
-    min-height: 294px;
+    height: auto;
+    min-height: 0;
     align-items: stretch;
     gap: 0;
     margin: 0;
@@ -2766,19 +2843,20 @@ body.topbar-hidden .navbar {
     border-top: 1px solid rgba(8, 39, 68, 0.10);
 }
 
-/* No image -> text column spans the full row (still 294px, content centered). */
+/* No image -> the text column spans the full row width. */
 .tour-itinerary-section .itinerary-day--no-image {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 /* --- Text column --- */
 .tour-itinerary-section .itinerary-day__content {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
+    align-items: stretch;
     min-width: 0;
-    height: 100%;
-    padding: 30px 60px 30px 68px;
+    height: auto;
+    padding: 34px 60px 34px 68px;
     background: #fbfaf7;
 }
 
@@ -2812,6 +2890,65 @@ body.topbar-hidden .navbar {
     margin-bottom: 0;
 }
 
+/* --- Read More / Show Less preview state ---
+   Long descriptions are clamped to a preview. Toggling the expanded state on
+   the wrapper removes the clamp in normal flow, so the full text naturally
+   grows its row and pushes everything below it downward — nothing overlays.
+   Kept server-side in the initial HTML, so there is no flash of full content. */
+.tour-itinerary-section .itinerary-day__description-wrap {
+    min-width: 0;
+}
+.tour-itinerary-section .itinerary-day__description-wrap--clamped .itinerary-day__description {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.tour-itinerary-section .itinerary-day__description-wrap--expanded .itinerary-day__description {
+    display: block;
+    -webkit-line-clamp: none;
+    overflow: visible;
+}
+
+/* Accessible per-day toggle button. */
+.tour-itinerary-section .itinerary-day__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    align-self: flex-start;
+    margin: 14px 0 0;
+    padding: 6px 0;
+    border: 0;
+    background: transparent;
+    color: #b88720;
+    font-family: var(--font-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: color 0.25s ease;
+}
+.tour-itinerary-section .itinerary-day__toggle:hover {
+    color: #8a6a17;
+}
+.tour-itinerary-section .itinerary-day__toggle:focus {
+    outline: none;
+}
+.tour-itinerary-section .itinerary-day__toggle:focus-visible {
+    outline: 2px solid #b88720;
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+.tour-itinerary-section .itinerary-day__toggle-icon {
+    font-size: 11px;
+    transition: transform 0.25s ease;
+}
+.tour-itinerary-section .itinerary-day__toggle[aria-expanded="true"] .itinerary-day__toggle-icon {
+    transform: rotate(180deg);
+}
+
 /* --- Metadata row: plain, no boxes/pills, gold icons, values only when present --- */
 .tour-itinerary-section .itinerary-day__meta {
     display: flex;
@@ -2839,8 +2976,9 @@ body.topbar-hidden .navbar {
 }
 
 /* --- Media column: landscape image fills the entire right side ---
-   The cell stretches to the (294px) row height via align-items: stretch, so the
-   image is always cropped into a wide landscape panel — never its natural height. */
+   The cell stretches to the row height via align-items: stretch, so the image is
+   always cropped into a wide landscape panel matching the text column — never
+   its natural height, and never smaller than its row. */
 .tour-itinerary-section .itinerary-day__media {
     width: 100%;
     min-width: 0;
@@ -2865,13 +3003,6 @@ body.topbar-hidden .navbar {
     box-shadow: none;
 }
 
-/* Long-description exception: only a row whose text overflows is allowed to grow
-   past 294px (height:auto); its image stretches to match the resulting height.
-   The .itinerary-day--tall class is added by a tiny script in tour-details.php. */
-.tour-itinerary-section .itinerary-day--tall {
-    height: auto;
-}
-
 /* --- Legacy fallback (tours without structured days) --- */
 .tour-itinerary-section .itinerary-legacy {
     padding: 0 68px 40px;
@@ -2885,21 +3016,20 @@ body.topbar-hidden .navbar {
     max-width: 76ch;
 }
 
-/* --- Tablet (768px - 991px): keep two columns, tighten text padding, and let
-   rows grow only as needed while images keep filling their columns. --- */
+/* --- Tablet (768px - 991px): keep two columns, tighten text padding and let
+   rows grow naturally while images keep filling their columns. --- */
 @media (min-width: 768px) and (max-width: 991.98px) {
     .tour-itinerary-section .tour-itinerary-header {
         padding: 30px 30px 20px;
-    }
-    .tour-itinerary-section .itinerary-day {
-        height: auto;
-        min-height: 294px;
     }
     .tour-itinerary-section .itinerary-day__content {
         padding: 28px 30px;
     }
     .tour-itinerary-section .itinerary-day__title {
         font-size: 1.6rem;
+    }
+    .tour-itinerary-section .itinerary-day__toggle {
+        margin-top: 12px;
     }
     .tour-itinerary-section .itinerary-legacy {
         padding: 0 30px 34px;
@@ -2931,6 +3061,11 @@ body.topbar-hidden .navbar {
     }
     .tour-itinerary-section .itinerary-day__description {
         font-size: 15px;
+    }
+    .tour-itinerary-section .itinerary-day__toggle {
+        margin-top: 12px;
+        padding: 8px 0;
+        font-size: 0.82rem;
     }
     .tour-itinerary-section .itinerary-day__meta {
         margin-top: 20px;

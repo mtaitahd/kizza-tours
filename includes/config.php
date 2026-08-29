@@ -473,6 +473,74 @@ function limitText($text, $limit = 100) {
     return substr($text, 0, $limit) . '...';
 }
 
+/**
+ * Normalizes a repeatable list value (highlights / includes / excludes) into a
+ * flat array of individual items.
+ *
+ * Supports the modern JSON-array storage (["Item A","Item B"]) written by the
+ * tour admin item editors, newline-separated values, and the legacy
+ * comma-separated strings kept by older records — without ever destroying the
+ * stored value. Empty values return an empty array.
+ */
+function tourListItems($raw) {
+    if (is_array($raw)) {
+        return tourListNormalize($raw);
+    }
+    $raw = trim((string)$raw);
+    if ($raw === '') return [];
+
+    // Modern JSON-array storage.
+    if (preg_match('/^\s*\[/', $raw)) {
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            $items = tourListNormalize($decoded);
+            if (!empty($items)) return $items;
+        }
+    }
+
+    // Newline-separated values (one item per line).
+    $lines = preg_split("/\r\n|\r|\n/", $raw);
+    if (count($lines) > 1) {
+        $items = tourListNormalize($lines);
+        if (count($items) > 0) return $items;
+    }
+
+    // Legacy comma-separated values.
+    return tourListNormalize(preg_split('/\s*,\s*/', $raw));
+}
+
+/**
+ * Builds the normalized, deduplicated item list used for storage. Preserves the
+ * order the admin entered and drops empty/duplicate entries.
+ */
+function tourListNormalize($values) {
+    $out = [];
+    $seen = [];
+    foreach ((array)$values as $value) {
+        if (is_array($value)) $value = $value['value'] ?? null;
+        if (!is_string($value) && !is_numeric($value)) continue;
+        $item = trim((string)$value);
+        $key = mb_strtolower($item, 'UTF-8');
+        if ($item === '' || isset($seen[$key])) continue;
+        $seen[$key] = true;
+        $out[] = $item;
+    }
+    return $out;
+}
+
+/**
+ * Serializes an item list into the JSON-array storage format the frontend
+ * helper understands. Empty lists are stored as an empty string so existing
+ * `empty()` checks keep working.
+ */
+function tourListStorage($items) {
+    if (is_string($items)) {
+        $items = tourListItems($items);
+    }
+    $clean = tourListNormalize($items);
+    return $clean ? json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
+}
+
 function slugify($text) {
     $text = preg_replace('~[^\pL\d]+~u', '-', $text);
     if (function_exists('iconv')) {

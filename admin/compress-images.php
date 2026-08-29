@@ -1,6 +1,7 @@
 ﻿<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
+require_once __DIR__ . '/../includes/image-compressor.php';
 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: ./');
@@ -14,141 +15,121 @@ $scanDirs = [
     __DIR__ . '/../assets/images',
     __DIR__ . '/../templates/assets/img',
 ];
-$quality = 70;
-$maxWidth = 1920;
 
-$useImagick = extension_loaded('imagick');
-$hasLibrary = extension_loaded('imagick') || extension_loaded('gd');
-$results = [];
-$totalSaved = 0;
-$filesFound = 0;
+$compressor = new ImageCompressor(BASE_PATH);
+$compressor->setScanDirs($scanDirs);
+$compressor->setParams(70, 1920);
+$hasLibrary = ImageCompressor::hasLibrary();
 
-$allImageFiles = [];
+// ------------------------------------------------ JSON job endpoints
+$isAjax = ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['ajax'] ?? '') === '1');
+if ($isAjax) {
+    verify_csrf();
+    header('Content-Type: application/json; charset=utf-8');
+    $action = $_POST['action'] ?? '';
 
-function scanImageDir($dir, &$res = []) {
-    foreach (scandir($dir) as $item) {
-        if ($item === '.' || $item === '..') continue;
-        $path = $dir . '/' . $item;
-        if (is_dir($path)) { scanImageDir($path, $res); }
-        else {
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp']) && filesize($path) > 10240 && basename($path) !== 'log.png') {
-                $res[] = $path;
-            }
+    $respond = function (array $payload) {
+        echo json_encode($payload);
+        exit;
+    };
+
+    try {
+        switch ($action) {
+            case 'start':
+                if (!$compressor->acquireLock()) {
+                    $respond(['ok' => false, 'error' => 'Another compression job is already running. Please wait for it to finish.']);
+                }
+                $selection = isset($_POST['paths']) ? array_values(array_filter(array_map('trim', (array)$_POST['paths']))) : null;
+                $state = $compressor->startJob($selection);
+                $compressor->releaseLock();
+                $respond(['ok' => true, 'state' => compressorTotals($state)]);
+            case 'batch':
+                if (!$compressor->acquireLock()) {
+                    $respond(['ok' => false, 'error' => 'Another compression job is already running. Please wait for it to finish.']);
+                }
+                $state = $compressor->processBatch(8000, 4);
+                $compressor->releaseLock();
+                $respond(['ok' => true, 'state' => compressorTotals($state)]);
+            case 'status':
+                $respond(['ok' => true, 'state' => compressorTotals($compressor->readState())]);
+            case 'reset':
+                $compressor->resetState();
+                $respond(['ok' => true]);
         }
+        $respond(['ok' => false, 'error' => 'Unknown action.']);
+    } catch (\Throwable $e) {
+        $compressor->releaseLock();
+        error_log("Compress images error: " . $e->getMessage());
+        $respond(['ok' => false, 'error' => $e->getMessage()]);
     }
-    return $res;
 }
 
-foreach ($scanDirs as $dir) {
-    if (is_dir($dir)) scanImageDir($dir, $allImageFiles);
-}
-
-// Handle replace
+// ------------------------------------------------ Replace (legacy page POST)
 $replaceMessage = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'replace') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'replace') {
     verify_csrf();
     $relPath = trim($_POST['rel_path'] ?? '');
     $absPath = realpath(__DIR__ . '/../' . $relPath);
     $baseDir = realpath(__DIR__ . '/..');
-    if ($absPath && str_starts_with($absPath, $baseDir) && file_exists($absPath) && isset($_FILES['replace_image'])) {
+    if ($absPath && $baseDir && strpos($absPath, $baseDir) === 0 && file_exists($absPath) && isset($_FILES['replace_image'])) {
         $ext = strtolower(pathinfo($absPath, PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
-        if (in_array($ext, $allowed)) {
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
             $tmp = $_FILES['replace_image']['tmp_name'];
             if (is_uploaded_file($tmp) && $_FILES['replace_image']['error'] === UPLOAD_ERR_OK) {
-                move_uploaded_file($tmp, $absPath);
-                $replaceMessage = 'Image replaced successfully: ' . htmlspecialchars($relPath);
+                if (move_uploaded_file($tmp, $absPath)) {
+                    $replaceMessage = 'Image replaced successfully: ' . htmlspecialchars($relPath);
+                }
             }
         }
     }
 }
 
-// Handle compression
-$compressAttempted = isset($_POST['compress']);
-if ($compressAttempted && $hasLibrary) {
-    function compressImage($path, $quality, $maxWidth, $useImagick) {
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $origSize = filesize($path);
-        if ($origSize < 10240) return null;
-
-        if ($useImagick) {
-            $img = new Imagick($path);
-            $w = $img->getImageWidth();
-            if ($w > $maxWidth) $img->resizeImage($maxWidth, 0, Imagick::FILTER_LANCZOS, 1);
-            if ($ext === 'webp') { $img->setImageFormat('webp'); $img->setImageCompressionQuality($quality); }
-            elseif ($ext === 'png') { $img->setImageFormat('png'); $img->setImageCompressionQuality($quality); }
-            else { $img->setImageFormat('jpg'); $img->setImageCompressionQuality($quality); }
-            $blob = $img->getImageBlob();
-            $img->destroy();
-        } else {
-            switch ($ext) {
-                case 'webp': $src = @imagecreatefromwebp($path); break;
-                case 'png': $src = @imagecreatefrompng($path); break;
-                case 'jpg': case 'jpeg': $src = @imagecreatefromjpeg($path); break;
-                default: return null;
-            }
-            if (!$src) return null;
-            $w = imagesx($src); $h = imagesy($src);
-            if ($w > $maxWidth) {
-                $ratio = $maxWidth / $w;
-                $dst = imagecreatetruecolor($maxWidth, (int)($h * $ratio));
-                if ($ext === 'png') { imagealphablending($dst, false); imagesavealpha($dst, true); }
-                imagecopyresampled($dst, $src, 0, 0, 0, 0, $maxWidth, (int)($h * $ratio), $w, $h);
-                imagedestroy($src); $src = $dst;
-            }
-            ob_start();
-            if ($ext === 'webp') imagewebp($src, null, $quality);
-            elseif ($ext === 'png') imagepng($src, null, 9);
-            else imagejpeg($src, null, $quality);
-            $blob = ob_get_clean();
-            imagedestroy($src);
+function compressorTotals($state)
+{
+    if (!is_array($state)) {
+        return ['running' => false, 'files' => [], 'total' => 0, 'index' => 0, 'done' => 0, 'skipped' => 0, 'errors' => 0, 'saved' => 0, 'result' => null];
+    }
+    $files = $state['files'] ?? [];
+    $done = 0;
+    $skipped = 0;
+    $errors = 0;
+    $saved = 0;
+    foreach ($files as $f) {
+        $st = $f['status'] ?? 'pending';
+        if ($st === 'done') {
+            $done++;
+            $saved += max(0, (int)($f['orig'] ?? 0) - (int)($f['new'] ?? 0));
+        } elseif ($st === 'skipped') {
+            $skipped++;
+        } elseif ($st === 'error') {
+            $errors++;
         }
-
-        $newSize = strlen($blob);
-        if ($newSize < $origSize) {
-            file_put_contents($path, $blob);
-            return ['orig' => $origSize, 'new' => $newSize];
-        }
-        return ['orig' => $origSize, 'new' => $origSize];
     }
-
-    $allFiles = $allImageFiles;
-    $filesFound = count($allFiles);
-
-    foreach ($allFiles as $file) {
-        $res = compressImage($file, $quality, $maxWidth, $useImagick);
-        if ($res === null) continue;
-        $savings = (1 - $res['new'] / $res['orig']) * 100;
-        $totalSaved += ($res['orig'] - $res['new']);
-        $results[] = [
-            'path' => str_replace([__DIR__ . '/../', '\\'], ['', '/'], $file),
-            'orig' => $res['orig'],
-            'new' => $res['new'],
-            'savings' => $savings,
-            'optimal' => $res['new'] >= $res['orig'],
-        ];
-    }
-
-    // Re-scan after compression
-    $allImageFiles = [];
-    foreach ($scanDirs as $dir) {
-        if (is_dir($dir)) scanImageDir($dir, $allImageFiles);
-    }
+    return [
+        'running' => !($state['done'] ?? false),
+        'files'   => $files,
+        'total'   => count($files),
+        'index'   => (int)($state['index'] ?? 0),
+        'done'    => $done,
+        'skipped' => $skipped,
+        'errors'  => $errors,
+        'saved'   => $saved,
+        'result'  => ($state['done'] ?? false) ? ['saved_bytes' => (int)($state['total_saved'] ?? $saved), 'total_orig' => (int)($state['total_orig'] ?? 0)] : null,
+    ];
 }
 
-// Group images by directory for display
+// ------------------------------------------------ Page listing
+$allImageFiles = $compressor->scan();
 $grouped = [];
 foreach ($allImageFiles as $file) {
-    $rel = str_replace([__DIR__ . '/../', '\\'], ['', '/'], $file);
-    $dirName = dirname($rel);
+    $dirName = dirname($file['rel']);
     if ($dirName === '.') $dirName = 'root';
     $grouped[$dirName][] = [
-        'rel' => $rel,
-        'abs' => $file,
-        'size' => filesize($file),
-        'ext' => strtolower(pathinfo($file, PATHINFO_EXTENSION)),
-        'name' => basename($file),
+        'rel'  => $file['rel'],
+        'abs'  => $file['abs'],
+        'size' => $file['size'],
+        'ext'  => $file['ext'],
+        'name' => basename($file['abs']),
     ];
 }
 $totalImages = count($allImageFiles);
@@ -186,6 +167,7 @@ $totalImages = count($allImageFiles);
         .result-log { background: #1a1a2e; color: #00ff88; font-family: 'Courier New', monospace; font-size: 0.78rem; padding: 1rem; border-radius: 8px; max-height: 500px; overflow-y: auto; line-height: 1.6; }
         .result-log .ok { color: #00ff88; }
         .result-log .optimal { color: #ffd700; }
+        .result-log .error { color: #ff6b6b; }
         .result-log .done { color: #00bfff; font-weight: bold; }
         .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
         .img-card { border: 1px solid #e9ecef; border-radius: 10px; overflow: hidden; background: #fff; transition: box-shadow 0.2s; position: relative; }
@@ -201,6 +183,8 @@ $totalImages = count($allImageFiles);
         .img-card.selected { border-color: #0A2540; box-shadow: 0 0 0 2px rgba(10,37,64,0.25); }
         #toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .dir-badge { font-size: 0.7rem; padding: 2px 10px; border-radius: 20px; background: #e9ecef; color: #555; display: inline-block; margin-bottom: 4px; }
+        .progress { height: 22px; }
+        .progress-label { font-size: 0.85rem; color: #555; }
         @media (max-width: 640px) {
             .img-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
             .img-card .thumb-wrap { height: 100px; }
@@ -264,18 +248,50 @@ $totalImages = count($allImageFiles);
                     <?php endif; ?>
 
                     <?php if (!$hasLibrary): ?>
-                        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No image library found (Imagick or GD). Install one to use compression.</div>
+                        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>No image library found (GD). Install the GD PHP extension to use compression.</div>
                     <?php endif; ?>
 
-                    <!-- Toolbar -->
+                    <!-- Compression Tool -->
+                    <div class="card compress-card mb-4">
+                        <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-compress-alt mr-2"></i>Compression Tool</h6>
+                            <div id="jobSummary" class="text-muted" style="font-size:0.85rem;"></div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Compresses images (<strong>70% quality</strong>, max width <strong>1920px</strong>) across <code>uploads/</code>, <code>assets/images/</code>, and <code>templates/assets/img/</code>. Images smaller than 10 KB and files that are already optimized are skipped automatically. Work runs in short batches, so large libraries never time out.</p>
+                            <div id="jobControls">
+                                <button type="button" id="compressAllBtn" class="btn btn-primary" <?php echo $hasLibrary ? '' : 'disabled'; ?>>
+                                    <i class="fas fa-compress-alt mr-2"></i>Compress All Images
+                                </button>
+                                <button type="button" id="compressSelectedBtn" class="btn btn-outline-info" <?php echo $hasLibrary ? '' : 'disabled'; ?>>
+                                    <i class="fas fa-compress-alt mr-2"></i>Compress Selected (<span id="selectedCount">0</span>)
+                                </button>
+                                <button type="button" id="resetHistoryBtn" class="btn btn-outline-secondary" title="Forget optimization history. Next run will recompress every image.">
+                                    <i class="fas fa-undo mr-1"></i>Reset History
+                                </button>
+                            </div>
+                            <div id="progressWrap" style="display:none;" class="mt-3">
+                                <div class="d-flex justify-content-between progress-label mb-1">
+                                    <span id="progressLabel">Starting…</span>
+                                    <span id="progressPct">0%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" id="progressBar" role="progressbar" style="width:0%;background:#0A2540;"></div>
+                                </div>
+                            </div>
+                            <div id="resultSection" style="display:none;" class="mt-3">
+                                <div class="result-log" id="resultLog"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image library -->
                     <div class="card compress-card mb-4">
                         <div class="card-header py-3 d-flex align-items-center justify-content-between">
                             <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-images mr-2"></i>All Images <span class="badge badge-secondary ml-2"><?php echo $totalImages; ?></span></h6>
                             <div id="toolbar">
                                 <button class="btn btn-sm btn-outline-primary" id="selectAllBtn"><i class="fas fa-check-square mr-1"></i>Select All</button>
                                 <button class="btn btn-sm btn-outline-secondary" id="deselectAllBtn"><i class="fas fa-square mr-1"></i>Deselect All</button>
-                                <span id="selectedCount" class="text-muted" style="font-size:0.85rem;">0 selected</span>
-                                <button class="btn btn-sm btn-outline-info" id="compressBtn"><i class="fas fa-compress-alt mr-1"></i>Compress Selected</button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -307,58 +323,6 @@ $totalImages = count($allImageFiles);
                             <?php endif; ?>
                         </div>
                     </div>
-
-                    <!-- Compression Tool -->
-                    <div class="card compress-card mb-4">
-                        <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                            <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-compress-alt mr-2"></i>Compression Tool</h6>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted">Compresses all images (<strong>70% quality</strong>, max width <strong>1920px</strong>) across <code>uploads/</code>, <code>assets/images/</code>, and <code>templates/assets/img/</code>.</p>
-                            <form method="post" onsubmit="document.getElementById('compressSubmitBtn').disabled = true; document.getElementById('compressSubmitBtn').innerHTML = '<i class=\'fas fa-spinner fa-spin mr-2\'></i>Processing...';">
-                                <?php csrf_field(); ?>
-                                <input type="hidden" name="compress" value="1">
-                                <button type="submit" id="compressSubmitBtn" class="btn btn-primary">
-                                    <i class="fas fa-compress-alt mr-2"></i>Compress All Images
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <?php if ($compressAttempted): ?>
-                    <div class="row" id="resultsSection">
-                        <div class="col-12">
-                            <div class="card compress-card mb-4">
-                                <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-list mr-2"></i>Results</h6>
-                                    <div>
-                                        <?php if ($hasLibrary): ?>
-                                        <span class="badge badge-primary mr-2" style="font-size:0.85rem;"><?php echo $filesFound; ?> images processed</span>
-                                        <?php endif; ?>
-                                        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('resultsSection').style.display='none'"><i class="fas fa-times mr-1"></i>Clear</button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <?php if (!$hasLibrary): ?>
-                                        <div class="alert alert-danger mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>No image library found! Install <strong>GD</strong> or <strong>Imagick</strong> PHP extension to use compression.</div>
-                                    <?php else: ?>
-                                    <div class="result-log">
-                                        <?php foreach ($results as $r): ?>
-                                            <?php if ($r['optimal']): ?>
-                                                <div class="optimal">-: <?php echo $r['path']; ?> - already optimal (<?php echo round($r['orig']/1024); ?>KB)</div>
-                                            <?php else: ?>
-                                                <div class="ok">OK: <?php echo $r['path']; ?> - <?php echo round($r['orig']/1024); ?>KB -> <?php echo round($r['new']/1024); ?>KB (<?php echo round($r['savings']); ?>% saved)</div>
-                                            <?php endif; ?>
-                                        <?php endforeach; ?>
-                                        <div class="done mt-2">Done! Total saved: <?php echo round($totalSaved/1024); ?> KB</div>
-                                        <div class="done">Library: <?php echo $useImagick ? 'Imagick' : 'GD'; ?></div>
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
@@ -405,9 +369,14 @@ $totalImages = count($allImageFiles);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
+        var CSRF = <?php echo json_encode(csrf_token()); ?>;
+        var jobBusy = false;
+        var seenPaths = {};
+        var totalSavedBytes = 0;
+
         function updateCount() {
             var checked = document.querySelectorAll('.img-check:checked').length;
-            document.getElementById('selectedCount').textContent = checked + ' selected';
+            document.getElementById('selectedCount').textContent = checked;
         }
 
         document.getElementById('selectAllBtn').addEventListener('click', function() {
@@ -432,14 +401,124 @@ $totalImages = count($allImageFiles);
             $('#replaceModal').modal('show');
         }
 
-        document.getElementById('compressBtn').addEventListener('click', function() {
-            var checked = document.querySelectorAll('.img-check:checked');
+        function selectedPaths() {
             var paths = [];
-            checked.forEach(function(cb) { paths.push(cb.value); });
+            document.querySelectorAll('.img-check:checked').forEach(function(cb) { paths.push(cb.value); });
+            return paths;
+        }
+
+        function kb(n) { return (n / 1024).toFixed(1) + ' KB'; }
+
+        function appendLog(line, cls) {
+            var log = document.getElementById('resultLog');
+            var div = document.createElement('div');
+            div.className = cls || '';
+            div.textContent = line;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function renderNewProgress(state) {
+            seenPaths = seenPaths || {};
+            (state.files || []).forEach(function(f) {
+                if (seenPaths[f.rel]) return;
+                var st = f.status || 'pending';
+                if (st === 'pending') return;
+                seenPaths[f.rel] = true;
+                if (st === 'done') {
+                    var saved = Math.max(0, (f.orig || 0) - (f.new || 0));
+                    totalSavedBytes += saved;
+                    appendLog('OK: ' + f.rel + ' - ' + kb(f.orig) + ' -> ' + kb(f.new) + ' (' + Math.round((saved / (f.orig || 1)) * 100) + '% saved)', 'ok');
+                } else if (st === 'skipped') {
+                    appendLog('-: ' + f.rel + ' - already optimal (' + kb(f.orig || 0) + ')', 'optimal');
+                } else if (st === 'error') {
+                    appendLog('ERR: ' + f.rel + ' - ' + (f.error || 'failed'), 'error');
+                }
+            });
+            var pct = state.total ? Math.round((state.index / state.total) * 100) : 100;
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressPct').textContent = pct + '%';
+            document.getElementById('progressLabel').textContent =
+                'Processed ' + state.index + ' of ' + state.total + ' — saved ' + kb(totalSavedBytes) + ' so far';
+            document.getElementById('jobSummary').textContent =
+                state.done + ' compressed, ' + state.skipped + ' already optimal, ' + state.errors + ' errors';
+        }
+
+        function renderFinished(state) {
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressPct').textContent = '100%';
+            document.getElementById('progressLabel').textContent = 'Done — total saved ' + kb(totalSavedBytes);
+            appendLog('Done! Total saved: ' + kb(totalSavedBytes), 'done');
+            appendLog('Library: GD (batched)', 'done');
+            jobBusy = false;
+            document.getElementById('compressAllBtn').disabled = false;
+            document.getElementById('compressSelectedBtn').disabled = false;
+        }
+
+        function api(action, body) {
+            var payload = Object.assign({ ajax: '1', action: action, csrf_token: CSRF }, body || {});
+            var fd = new FormData();
+            Object.keys(payload).forEach(function(k) {
+                var v = payload[k];
+                if (k === 'paths') { v.forEach(function(p) { fd.append('paths[]', p); }); }
+                else { fd.append(k, v); }
+            });
+            return fetch(window.location.pathname, { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); });
+        }
+
+        function runJob(paths) {
+            if (jobBusy) { alert('A compression job is already running.'); return; }
+            jobBusy = true;
+            seenPaths = {};
+            totalSavedBytes = 0;
+            document.getElementById('compressAllBtn').disabled = true;
+            document.getElementById('compressSelectedBtn').disabled = true;
+            document.getElementById('resultLog').innerHTML = '';
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('progressWrap').style.display = 'block';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressPct').textContent = '0%';
+            document.getElementById('progressLabel').textContent = 'Starting…';
+
+            api('start', { paths: paths })
+                .then(function(res) {
+                    if (!res.ok) { throw new Error(res.error || 'Could not start job.'); }
+                    renderNewProgress(res.state);
+                    return step();
+                })
+                .catch(function(err) {
+                    jobBusy = false;
+                    document.getElementById('compressAllBtn').disabled = false;
+                    document.getElementById('compressSelectedBtn').disabled = false;
+                    appendLog('Error: ' + err.message, 'error');
+                });
+
+            function step() {
+                return api('batch').then(function(res) {
+                    if (!res.ok) { throw new Error(res.error || 'Batch failed.'); }
+                    renderNewProgress(res.state);
+                    if (res.state.running) {
+                        return step();
+                    }
+                    renderFinished(res.state);
+                });
+            }
+        }
+
+        document.getElementById('compressAllBtn').addEventListener('click', function() {
+            runJob([]);
+        });
+
+        document.getElementById('compressSelectedBtn').addEventListener('click', function() {
+            var paths = selectedPaths();
             if (paths.length === 0) { alert('Select at least one image to compress.'); return; }
-            // We'll just submit the whole form for the full compression for now
-            // Could later implement per-selection compression
-            alert('Compression processes all images in scanned directories. Use "Compress All Images" below.');
+            runJob(paths);
+        });
+
+        document.getElementById('resetHistoryBtn').addEventListener('click', function() {
+            if (!confirm('Forget the optimization history? The next run will recompress every image (unchanged ones will be skipped as already optimal).')) return;
+            api('reset').then(function() { alert('History reset.'); }).catch(function() { alert('Could not reset history.'); });
         });
     </script>
 </body>

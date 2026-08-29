@@ -44,7 +44,7 @@ if (empty($packages)) {
                     if ($imgKey) $img = getMediaUrl($imgKey, '');
                 }
                 if (empty($img)) $img = 'assets/images/placeholder.svg';
-                $highlightsArr = array_filter(array_map('trim', explode(',', $pkg['highlights'] ?? '')));
+                $highlightsArr = tourListItems($pkg['highlights'] ?? '');
                 $rating = intval($pkg['rating'] ?? 5);
                 $pkgId = $pkg['id'] ?? 0;
             ?>

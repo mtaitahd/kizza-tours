@@ -82,7 +82,7 @@ $taUrl = getSetting('tripadvisor_url', '#');
 
 <!-- Main JavaScript (minified) -->
 <script src="<?php echo ASSETS_PATH; ?>js/animations.min.js?v=2" defer></script>
-<script src="<?php echo ASSETS_PATH; ?>js/main.min.js?v=2" defer></script>
+<script src="<?php echo ASSETS_PATH; ?>js/main.min.js?v=3" defer></script>
 <script src="<?php echo ASSETS_PATH; ?>js/booking.min.js?v=2" defer></script>
 
 <!-- Booking Success Modal -->

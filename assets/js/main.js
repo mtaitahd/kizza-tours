@@ -254,21 +254,29 @@ $(document).ready(function() {
     const $pkgModal = $('#pkgModal');
     let pkgModalOpen = false;
 
+    // Parses a stored tour list that is either a JSON array (new storage
+    // format) or a legacy comma-separated / newline-separated string.
+    function parseTourList(val) {
+        if (!val) return [];
+        var v = (typeof val === 'string') ? val.trim() : val;
+        if (typeof v === 'string' && v.charAt(0) === '[') {
+            try {
+                var arr = JSON.parse(v);
+                return Array.isArray(arr) ? arr.map(function(s) { return String(s).trim(); }).filter(Boolean) : [];
+            } catch (e) { /* fall through to legacy parsing */ }
+        }
+        return String(v).split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    }
+
     function renderPackageModal(pkg) {
         const img = pkg.image || 'assets/images/placeholder.svg' + encodeURIComponent(pkg.title);
         const galleryImages = pkg.gallery && typeof pkg.gallery === 'string' && pkg.gallery.trim()
             ? pkg.gallery.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
             : [img];
 
-        const highlights = pkg.highlights
-            ? pkg.highlights.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
-            : [];
-        const includes = pkg.includes
-            ? pkg.includes.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
-            : [];
-        const excludes = pkg.excludes
-            ? pkg.excludes.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
-            : [];
+        const highlights = parseTourList(pkg.highlights);
+        const includes = parseTourList(pkg.includes);
+        const excludes = parseTourList(pkg.excludes);
 
         var html = '<div class="pkg-modal-gallery" id="pkgGallery">';
         galleryImages.forEach(function(url, idx) {

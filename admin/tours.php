@@ -76,8 +76,24 @@ function ensureItineraryDaysTable() {
 }
 ensureToursTable();
 ensureItineraryDaysTable();
+ensureFaqTourColumn();
 
 require_once __DIR__ . '/../includes/itinerary-days-save.php';
+require_once __DIR__ . '/../includes/tour-faqs-save.php';
+
+function ensureFaqTourColumn() {
+    try {
+        $db = db();
+        $cols = $db->fetchAll("SHOW COLUMNS FROM faq");
+        foreach ($cols as $c) {
+            if (strtolower($c['Field']) === 'tour_id') return true;
+        }
+        $db->query("ALTER TABLE faq ADD COLUMN tour_id INT DEFAULT NULL AFTER id");
+        return true;
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -96,9 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rating = floatval($_POST['rating'] ?? 5);
         $max_guests = intval($_POST['max_guests'] ?? 10);
         $description = trim($_POST['description'] ?? '');
-        $highlights = trim($_POST['highlights'] ?? '');
-        $includes = trim($_POST['includes'] ?? '');
-        $excludes = trim($_POST['excludes'] ?? '');
+        // Itemized lists are stored as JSON arrays; legacy comma-separated values
+        // (and newer one-per-line submissions) are normalized on save.
+        $highlights = tourListStorage($_POST['highlights'] ?? '');
+        $includes = tourListStorage($_POST['includes'] ?? '');
+        $excludes = tourListStorage($_POST['excludes'] ?? '');
         $gallery = trim($_POST['gallery'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
         $meta_title = trim($_POST['meta_title'] ?? '');
@@ -194,21 +212,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         unset($d);
 
+        // ---- Per-tour FAQs ----
+        $faqIds = $_POST['faq_id'] ?? [];
+        $faqQs = $_POST['faq_question'] ?? [];
+        $faqAs = $_POST['faq_answer'] ?? [];
+        $faqCs = $_POST['faq_category'] ?? [];
+        $faqSs = $_POST['faq_status'] ?? [];
+        $submittedFaqs = [];
+        for ($i = 0; $i < count((array)$faqQs); $i++) {
+            $submittedFaqs[] = [
+                'id'       => intval($faqIds[$i] ?? 0),
+                'question' => trim($faqQs[$i] ?? ''),
+                'answer'   => trim($faqAs[$i] ?? ''),
+                'category' => trim($faqCs[$i] ?? ''),
+                'status'   => trim($faqSs[$i] ?? 'active'),
+            ];
+        }
+
         if ($action === 'add') {
             $itinerary = '';
+            $newTourId = 0;
             try {
+                if (!$db->getConnection()->inTransaction()) $db->beginTransaction();
                 $newTourId = $db->insert(
                     "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status, meta_title, meta_description, meta_keywords, no_robots) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status, $meta_title, $meta_description, $meta_keywords, $no_robots]
                 );
                 saveItineraryDays($newTourId, $submittedDays, $uploadedNewImages);
+                saveTourFaqs($newTourId, $submittedFaqs);
+                if ($db->getConnection()->inTransaction()) $db->commit();
             } catch (\Throwable $e) {
+                if ($db->getConnection()->inTransaction()) $db->rollback();
                 // Roll back the tour we just created and clean up new uploads.
                 foreach ($uploadedNewImages as $p) deleteFile($p);
+                if ($hasNewImage && !empty($image)) deleteFile($image);
+                if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
                 try { $db->query("DELETE FROM tour_packages WHERE id = ?", [$newTourId]); } catch (\Throwable $ignore) {}
                 error_log("Tour add error: " . $e->getMessage());
-                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Could not save the tour with its itinerary days.'];
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Could not save the tour with its itinerary days and FAQs.'];
                 header('Location: tours');
                 exit;
             }
@@ -228,19 +270,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
             $sql .= " WHERE id=?";
             $params[] = $tourId;
-            $db->query($sql, $params);
 
-            // days: save submitted rows; helper cleans up replaced/removed images
+            // The tour row, its itinerary days and its FAQs are saved atomically.
             try {
+                if (!$db->getConnection()->inTransaction()) $db->beginTransaction();
+                $db->query($sql, $params);
                 saveItineraryDays($tourId, $submittedDays, $uploadedNewImages);
+                saveTourFaqs($tourId, $submittedFaqs);
+                if ($db->getConnection()->inTransaction()) $db->commit();
             } catch (\Throwable $e) {
-                error_log("Tour update day-save error: " . $e->getMessage());
-                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'The tour was updated, but its itinerary days could not be saved.'];
+                if ($db->getConnection()->inTransaction()) $db->rollback();
+                foreach ($uploadedNewImages as $p) deleteFile($p);
+                if ($hasNewImage && !empty($image)) deleteFile($image);
+                if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
+                error_log("Tour update save error: " . $e->getMessage());
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'The tour could not be fully saved. No changes were applied.'];
                 header('Location: tours');
                 exit;
             }
 
-            // cleanup tour-level images after successful update
+            // Cleanup tour-level images only after a successful commit.
             if ($hasNewImage && !empty($existingRow['image'])) deleteFile($existingRow['image']);
             if ($hasNewHero && !empty($existingRow['hero_image'])) deleteFile($existingRow['hero_image']);
 
@@ -258,6 +307,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($db->fetchAll("SELECT image_path FROM itinerary_days WHERE tour_id = ?", [$tourId]) as $day) {
             if (!empty($day['image_path'])) deleteFile($day['image_path']);
         }
+        try { $db->query("DELETE FROM faq WHERE tour_id = ?", [$tourId]); } catch (\Throwable $ignore) {}
+        try { $db->query("DELETE FROM itinerary_days WHERE tour_id = ?", [$tourId]); } catch (\Throwable $ignore) {}
         $db->query("DELETE FROM tour_packages WHERE id = ?", [$tourId]);
         try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour deleted successfully'];
@@ -275,6 +326,13 @@ $allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, im
 $daysByTour = [];
 foreach ($allDays as $day) {
     $daysByTour[$day['tour_id']][] = $day;
+}
+
+// Load per-tour FAQs once, grouped by tour, for the edit modal.
+$allFaqs = $db->fetchAll("SELECT id, tour_id, question, answer, category, sort_order, status FROM faq WHERE tour_id IS NOT NULL AND tour_id != 0 ORDER BY sort_order ASC, id ASC");
+$faqsByTour = [];
+foreach ($allFaqs as $faq) {
+    $faqsByTour[$faq['tour_id']][] = $faq;
 }
 ?>
 <!DOCTYPE html>
@@ -422,6 +480,7 @@ foreach ($allDays as $day) {
                                         <?php foreach ($tours as $tour):
                                             $editTourData = $tour;
                                             $editTourData['days'] = $daysByTour[$tour['id']] ?? [];
+                                            $editTourData['faqs'] = $faqsByTour[$tour['id']] ?? [];
                                         ?>
                                         <tr>
                                             <td>
@@ -591,22 +650,28 @@ foreach ($allDays as $day) {
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Highlights (comma separated)</label>
-                                    <textarea class="form-control" name="highlights" id="tourHighlights" rows="2"></textarea>
+                                    <label>Highlights</label>
+                                    <div id="tourHighlightsItems" class="mb-2"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('tourHighlightsItems', 'highlights[]', '')"><i class="fas fa-plus"></i> Add Highlight</button>
+                                    <small class="d-block text-muted mt-1">One item per row. Each row becomes a bullet on the tour page.</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Includes (comma separated)</label>
-                                    <textarea class="form-control" name="includes" id="tourIncludes" rows="2"></textarea>
+                                    <label>Includes</label>
+                                    <div id="tourIncludesItems" class="mb-2"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('tourIncludesItems', 'includes[]', '')"><i class="fas fa-plus"></i> Add Include</button>
+                                    <small class="d-block text-muted mt-1">One item per row. Each row becomes a bullet on the tour page.</small>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Excludes (comma separated)</label>
-                                    <textarea class="form-control" name="excludes" id="tourExcludes" rows="2"></textarea>
+                                    <label>Excludes</label>
+                                    <div id="tourExcludesItems" class="mb-2"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('tourExcludesItems', 'excludes[]', '')"><i class="fas fa-plus"></i> Add Exclude</button>
+                                    <small class="d-block text-muted mt-1">One item per row. Each row becomes a bullet on the tour page.</small>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -628,8 +693,15 @@ foreach ($allDays as $day) {
                                 <i class="fas fa-info-circle"></i> This tour has legacy itinerary text still shown on the frontend until you add structured days above.
                             </small>
                         </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-question-circle mr-1"></i> Tour FAQs</label>
+                            <p class="text-muted small">FAQs shown only on this tour's detail page. Leave empty to hide the FAQ section for that tour.</p>
+                            <div id="tourFaqsContainer" class="mb-2"></div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addTourFaq({})">
+                                <i class="fas fa-plus"></i> Add FAQ
+                            </button>
+                        </div>
                         <hr>
-                        <h6 class="font-weight-bold"><i class="fas fa-search mr-1"></i> SEO & Meta</h6>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -675,6 +747,73 @@ foreach ($allDays as $day) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
+        function escapeAttr(v) {
+            if (typeof v !== 'string') v = String(v == null ? '' : v);
+            var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+            return v.replace(/[&<>"']/g, function(c) { return map[c]; });
+        }
+
+        function addListItem(containerId, fieldName, value) {
+            var container = document.getElementById(containerId);
+            var row = document.createElement('div');
+            row.className = 'input-group input-group-sm mb-2';
+            row.innerHTML = '<input type="text" class="form-control" name="' + escapeAttr(fieldName) + '" value="' + escapeAttr(value || '') + '" placeholder="Enter item...">'
+                + '<div class="input-group-append"><button type="button" class="btn btn-outline-danger" title="Remove item" onclick="this.parentNode.parentNode.remove()"><i class="fas fa-times"></i></button></div>';
+            container.appendChild(row);
+        }
+
+        function loadListItems(containerId, fieldName, raw) {
+            var container = document.getElementById(containerId);
+            container.innerHTML = '';
+            var items = [];
+            if (raw) {
+                if (typeof raw === 'string') {
+                    raw = raw.trim();
+                    if (raw.charAt(0) === '[') {
+                        try { var arr = JSON.parse(raw); items = Array.isArray(arr) ? arr : []; }
+                        catch (e) { items = []; }
+                    } else {
+                        items = raw.split(/\r\n|\r|\n|,/).map(function(s) { return s.trim(); });
+                    }
+                } else if (Array.isArray(raw)) {
+                    items = raw;
+                }
+            }
+            items = items.filter(function(s) { return typeof s === 'string' && s.trim() !== ''; });
+            if (!items.length) items = [''];
+            items.forEach(function(item) { addListItem(containerId, fieldName, item); });
+        }
+
+        function addTourFaq(f) {
+            f = f || {};
+            var container = document.getElementById('tourFaqsContainer');
+            var wrap = document.createElement('div');
+            wrap.className = 'tour-faq-row border rounded p-3 mb-3 bg-white';
+            var esc = escapeAttr;
+            var html = '';
+            html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += '<strong><i class="fas fa-question-circle"></i> FAQ</strong>';
+            html += '<button type="button" class="btn btn-sm btn-outline-danger" title="Remove FAQ" onclick="this.closest(\'.tour-faq-row\').remove()"><i class="fas fa-trash"></i></button>';
+            html += '</div>';
+            html += '<input type="hidden" name="faq_id[]" value="' + esc(f.id || 0) + '">';
+            html += '<div class="form-group"><label class="small">Question</label><input type="text" class="form-control" name="faq_question[]" value="' + esc(f.question || '') + '"></div>';
+            html += '<div class="form-group mb-2"><label class="small">Answer</label><textarea class="form-control" name="faq_answer[]" rows="2">' + esc(f.answer || '') + '</textarea></div>';
+            html += '<div class="form-row">';
+            html += '<div class="col-md-6"><div class="form-group"><label class="small">Category</label><input type="text" class="form-control" name="faq_category[]" value="' + esc(f.category || '') + '" placeholder="optional"></div></div>';
+            html += '<div class="col-md-6"><div class="form-group"><label class="small">Status</label><select class="form-control" name="faq_status[]">'
+                + '<option value="active"' + (f.status === 'active' || !f.status ? ' selected' : '') + '>Active</option>'
+                + '<option value="inactive"' + (f.status === 'inactive' ? ' selected' : '') + '>Inactive</option></select></div></div>';
+            html += '</div>';
+            wrap.innerHTML = html;
+            container.appendChild(wrap);
+        }
+
+        function loadTourFaqs(faqs) {
+            var container = document.getElementById('tourFaqsContainer');
+            container.innerHTML = '';
+            (faqs || []).forEach(function(f) { addTourFaq(f); });
+        }
+
         function editTour(t) {
             document.getElementById('tourAction').value = 'edit';
             document.getElementById('tourId').value = t.id;
@@ -688,9 +827,9 @@ foreach ($allDays as $day) {
             document.getElementById('tourGuests').value = t.max_guests || 10;
             document.getElementById('tourStatus').value = t.status || 'active';
             document.getElementById('tourDescription').value = t.description || '';
-            document.getElementById('tourHighlights').value = t.highlights || '';
-            document.getElementById('tourIncludes').value = t.includes || '';
-            document.getElementById('tourExcludes').value = t.excludes || '';
+            loadListItems('tourHighlightsItems', 'highlights[]', t.highlights || '');
+            loadListItems('tourIncludesItems', 'includes[]', t.includes || '');
+            loadListItems('tourExcludesItems', 'excludes[]', t.excludes || '');
             document.getElementById('tourGallery').value = t.gallery || '';
             document.getElementById('tourMetaTitle').value = t.meta_title || '';
             document.getElementById('tourMetaDesc').value = t.meta_description || '';
@@ -698,6 +837,7 @@ foreach ($allDays as $day) {
             document.getElementById('tourNoRobots').value = t.no_robots || 0;
             document.getElementById('tourModalTitle').textContent = 'Edit Tour';
             loadItineraryDays(t.days || []);
+            loadTourFaqs(t.faqs || []);
             document.getElementById('legacyItineraryNote').style.display = (t.itinerary && (!t.days || !t.days.length)) ? 'block' : 'none';
             $('#tourModal').modal('show');
         }
@@ -835,6 +975,10 @@ foreach ($allDays as $day) {
                     container.innerHTML = '';
                     addItineraryDay({ day_number: 1 });
                     document.getElementById('legacyItineraryNote').style.display = 'none';
+                    loadListItems('tourHighlightsItems', 'highlights[]', '');
+                    loadListItems('tourIncludesItems', 'includes[]', '');
+                    loadListItems('tourExcludesItems', 'excludes[]', '');
+                    loadTourFaqs([]);
                 }
             });
         })();

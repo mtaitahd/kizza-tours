@@ -882,6 +882,9 @@ return [
     'tour_details_view' => 'View Details',
     'tour_details_related_subtitle' => 'You May Also Like',
     'tour_details_related_title' => 'Related Safari Tours',
+    'read_more' => 'Read More',
+    'show_less' => 'Show Less',
+    'itinerary_day_prefix' => 'Day',
 
     // Destination Page
     'dest_about_subtitle' => 'Discover',

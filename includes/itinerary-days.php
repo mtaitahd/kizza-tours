@@ -11,11 +11,10 @@
  * description, metadata) on the left and a landscape image on the right.
  * Scoped under .tour-itinerary-section so it never affects other components.
  *
- * The displayed title is always built as "Day {number} — {destination}".
- * Any "Day N:" / "DAY N –" prefix already stored is stripped first, and a
- * stray trailing full stop is removed, so admins never need to type the prefix
- * or worry about punctuation. Natural capitalization entered by the admin is
- * preserved (no automatic upper/lower-case conversion).
+ * Nothing is hard-coded: each day is rendered purely from the stored row. If a
+ * day has no image the text spans the full row. Long descriptions get a
+ * per-day "Read More / Show Less" control so rows never overflow into the next
+ * day or the following sections.
  */
 if (empty($itineraryDays)) {
     return;
@@ -53,9 +52,22 @@ function itineraryHumanizeTitle($title) {
     }
     return trim($t);
 }
+
+/**
+ * Decides whether a day description is long enough to need the Read More/Show
+ * Less control. Uses a character-count threshold OR multiple paragraph breaks.
+ */
+function itineraryDescriptionNeedsToggle($description) {
+    $text = trim((string)$description);
+    if ($text === '') return false;
+    if (mb_strlen($text, 'UTF-8') > 380) return true;
+    if (substr_count($text, "\n") >= 3) return true;
+    return false;
+}
 ?>
 <?php foreach ($itineraryDays as $i => $day):
-    $dayNumber  = isset($day['day_number']) ? intval($day['day_number']) : ($i + 1);
+    $rowKey     = $i + 1;
+    $dayNumber  = isset($day['day_number']) ? intval($day['day_number']) : $rowKey;
     $destination = itineraryHumanizeTitle($day['title'] ?? '');
     $dayDesc    = trim($day['description'] ?? '');
     $drive      = trim($day['drive_time'] ?? '');
@@ -73,17 +85,31 @@ function itineraryHumanizeTitle($title) {
     if (!$hasText && !$hasImage) {
         continue;
     }
+
+    $dayPrefix  = __('itinerary_day_prefix');
+    $needsToggle = ($dayDesc !== '') && itineraryDescriptionNeedsToggle($dayDesc);
+    $descId = 'itinerary-day-' . $rowKey . '-description';
 ?>
-    <article class="itinerary-day<?php echo $hasImage ? '' : ' itinerary-day--no-image'; ?>" id="itinerary-day-<?php echo $dayNumber; ?>">
+    <article class="itinerary-day<?php echo $hasImage ? '' : ' itinerary-day--no-image'; ?>" id="itinerary-day-<?php echo $rowKey; ?>">
         <div class="itinerary-day__content">
             <?php if ($destination !== ''): ?>
-            <h3 class="itinerary-day__title"><?php echo htmlspecialchars('Day ' . $dayNumber . ' — ' . $destination); ?></h3>
+            <h3 class="itinerary-day__title"><?php echo htmlspecialchars($dayPrefix . ' ' . $dayNumber . ' — ' . $destination); ?></h3>
             <?php else: ?>
-            <h3 class="itinerary-day__title"><?php echo htmlspecialchars('Day ' . $dayNumber); ?></h3>
+            <h3 class="itinerary-day__title"><?php echo htmlspecialchars($dayPrefix . ' ' . $dayNumber); ?></h3>
             <?php endif; ?>
 
             <?php if ($dayDesc !== ''): ?>
-            <div class="itinerary-day__description"><?php echo nl2br(htmlspecialchars($dayDesc)); ?></div>
+            <div class="itinerary-day__description-wrap<?php echo $needsToggle ? ' itinerary-day__description-wrap--clamped' : ''; ?>">
+                <div class="itinerary-day__description" id="<?php echo $descId; ?>"><?php echo nl2br(htmlspecialchars($dayDesc)); ?></div>
+            </div>
+            <?php if ($needsToggle): ?>
+            <button type="button" class="itinerary-day__toggle" aria-expanded="false" aria-controls="<?php echo $descId; ?>"
+                data-label-more="<?php echo htmlspecialchars(__('read_more')); ?>"
+                data-label-less="<?php echo htmlspecialchars(__('show_less')); ?>">
+                <span class="itinerary-day__toggle-label"><?php echo htmlspecialchars(__('read_more')); ?></span>
+                <i class="fas fa-chevron-down itinerary-day__toggle-icon" aria-hidden="true"></i>
+            </button>
+            <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($drive !== '' || $meals !== '' || $accom !== ''): ?>
@@ -117,3 +143,34 @@ function itineraryHumanizeTitle($title) {
         <?php endif; ?>
     </article>
 <?php endforeach; ?>
+<script>
+// Per-day "Read More / Show Less" for long itinerary descriptions. Works
+// independently for every day, is keyboard-usable (it is a real <button>),
+// updates aria-expanded/aria-controls, and only toggles the row it belongs to.
+(function () {
+    function initItineraryToggles() {
+        var toggles = document.querySelectorAll('.itinerary-day__toggle');
+        toggles.forEach(function (btn) {
+            if (btn.getAttribute('data-initialized') === '1') return;
+            btn.setAttribute('data-initialized', '1');
+            btn.addEventListener('click', function () {
+                var wrap = btn.closest('.itinerary-day__description-wrap');
+                var expanded = btn.getAttribute('aria-expanded') === 'true';
+                if (wrap) {
+                    wrap.classList.toggle('itinerary-day__description-wrap--expanded', !expanded);
+                }
+                btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                var label = btn.querySelector('.itinerary-day__toggle-label');
+                if (label) {
+                    label.textContent = expanded ? btn.getAttribute('data-label-more') : btn.getAttribute('data-label-less');
+                }
+            });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initItineraryToggles);
+    } else {
+        initItineraryToggles();
+    }
+})();
+</script>
