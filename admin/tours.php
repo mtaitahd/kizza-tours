@@ -24,6 +24,9 @@ function ensureToursTable() {
         try { $db->query("ALTER TABLE tour_packages ADD COLUMN meta_description TEXT DEFAULT NULL AFTER meta_title"); } catch (\Throwable $e) {}
         try { $db->query("ALTER TABLE tour_packages ADD COLUMN meta_keywords VARCHAR(255) DEFAULT NULL AFTER meta_description"); } catch (\Throwable $e) {}
         try { $db->query("ALTER TABLE tour_packages ADD COLUMN no_robots TINYINT(1) DEFAULT 0 AFTER meta_keywords"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN overview_image_1 VARCHAR(255) DEFAULT NULL AFTER hero_image"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN overview_image_2 VARCHAR(255) DEFAULT NULL AFTER overview_image_1"); } catch (\Throwable $e) {}
+        try { $db->query("ALTER TABLE tour_packages ADD COLUMN overview_image_3 VARCHAR(255) DEFAULT NULL AFTER overview_image_2"); } catch (\Throwable $e) {}
         return true;
     } catch (\Throwable $e) { return false; }
 }
@@ -150,6 +153,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
+        // ---- Tour Overview images (the 3 collage photos) ----
+        // Each slot keeps its previously saved file unless replaced by a new
+        // upload or explicitly removed. The three values are written together
+        // whenever any of them changed, so untouched slots are preserved.
+        $overviewImage1 = trim($_POST['overview_image_1_current'] ?? '');
+        $overviewImage2 = trim($_POST['overview_image_2_current'] ?? '');
+        $overviewImage3 = trim($_POST['overview_image_3_current'] ?? '');
+        $overviewImagesChanged = false;
+        $uploadedOverviewImages = [];
+        foreach ([1 => 'overview_image_1', 2 => 'overview_image_2', 3 => 'overview_image_3'] as $ov => $field) {
+            $current = trim($_POST[$field . '_current'] ?? '');
+            $remove = !empty($_POST[$field . '_remove']);
+            $newPath = '';
+            if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
+                $up = uploadFile($_FILES[$field], BASE_PATH . 'uploads/tours/', 'overview' . $ov . '_' . $slug);
+                if ($up) {
+                    $newPath = $up;
+                    $uploadedOverviewImages[] = $up;
+                    $overviewImagesChanged = true;
+                }
+            }
+            $final = $newPath !== '' ? $newPath : ($remove ? '' : $current);
+            if ($newPath === '' && $remove) $overviewImagesChanged = true;
+            ${'overviewImage' . $ov} = $final;
+        }
+        
         // ---- Structured itinerary days ----
         $dayIds = array_map('intval', $_POST['day_id'] ?? []);
         $dayNumbers = $_POST['day_number'] ?? [];
@@ -249,9 +278,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 if (!$db->getConnection()->inTransaction()) $db->beginTransaction();
                 $newTourId = $db->insert(
-                    "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, status, meta_title, meta_description, meta_keywords, no_robots) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $status, $meta_title, $meta_description, $meta_keywords, $no_robots]
+                    "INSERT INTO tour_packages (title, slug, duration, price, country, destination_id, rating, max_guests, description, highlights, includes, excludes, gallery, itinerary, image, hero_image, overview_image_1, overview_image_2, overview_image_3, status, meta_title, meta_description, meta_keywords, no_robots) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $image, $heroImage, $overviewImage1, $overviewImage2, $overviewImage3, $status, $meta_title, $meta_description, $meta_keywords, $no_robots]
                 );
                 saveItineraryDays($newTourId, $submittedDays, $uploadedNewImages);
                 saveTourFaqs($newTourId, $submittedFaqs);
@@ -262,6 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($uploadedNewImages as $p) deleteFile($p);
                 if ($hasNewImage && !empty($image)) deleteFile($image);
                 if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
+                foreach ($uploadedOverviewImages as $p) deleteFile($p);
                 try { $db->query("DELETE FROM tour_packages WHERE id = ?", [$newTourId]); } catch (\Throwable $ignore) {}
                 error_log("Tour add error: " . $e->getMessage());
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Could not save the tour with its itinerary days and FAQs.'];
@@ -275,13 +305,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // Preserve existing legacy itinerary text (never overwrite old tours).
-            $existingRow = $db->fetchOne("SELECT itinerary, image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
+            $existingRow = $db->fetchOne("SELECT itinerary, image, hero_image, overview_image_1, overview_image_2, overview_image_3 FROM tour_packages WHERE id = ?", [$tourId]);
             $itinerary = $existingRow['itinerary'] ?? '';
 
             $sql = "UPDATE tour_packages SET title=?, slug=?, duration=?, price=?, country=?, destination_id=?, rating=?, max_guests=?, description=?, highlights=?, includes=?, excludes=?, gallery=?, itinerary=?, status=?, meta_title=?, meta_description=?, meta_keywords=?, no_robots=?";
             $params = [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status, $meta_title, $meta_description, $meta_keywords, $no_robots];
             if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
             if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
+            if ($overviewImagesChanged) {
+                $sql .= ", overview_image_1=?, overview_image_2=?, overview_image_3=?";
+                $params[] = $overviewImage1;
+                $params[] = $overviewImage2;
+                $params[] = $overviewImage3;
+            }
             $sql .= " WHERE id=?";
             $params[] = $tourId;
 
@@ -297,6 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($uploadedNewImages as $p) deleteFile($p);
                 if ($hasNewImage && !empty($image)) deleteFile($image);
                 if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
+                foreach ($uploadedOverviewImages as $p) deleteFile($p);
                 error_log("Tour update save error: " . $e->getMessage());
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'The tour could not be fully saved. No changes were applied.'];
                 header('Location: tours');
@@ -306,6 +343,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Cleanup tour-level images only after a successful commit.
             if ($hasNewImage && !empty($existingRow['image'])) deleteFile($existingRow['image']);
             if ($hasNewHero && !empty($existingRow['hero_image'])) deleteFile($existingRow['hero_image']);
+            if ($overviewImagesChanged) {
+                foreach ([1, 2, 3] as $ov) {
+                    $old = trim($existingRow['overview_image_' . $ov] ?? '');
+                    $newVal = ${'overviewImage' . $ov};
+                    if ($old !== '' && $old !== $newVal) deleteFile($old);
+                }
+            }
 
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
@@ -725,6 +769,26 @@ foreach ($allFaqs as $faq) {
                             </div>
                         </div>
                         <div class="form-group">
+                            <label><i class="fas fa-images mr-1"></i> Tour Overview Images <small class="text-muted">(the 3 collage photos on the tour page)</small></label>
+                            <div class="row">
+                                <?php for ($ov = 1; $ov <= 3; $ov++): ?>
+                                <div class="col-md-4">
+                                    <div class="overview-img-preview border rounded p-2 mb-2 text-center bg-white" id="ovPrevWrap<?php echo $ov; ?>">
+                                        <img id="ovPrev<?php echo $ov; ?>" src="" alt="" style="max-width:100%; max-height:100px; object-fit:cover; display:none;">
+                                        <span id="ovEmpty<?php echo $ov; ?>" class="text-muted small"><i class="fas fa-image"></i> no image</span>
+                                    </div>
+                                    <input type="hidden" name="overview_image_<?php echo $ov; ?>_current" id="ovCur<?php echo $ov; ?>" value="">
+                                    <input type="file" class="form-control-file form-control-sm" name="overview_image_<?php echo $ov; ?>" id="ovFile<?php echo $ov; ?>" accept="image/*" onchange="previewOverviewFile(<?php echo $ov; ?>, this)">
+                                    <div class="form-check form-check-inline mt-1">
+                                        <input class="form-check-input" type="checkbox" name="overview_image_<?php echo $ov; ?>_remove" id="ovRemove<?php echo $ov; ?>" value="1">
+                                        <label class="form-check-label small" for="ovRemove<?php echo $ov; ?>">Remove</label>
+                                    </div>
+                                </div>
+                                <?php endfor; ?>
+                            </div>
+                            <small class="text-muted">Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery). Uploads are stored in <code>uploads/tours/</code>.</small>
+                        </div>
+                        <div class="form-group">
                             <label>Description</label>
                             <textarea class="form-control" name="description" id="tourDescription" rows="3"></textarea>
                         </div>
@@ -896,6 +960,49 @@ foreach ($allFaqs as $faq) {
             (faqs || []).forEach(function(f) { addTourFaq(f); });
         }
 
+        function previewOverviewFile(i, input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    setOverviewPreview(i, e.target.result);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function setOverviewPreview(i, src) {
+            var img = document.getElementById('ovPrev' + i);
+            var empty = document.getElementById('ovEmpty' + i);
+            img.src = src;
+            img.style.display = 'inline-block';
+            if (empty) empty.style.display = 'none';
+        }
+
+        function setOverviewSlot(i, path) {
+            var cur = document.getElementById('ovCur' + i);
+            var file = document.getElementById('ovFile' + i);
+            var rem = document.getElementById('ovRemove' + i);
+            if (cur) cur.value = path || '';
+            if (rem) rem.checked = false;
+            if (file) file.value = '';
+            if (path) {
+                setOverviewPreview(i, '../' + path.replace(/^\//, ''));
+            } else {
+                var img = document.getElementById('ovPrev' + i);
+                var empty = document.getElementById('ovEmpty' + i);
+                if (img) img.style.display = 'none';
+                if (empty) empty.style.display = '';
+            }
+        }
+
+        function setOverviewImages(t) {
+            for (var i = 1; i <= 3; i++) setOverviewSlot(i, t['overview_image_' + i] || '');
+        }
+
+        function resetOverviewImages() {
+            for (var i = 1; i <= 3; i++) setOverviewSlot(i, '');
+        }
+
         function editTour(t) {
             document.getElementById('tourAction').value = 'edit';
             document.getElementById('tourId').value = t.id;
@@ -913,6 +1020,7 @@ foreach ($allFaqs as $faq) {
             loadListItems('tourIncludesItems', 'includes[]', t.includes || '');
             loadListItems('tourExcludesItems', 'excludes[]', t.excludes || '');
             document.getElementById('tourGallery').value = t.gallery || '';
+            setOverviewImages(t);
             document.getElementById('tourMetaTitle').value = t.meta_title || '';
             document.getElementById('tourMetaDesc').value = t.meta_description || '';
             document.getElementById('tourMetaKeywords').value = t.meta_keywords || '';
@@ -1090,6 +1198,7 @@ foreach ($allFaqs as $faq) {
                     loadListItems('tourIncludesItems', 'includes[]', '');
                     loadListItems('tourExcludesItems', 'excludes[]', '');
                     loadTourFaqs([]);
+                    resetOverviewImages();
                 } else {
                     // Editing: (re)create preview maps for days that already
                     // have coordinates set.

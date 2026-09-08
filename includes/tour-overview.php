@@ -34,24 +34,37 @@ if ($overviewDestination === '') {
 }
 
 /* ── Resolve collage images ─────────────────────────────────────────
-   Build a flat, de-duplicated list of image URLs: the tour's featured image
-   first, then its gallery images (only existing files, featured never
-   repeated). The first URL becomes the large "main" image; the next two
-   become the medium + small overlapping images. If nothing exists, the
-   site's tour placeholder is used.                                   */
+   Priority 1: the three explicitly saved Overview images (overview_image_1/2/3,
+   set in Admin > Tours > that tour > Tour Overview Images). Slots left empty are
+   skipped, so the collage renders with the images the admin chose.
+   Priority 2 (only when ALL three are empty, e.g. older tours): fall back to the
+   featured image first, then gallery images (only existing files, featured never
+   repeated). The first URL becomes the large "main" image; the next two become
+   the medium + small overlapping images. If nothing exists, the site's tour
+   placeholder is used.                                                */
 $placeholder = 'assets/images/placeholder.svg';
 $placeholderUrl = file_exists(BASE_PATH . $placeholder) ? SITE_URL . '/' . $placeholder : $placeholder;
 
-$collageUrls = [];
 $rawCandidates = [];
-$mainImgRaw = trim($tour['image'] ?? '');
-if ($mainImgRaw !== '' && file_exists(BASE_PATH . $mainImgRaw)) {
-    $rawCandidates[] = $mainImgRaw;
+$overviewImagesSet = false;
+foreach ([1, 2, 3] as $oi) {
+    $ovPath = trim($tour['overview_image_' . $oi] ?? '');
+    if ($ovPath !== '') {
+        $overviewImagesSet = true;
+        $rawCandidates[] = $ovPath;
+    }
 }
-foreach (array_filter(array_map('trim', explode(',', $tour['gallery'] ?? ''))) as $gi) {
-    if ($gi === '') continue;
-    $rawCandidates[] = $gi;
+if (!$overviewImagesSet) {
+    $mainImgRaw = trim($tour['image'] ?? '');
+    if ($mainImgRaw !== '' && file_exists(BASE_PATH . $mainImgRaw)) {
+        $rawCandidates[] = $mainImgRaw;
+    }
+    foreach (array_filter(array_map('trim', explode(',', $tour['gallery'] ?? ''))) as $gi) {
+        if ($gi === '') continue;
+        $rawCandidates[] = $gi;
+    }
 }
+$collageUrls = [];
 $seenUrls = [];
 foreach ($rawCandidates as $rc) {
     $clean = ltrim($rc, '/');
