@@ -37,9 +37,6 @@ if (!empty($tour['no_robots'])) {
     $pageSeo['robots'] = 'index, follow';
 }
 
-$siteWhatsapp = getSetting('site_whatsapp', SITE_WHATSAPP);
-$sitePhone = getSetting('site_phone', SITE_PHONE);
-$countrySlug = strtolower($tour['country'] ?? '');
 $relatedTours = getTourPackages([], 4);
 
 $highlightsArr = tourListItems($tour['highlights'] ?? '');
@@ -95,32 +92,7 @@ $tourHeroBg = $heroBgUrl
 
 <section class="section-padding">
     <div class="container">
-        <div class="row g-5">
-            <div class="col-lg-8">
-                <?php include 'includes/tour-overview.php'; ?>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card shadow-sm border-0 rounded-0 p-4 sticky-top tour-booking-card" style="top: 100px;">
-                    <h4 class="mb-3"><?php echo __('tour_details_price'); ?></h4>
-                    <div class="mb-3">
-                        <span style="font-size: 2rem; font-weight: 700; color: var(--secondary);">$<?php echo number_format($tour['price'] ?? 0, 0); ?></span>
-                        <small class="text-muted"> / <?php echo __('pkg_per_person'); ?></small>
-                    </div>
-                    <a href="<?php echo SITE_URL; ?>/book-tour" class="btn btn-premium btn-gold btn-lg w-100 mb-3">
-                        <i class="fas fa-calendar-check"></i> <?php echo __('tour_details_book_now'); ?>
-                    </a>
-                    <a href="https://wa.me/<?php echo $siteWhatsapp; ?>" class="btn btn-premium btn-outline-success btn-lg w-100 mb-4" target="_blank">
-                        <i class="fab fa-whatsapp"></i> <?php echo __('tour_details_chat'); ?>
-                    </a>
-
-                    <hr>
-                    <a href="<?php echo SITE_URL; ?>/<?php echo $countryPage; ?>" class="btn btn-outline-gold w-100">
-                        <i class="fas fa-arrow-left"></i> <?php echo __('tour_details_view_all'); ?>
-                    </a>
-                </div>
-            </div>
-        </div>
+        <?php include 'includes/tour-overview.php'; ?>
     </div>
 </section>
 

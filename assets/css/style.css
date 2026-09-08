@@ -2901,16 +2901,19 @@ body.topbar-hidden .navbar {
     }
 }
 
-/* Right-side sticky cards (tour details booking card, book tour panel): keep
-   the last action button above the WhatsApp circle so it is never hidden.
-   Overrides Bootstrap's .p-4 spacing utility (!important). */
-.tour-booking-card {
+/* Right-side sticky booking card removed from the tour details layout:
+   the Tour Overview now spans the full container width with its own
+   two-column image / content grid (see includes/tour-overview.php). */
+
+/* The book-tour page keeps its sticky info panel; scope the old
+   WhatsApp-clearance spacing to that page only. */
+.tour-booking-card--book-page {
     padding-bottom: 112px !important;
     padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 @media (max-width: 575.98px) {
-    .tour-booking-card {
+    .tour-booking-card--book-page {
         padding-bottom: 88px !important;
         padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
     }

@@ -157,12 +157,20 @@ $overviewToggleId = 'tour-overview-toggle';
 </div>
 
 <style>
-/* ── Tour Overview (scoped) ─────────────────────────────────────── */
+/* ── Tour Overview (scoped) ───────────────────────────────────────
+   Two columns across the FULL container: image collage left (≈46%),
+   content right (≈54%), 70–90px gap on desktop, columns top-aligned so
+   the collage sits level with the eyebrow and never moves when the long
+   overview text expands below it.                            */
 .tour-overview {
     display: grid;
-    grid-template-columns: 45% 1fr;
-    gap: clamp(1.5rem, 3vw, 3.5rem);
-    align-items: center;
+    grid-template-columns: 46fr 54fr;
+    gap: clamp(70px, 6vw, 90px);
+    align-items: start;
+}
+.tour-overview__media,
+.tour-overview__content {
+    min-width: 0;
 }
 
 /* Collage */
@@ -170,14 +178,13 @@ $overviewToggleId = 'tour-overview-toggle';
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 5;
-    max-width: 460px;
-    margin: 0 auto;
+    margin: 0;
 }
 .tour-overview__frame {
     position: absolute;
-    border-radius: var(--radius-md);
-    border: 5px solid #fff;
-    box-shadow: 0 10px 30px rgba(10, 37, 64, 0.12);
+    border-radius: 28px;
+    border: 6px solid #fff;
+    box-shadow: 0 14px 40px rgba(10, 37, 64, 0.14);
     overflow: hidden;
     background: var(--off-white);
 }
@@ -187,63 +194,65 @@ $overviewToggleId = 'tour-overview-toggle';
     object-fit: cover;
     display: block;
 }
+/* 3-image collage: large main (≈4:5) + landscape overlaps */
 .tour-overview__img--main {
     top: 0;
     left: 0;
-    width: 76%;
-    height: 74%;
+    width: 78%;
+    height: 78%;
     z-index: 1;
 }
 .tour-overview__img--mid {
-    top: 42%;
+    top: 24%;
     right: 0;
-    width: 48%;
-    height: 42%;
+    width: 54%;
+    height: 34%;
     z-index: 2;
 }
 .tour-overview__img--small {
     bottom: 0;
-    left: 8%;
-    width: 42%;
-    height: 34%;
+    left: 2%;
+    width: 50%;
+    height: 32%;
     z-index: 3;
 }
 
 /* 2-image balanced layout */
+.tour-overview__media--count-2 .tour-overview__img--main {
+    width: 80%;
+    height: 90%;
+}
 .tour-overview__media--count-2 .tour-overview__img--mid {
-    top: 12%;
+    top: 16%;
     right: 0;
-    width: 44%;
-    height: 40%;
+    width: 50%;
+    height: 38%;
 }
 .tour-overview__media--count-2 .tour-overview__img--small {
-    bottom: 6%;
+    bottom: 0;
     left: auto;
-    right: 6%;
-    width: 44%;
+    right: 2%;
+    width: 50%;
     height: 38%;
 }
 
-/* 1-image layout */
+/* 1-image layout: large portrait filling the whole left column */
 .tour-overview__media--count-1 .tour-overview__img--main {
     width: 100%;
     height: 100%;
 }
-
-/* Collage extras: a shared modal-like underlay never extends outside the
-   section; the frames are absolutely contained by the stage. */
 
 /* Content */
 .tour-overview__eyebrow {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin: 0 0 0.5rem;
+    gap: 0.85rem;
+    margin: 0 0 0.75rem;
     font-family: var(--font-secondary);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    letter-spacing: 0.35em;
+    letter-spacing: 0.3em;
     text-transform: uppercase;
     color: var(--secondary);
 }
@@ -256,18 +265,18 @@ $overviewToggleId = 'tour-overview-toggle';
 }
 .tour-overview__heading {
     font-family: var(--font-primary);
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.15;
+    font-size: clamp(3.375rem, 4.25vw, 4rem);
+    line-height: 1.12;
     color: var(--primary);
-    margin: 0 0 1.25rem;
+    margin: 0 0 1.5rem;
 }
 
 /* Description + Read More */
 .tour-overview__desc {
     position: relative;
     color: var(--text-light);
-    font-size: 1.02rem;
-    line-height: 1.8;
+    font-size: clamp(1.05rem, 1.35vw, 1.125rem);
+    line-height: 1.78;
     overflow: hidden;
     /* Collapsed cap (desktop) — JS adjusts to a whole-line height and hides
        the cap entirely when content fits. */
@@ -290,18 +299,18 @@ $overviewToggleId = 'tour-overview-toggle';
     opacity: 1;
 }
 .tour-overview__toggle {
-    margin-top: 0.25rem;
-    padding: 0;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0 0.5rem;
     border: 0;
     background: transparent;
     font-family: var(--font-body);
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--secondary);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
     transition: color 0.2s ease;
 }
 .tour-overview__toggle[hidden] {
@@ -313,7 +322,7 @@ $overviewToggleId = 'tour-overview-toggle';
     outline: none;
 }
 .tour-overview__toggle-arrow {
-    font-size: 1rem;
+    font-size: 1.05rem;
     line-height: 1;
     transition: transform 0.3s ease;
 }
@@ -321,35 +330,36 @@ $overviewToggleId = 'tour-overview-toggle';
     transform: rotate(180deg);
 }
 
-/* Highlights row */
+/* Highlights row: horizontal on desktop, wraps gracefully */
 .tour-overview__highlights {
     list-style: none;
-    margin: 1.5rem 0 0;
+    margin: 1.75rem 0 0;
     padding: 0;
-    display: grid;
-    gap: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
 }
 .tour-overview__highlight {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.7rem;
 }
 .tour-overview__highlight-icon {
     flex: 0 0 auto;
-    width: 26px;
-    height: 26px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: var(--secondary);
     color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.78rem;
 }
 .tour-overview__highlight-text {
     color: var(--primary);
     font-family: var(--font-primary);
-    font-size: 1.05rem;
+    font-size: 1.125rem;
     font-weight: 500;
     line-height: 1.4;
 }
@@ -362,14 +372,14 @@ $overviewToggleId = 'tour-overview-toggle';
     border-radius: 2px;
 }
 
-/* Tablet */
+/* Tablet: stack — collage first, content below, single column */
 @media (max-width: 991.98px) {
     .tour-overview {
-        grid-template-columns: 42% 1fr;
-        gap: 2rem;
+        grid-template-columns: 1fr;
+        gap: 2.25rem;
     }
     .tour-overview__media-stage {
-        max-width: 100%;
+        margin: 0 auto;
     }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -377,24 +387,38 @@ $overviewToggleId = 'tour-overview-toggle';
         transition: none;
     }
 }
-/* Mobile: single column, collage first */
+/* Mobile: full-width main image, scaled-down overlap, clear of WhatsApp */
 @media (max-width: 767.98px) {
     .tour-overview {
         grid-template-columns: 1fr;
         gap: 1.75rem;
     }
     .tour-overview__media-stage {
+        width: 100%;
         max-width: 100%;
         aspect-ratio: 4 / 5;
+        margin: 0;
+    }
+    .tour-overview__frame {
+        border-width: 4px;
+        border-radius: 22px;
+    }
+    .tour-overview__heading {
+        font-size: clamp(2.4rem, 8vw, 3.25rem);
     }
     .tour-overview__desc {
         max-height: 220px;
     }
-    .tour-overview__heading {
-        font-size: clamp(1.8rem, 7vw, 2.4rem);
-    }
     .tour-overview__highlight-text {
-        font-size: 1rem;
+        font-size: 1.05rem;
+    }
+    .tour-overview__highlights {
+        gap: 0.9rem 1.25rem;
+    }
+    /* Keep the Read More control + highlights clear of the floating
+       WhatsApp circle while scrolling on small screens. */
+    .tour-overview__content {
+        padding-bottom: 2rem;
     }
 }
 </style>
