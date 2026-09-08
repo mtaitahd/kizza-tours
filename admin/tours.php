@@ -359,6 +359,7 @@ foreach ($allFaqs as $faq) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../templates/assets/css/ruang-admin.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
     <link href="css/admin.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -378,6 +379,72 @@ foreach ($allFaqs as $faq) {
             .topbar { left: 0; }
             body.sidebar-toggled .topbar { left: 0; }
         }
+
+        /* ── Itinerary day location map (Leaflet / OpenStreetMap) ── */
+        .itinerary-location-map-wrapper {
+            position: relative;
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid #dce3ea;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #eef2f5;
+        }
+        .itinerary-location-map {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 300px;
+            min-height: 300px;
+            overflow: hidden;
+            z-index: 1;
+            background: #e8eef2;
+        }
+        .itinerary-location-map .leaflet-pane,
+        .itinerary-location-map .leaflet-tile,
+        .itinerary-location-map .leaflet-marker-icon,
+        .itinerary-location-map .leaflet-marker-shadow,
+        .itinerary-location-map .leaflet-pane > svg,
+        .itinerary-location-map .leaflet-pane > canvas {
+            position: absolute;
+        }
+        .itinerary-location-map img.leaflet-tile,
+        .itinerary-location-map img.leaflet-marker-icon,
+        .itinerary-location-map img.leaflet-marker-shadow {
+            max-width: none !important;
+            max-height: none !important;
+            width: auto;
+            height: auto;
+            padding: 0;
+            margin: 0;
+            border: 0;
+        }
+        .itinerary-map-marker-wrapper { background: transparent; border: 0; }
+        .itinerary-map-marker {
+            position: relative;
+            width: 36px;
+            height: 46px;
+        }
+        .itinerary-map-marker::before {
+            content: '';
+            position: absolute;
+            left: 4px; top: 0;
+            width: 28px; height: 28px;
+            background: #c13d31;
+            border: 2px solid #fff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+        }
+        .itinerary-map-marker span {
+            position: absolute;
+            left: 0; right: 0; top: 7px;
+            text-align: center;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            z-index: 2;
+        }
+        .loc-result-item { cursor: pointer; }
     </style>
 </head>
 <body id="page-top">
@@ -759,6 +826,7 @@ foreach ($allFaqs as $faq) {
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
         function escapeAttr(v) {
@@ -863,6 +931,7 @@ foreach ($allFaqs as $faq) {
             var wrap = document.createElement('div');
             wrap.className = 'itinerary-day-row border rounded p-3 mb-3 bg-white';
             wrap.setAttribute('data-index', index);
+            wrap.setAttribute('data-day-idx', (window.__itDaySeq = (window.__itDaySeq || 0) + 1));
 
             var dayNo = day.day_number ? day.day_number : (index + 1);
             var title = day.title || '';
@@ -876,6 +945,7 @@ foreach ($allFaqs as $faq) {
             var locationName = day.location_name || '';
             var lat = day.lat != null && day.lat !== '' ? day.lat : '';
             var lng = day.lng != null && day.lng !== '' ? day.lng : '';
+            var idxKey = wrap.getAttribute('data-day-idx');
 
             var esc = function(v, m) {
                 if (typeof v !== 'string') v = String(v == null ? '' : v);
@@ -907,10 +977,28 @@ foreach ($allFaqs as $faq) {
             html += '</div>';
 
             html += '<div class="form-row">';
-            html += '<div class="col-md-12"><div class="form-group"><label>Map Location <small class="text-muted">(optional)</small></label><input type="text" class="form-control" name="day_location_name[]" value="' + esc(locationName) + '" placeholder="e.g. Serengeti National Park"></div></div>';
-            html += '<div class="col-md-6"><div class="form-group"><label class="text-muted"><small>Latitude</small></label><input type="text" class="form-control" name="day_lat[]" value="' + esc(lat) + '" placeholder="e.g. -2.332778"></div></div>';
-            html += '<div class="col-md-6"><div class="form-group"><label class="text-muted"><small>Longitude</small></label><input type="text" class="form-control" name="day_lng[]" value="' + esc(lng) + '" placeholder="e.g. 34.560556"></div></div>';
+            html += '<div class="col-md-12"><div class="form-group"><label>Map Location <small class="text-muted">(optional)</small></label></div></div>';
+            html += '<div class="col-md-12">';
+            html += '<div class="input-group input-group-sm">';
+            html += '<input type="text" class="form-control loc-search-input" data-day-idx="' + idxKey + '" placeholder="e.g. Serengeti National Park" value="' + esc(locationName) + '">';
+            html += '<div class="input-group-append"><button type="button" class="btn btn-outline-primary loc-search-btn" data-day-idx="' + idxKey + '">Search</button></div>';
             html += '</div>';
+            html += '<div class="loc-results small mt-1" data-day-idx="' + idxKey + '" style="max-height:140px;overflow-y:auto;"></div>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="itinerary-location-map-wrapper" data-day-idx="' + idxKey + '" style="display:none;">';
+            html += '<div class="itinerary-location-map" data-location-map data-day-idx="' + idxKey + '"></div>';
+            html += '</div>';
+
+            html += '<div class="loc-summary small text-success mt-1 d-none" data-day-idx="' + idxKey + '">';
+            html += '<span class="loc-summary-text"></span> ';
+            html += '<button type="button" class="btn btn-sm btn-outline-danger ms-2 loc-clear-btn" data-day-idx="' + idxKey + '">Clear Location</button>';
+            html += '</div>';
+
+            html += '<input type="hidden" name="day_location_name[]" class="loc-field-location_name" value="' + esc(locationName) + '">';
+            html += '<input type="hidden" name="day_lat[]" class="loc-field-lat" value="' + esc(lat) + '">';
+            html += '<input type="hidden" name="day_lng[]" class="loc-field-lng" value="' + esc(lng) + '">';
 
             html += '<div class="form-row align-items-end">';
             html += '<div class="col-md-6"><div class="form-group"><label>Image</label><input type="file" class="form-control-file itinerary-day-file" name="day_image[]" accept="image/*" onchange="previewDayImage(this)"></div></div>';
@@ -1002,9 +1090,206 @@ foreach ($allFaqs as $faq) {
                     loadListItems('tourIncludesItems', 'includes[]', '');
                     loadListItems('tourExcludesItems', 'excludes[]', '');
                     loadTourFaqs([]);
+                } else {
+                    // Editing: (re)create preview maps for days that already
+                    // have coordinates set.
+                    setTimeout(initDayLocationMaps, 350);
                 }
             });
         })();
+    </script>
+    <script>
+        /* ── Itinerary day location picker (Leaflet / OpenStreetMap) ──
+           Mirrors htdocs/tour: type a place, click Search, choose a result, and
+           the day's map preview appears with a numbered draggable marker. The
+           chosen name + lat/lng are stored in hidden fields saved with the form.
+           Existing days re-show their saved marker when the modal opens.      */
+        window._locMaps = window._locMaps || {};
+        window._locMarkers = window._locMarkers || {};
+
+        function createItineraryMarkerIcon(dayNumber) {
+            return L.divIcon({
+                className: 'itinerary-map-marker-wrapper',
+                html: '<div class="itinerary-map-marker"><span>' + dayNumber + '</span></div>',
+                iconSize: [36, 46],
+                iconAnchor: [18, 46],
+                popupAnchor: [0, -44]
+            });
+        }
+
+        function _showLocationMap(wrapper) {
+            if (!wrapper) return;
+            wrapper.style.display = 'block';
+        }
+
+        function _initLocMap(container) {
+            var idx = container.getAttribute('data-day-idx');
+            if (!idx || window._locMaps[idx]) return;
+            var map = L.map(container, { scrollWheelZoom: false, zoomControl: true }).setView([-6.3690, 34.8888], 6);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            window._locMaps[idx] = map;
+            requestAnimationFrame(function () { map.invalidateSize(true); });
+            map.on('click', function (e) {
+                var dayNo = _dayNumberFor(idx);
+                _setMapPoint(idx, dayNo, e.latlng.lat, e.latlng.lng, 'Selected map location');
+            });
+        }
+
+        function _dayNumberFor(idx) {
+            var row = document.querySelector('.itinerary-day-row[data-day-idx="' + idx + '"]');
+            if (row) {
+                var n = row.querySelector('.itinerary-day-number');
+                if (n && n.value) return n.value;
+            }
+            return 1;
+        }
+
+        function _setMapPoint(idx, dayNumber, lat, lng, name) {
+            var map = window._locMaps[idx];
+            if (!map) return;
+            if (window._locMarkers[idx]) map.removeLayer(window._locMarkers[idx]);
+            var marker = L.marker([lat, lng], { draggable: true, icon: createItineraryMarkerIcon(dayNumber) }).addTo(map);
+            window._locMarkers[idx] = marker;
+            marker.bindPopup(name || 'Selected map location').openPopup();
+            map.setView([lat, lng], Math.max(map.getZoom(), 11));
+            requestAnimationFrame(function () { map.invalidateSize(true); });
+
+            var row = document.querySelector('.itinerary-day-row[data-day-idx="' + idx + '"]');
+            if (row) {
+                row.querySelector('.loc-field-lat').value = lat.toFixed(7);
+                row.querySelector('.loc-field-lng').value = lng.toFixed(7);
+                row.querySelector('.loc-field-location_name').value = name || 'Selected map location';
+                var summary = row.querySelector('.loc-summary');
+                summary.classList.remove('d-none');
+                summary.querySelector('.loc-summary-text').textContent = 'Selected: ' + (name || 'Selected map location');
+            }
+            marker.on('dragend', function () {
+                var pos = marker.getLatLng();
+                _setMapPoint(idx, dayNumber, pos.lat, pos.lng, name || 'Selected map location');
+            });
+        }
+
+        /* ── Search (OpenStreetMap Nominatim, browser-side) ────────── */
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest ? e.target.closest('.loc-search-btn') : null;
+            if (btn) { e.preventDefault(); runLocationSearch(btn.getAttribute('data-day-idx')); return; }
+
+            var result = e.target.closest ? e.target.closest('.loc-result-item') : null;
+            if (result) { pickLocationResult(result); return; }
+
+            var clear = e.target.closest ? e.target.closest('.loc-clear-btn') : null;
+            if (clear) { clearLocation(clear.getAttribute('data-day-idx')); }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('loc-search-input')) {
+                e.preventDefault();
+                runLocationSearch(e.target.getAttribute('data-day-idx'));
+            }
+        });
+
+        function runLocationSearch(idx) {
+            var input = document.querySelector('.loc-search-input[data-day-idx="' + idx + '"]');
+            var query = (input ? input.value : '').trim();
+            if (query.length < 3) return;
+            var results = document.querySelector('.loc-results[data-day-idx="' + idx + '"]');
+            if (results) results.innerHTML = '<span class="text-muted">Searching…</span>';
+            if (typeof window._locFetchCancel === 'function') window._locFetchCancel();
+
+            var ctrl = new AbortController();
+            window._locFetchCancel = function () { ctrl.abort(); };
+            fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' + encodeURIComponent(query), {
+                headers: { 'Accept': 'application/json' },
+                signal: ctrl.signal
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                window._locFetchCancel = null;
+                if (!results) return;
+                if (!data || !data.length) {
+                    results.innerHTML = '<span class="text-muted">No matching locations found</span>';
+                    return;
+                }
+                results.innerHTML = data.map(function (r) {
+                    return '<div class="loc-result-item p-1 px-2 rounded mb-1" data-day-idx="' + idx +
+                        '" data-lat="' + r.lat + '" data-lng="' + r.lon + '" data-name="' + String(r.display_name || '').replace(/"/g, '&quot;') + '">' +
+                        String(r.display_name || '') + '</div>';
+                }).join('');
+            })
+            .catch(function () {
+                window._locFetchCancel = null;
+                if (results) results.innerHTML = '<span class="text-muted">Unable to search locations right now</span>';
+            });
+        }
+
+        function pickLocationResult(el) {
+            var idx = el.getAttribute('data-day-idx');
+            var lat = parseFloat(el.getAttribute('data-lat'));
+            var lng = parseFloat(el.getAttribute('data-lng'));
+            var name = el.getAttribute('data-name');
+            var wrapper = document.querySelector('.itinerary-location-map-wrapper[data-day-idx="' + idx + '"]');
+            var container = document.querySelector('.itinerary-location-map[data-day-idx="' + idx + '"]');
+            _showLocationMap(wrapper);
+            if (container && !window._locMaps[idx]) _initLocMap(container);
+            var dayNo = _dayNumberFor(idx);
+            setTimeout(function () { _setMapPoint(idx, dayNo, lat, lng, name); }, 60);
+            var results = document.querySelector('.loc-results[data-day-idx="' + idx + '"]');
+            if (results) results.innerHTML = '';
+        }
+
+        function clearLocation(idx) {
+            var row = document.querySelector('.itinerary-day-row[data-day-idx="' + idx + '"]');
+            if (row) {
+                row.querySelector('.loc-field-lat').value = '';
+                row.querySelector('.loc-field-lng').value = '';
+                row.querySelector('.loc-field-location_name').value = '';
+                var summary = row.querySelector('.loc-summary');
+                summary.classList.add('d-none');
+                summary.querySelector('.loc-summary-text').textContent = '';
+            }
+            if (window._locMarkers[idx] && window._locMaps[idx]) {
+                window._locMaps[idx].removeLayer(window._locMarkers[idx]);
+                delete window._locMarkers[idx];
+            }
+            if (window._locMaps[idx]) {
+                window._locMaps[idx].setView([-6.3690, 34.8888], 6);
+                requestAnimationFrame(function () { window._locMaps[idx].invalidateSize(true); });
+            }
+        }
+
+        function initDayLocationMaps() {
+            if (typeof L === 'undefined') return;
+            var rows = document.querySelectorAll('.itinerary-day-row');
+            Array.prototype.forEach.call(rows, function (row) {
+                var idx = row.getAttribute('data-day-idx');
+                var latVal = (row.querySelector('.loc-field-lat') || {}).value;
+                var lngVal = (row.querySelector('.loc-field-lng') || {}).value;
+                var nameVal = (row.querySelector('.loc-field-location_name') || {}).value;
+                var wrapper = row.querySelector('.itinerary-location-map-wrapper');
+                var container = row.querySelector('.itinerary-location-map');
+                if (latVal && lngVal && wrapper && container) {
+                    _showLocationMap(wrapper);
+                    if (!window._locMaps[idx]) _initLocMap(container);
+                    var dayNo = _dayNumberFor(idx);
+                    setTimeout(function () { _setMapPoint(idx, dayNo, parseFloat(latVal), parseFloat(lngVal), nameVal); }, 60);
+                }
+            });
+        }
+
+        window.addEventListener('resize', function () {
+            Object.keys(window._locMaps).forEach(function (idx) {
+                var map = window._locMaps[idx];
+                if (map) requestAnimationFrame(function () { map.invalidateSize(true); });
+            });
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(initDayLocationMaps, 500); });
+        } else {
+            setTimeout(initDayLocationMaps, 500);
+        }
     </script>
     <script>
         function filterTable(val) {
