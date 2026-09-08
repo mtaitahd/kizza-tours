@@ -887,6 +887,12 @@ return [
     'tour_details_inc_exc_title' => 'Inclusions & Exclusions',
     'read_more' => 'Read More',
     'show_less' => 'Show Less',
+    'tour_overview_eyebrow' => 'Discover',
+    'tour_overview_eyebrow_fallback' => 'Discover the Experience',
+    'tour_overview_read_full' => 'Read full overview',
+    'tour_overview_show_less' => 'Show less',
+    'tour_overview_img_main_alt' => 'Featured image of {title}',
+    'tour_overview_img_overlap_alt' => 'Gallery image of {title}',
     'itinerary_day_prefix' => 'Day',
 
     // Destination Page

@@ -42,12 +42,6 @@ $sitePhone = getSetting('site_phone', SITE_PHONE);
 $countrySlug = strtolower($tour['country'] ?? '');
 $relatedTours = getTourPackages([], 4);
 
-$img = !empty($tour['image']) && file_exists(BASE_PATH . $tour['image']) ? SITE_URL . '/' . $tour['image'] : '';
-if (empty($img)) {
-    $fallback = 'assets/images/placeholder.svg';
-    $img = file_exists(BASE_PATH . $fallback) ? SITE_URL . '/' . $fallback : 'assets/images/placeholder.svg';
-}
-
 $highlightsArr = tourListItems($tour['highlights'] ?? '');
 $includesArr = tourListItems($tour['includes'] ?? '');
 $excludesArr = tourListItems($tour['excludes'] ?? '');
@@ -103,33 +97,7 @@ $tourHeroBg = $heroBgUrl
     <div class="container">
         <div class="row g-5">
             <div class="col-lg-8">
-                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($tour['title']); ?>" class="img-fluid rounded-4 shadow-lg mb-4 w-100" style="max-height: 450px; object-fit: cover;" onerror="this.src='assets/images/placeholder.svg'">
-                
-                <?php
-                $galleryImages = array_filter(array_map('trim', explode(',', $tour['gallery'] ?? '')));
-                if (!empty($galleryImages)): ?>
-                <div class="row g-2 mb-4">
-                    <?php foreach ($galleryImages as $gi):
-                        $giPath = file_exists(BASE_PATH . $gi) ? SITE_URL . '/' . $gi : '';
-                        if (empty($giPath)) continue;
-                    ?>
-                    <div class="col-4 col-md-3">
-                        <a href="<?php echo $giPath; ?>" data-lightbox="tour-gallery" data-title="<?php echo htmlspecialchars($tour['title']); ?>">
-                            <img src="<?php echo $giPath; ?>" alt="" class="img-fluid rounded-3 w-100" style="height: 120px; object-fit: cover;" loading="lazy">
-                        </a>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-                
-                <div class="d-flex flex-wrap gap-3 mb-4">
-                    <span class="badge bg-gold text-dark px-3 py-2"><i class="fas fa-clock me-1"></i> <?php echo htmlspecialchars($tour['duration'] ?? 'N/A'); ?></span>
-                    <span class="badge bg-primary px-3 py-2"><i class="fas fa-map-marker-alt me-1"></i> <?php echo htmlspecialchars($tour['country'] ?? ''); ?></span>
-                    <span class="badge bg-success px-3 py-2"><i class="fas fa-tag me-1"></i> $<?php echo number_format($tour['price'] ?? 0, 0); ?>/person</span>
-                </div>
-
-                <h2><?php echo __('tour_details_overview'); ?></h2>
-                <p style="color: var(--text-light); font-size: 1.05rem; line-height: 1.8;"><?php echo nl2br(htmlspecialchars($tour['description'] ?? '')); ?></p>
+                <?php include 'includes/tour-overview.php'; ?>
             </div>
 
             <div class="col-lg-4">
