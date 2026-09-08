@@ -39,6 +39,9 @@ function ensureItineraryDayColumns() {
             'drive_time'     => "ALTER TABLE itinerary_days ADD COLUMN drive_time VARCHAR(255) DEFAULT NULL AFTER description",
             'meals'          => "ALTER TABLE itinerary_days ADD COLUMN meals VARCHAR(255) DEFAULT NULL AFTER drive_time",
             'accommodation'  => "ALTER TABLE itinerary_days ADD COLUMN accommodation VARCHAR(255) DEFAULT NULL AFTER meals",
+            'location_name'  => "ALTER TABLE itinerary_days ADD COLUMN location_name VARCHAR(255) DEFAULT NULL AFTER accommodation",
+            'lat'            => "ALTER TABLE itinerary_days ADD COLUMN lat DECIMAL(10,7) DEFAULT NULL AFTER location_name",
+            'lng'            => "ALTER TABLE itinerary_days ADD COLUMN lng DECIMAL(10,7) DEFAULT NULL AFTER lat",
         ];
         foreach ($additions as $field => $sql) {
             if (!isset($existing[$field])) $db->query($sql);
@@ -63,6 +66,9 @@ function ensureItineraryDaysTable() {
             drive_time VARCHAR(255) DEFAULT NULL,
             meals VARCHAR(255) DEFAULT NULL,
             accommodation VARCHAR(255) DEFAULT NULL,
+            location_name VARCHAR(255) DEFAULT NULL,
+            lat DECIMAL(10,7) DEFAULT NULL,
+            lng DECIMAL(10,7) DEFAULT NULL,
             image_path VARCHAR(255) DEFAULT NULL,
             image_alt VARCHAR(255) DEFAULT NULL,
             sort_order INT NOT NULL DEFAULT 0,
@@ -152,6 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dayDrives = $_POST['day_drive_time'] ?? [];
         $dayMeals = $_POST['day_meals'] ?? [];
         $dayAccoms = $_POST['day_accommodation'] ?? [];
+        $dayLocNames = $_POST['day_location_name'] ?? [];
+        $dayLats = $_POST['day_lat'] ?? [];
+        $dayLngs = $_POST['day_lng'] ?? [];
         $dayAlts = $_POST['day_alt'] ?? [];
         $dayExistingImgs = $_POST['day_existing_image'] ?? [];
         $dayRemoveImgs = $_POST['day_remove_image'] ?? [];
@@ -159,6 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $submittedDays = [];
         for ($i = 0; $i < count($dayTitles); $i++) {
+            $dayLat = trim($dayLats[$i] ?? '');
+            $dayLng = trim($dayLngs[$i] ?? '');
             $submittedDays[] = [
                 'day_id'        => intval($dayIds[$i] ?? 0),
                 'day_number'    => isset($dayNumbers[$i]) ? intval($dayNumbers[$i]) : ($i + 1),
@@ -167,6 +178,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'drive_time'    => trim($dayDrives[$i] ?? ''),
                 'meals'         => trim($dayMeals[$i] ?? ''),
                 'accommodation' => trim($dayAccoms[$i] ?? ''),
+                'location_name' => trim($dayLocNames[$i] ?? ''),
+                'lat'           => ($dayLat !== '' && is_numeric($dayLat)) ? (float)$dayLat : null,
+                'lng'           => ($dayLng !== '' && is_numeric($dayLng)) ? (float)$dayLng : null,
                 'alt'           => trim($dayAlts[$i] ?? ''),
                 'existing_image'=> trim($dayExistingImgs[$i] ?? ''),
                 'remove_image'  => !empty($dayRemoveImgs[$i]),
@@ -322,7 +336,7 @@ $tours = $db->fetchAll("SELECT p.*, d.name as dest_name FROM tour_packages p LEF
 $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE status = 'active' ORDER BY name");
 
 // Load all itinerary days once, grouped by tour, for the edit modal.
-$allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, image_path, image_alt FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
+$allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, image_path, image_alt, location_name, lat, lng FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
 $daysByTour = [];
 foreach ($allDays as $day) {
     $daysByTour[$day['tour_id']][] = $day;
@@ -859,6 +873,9 @@ foreach ($allFaqs as $faq) {
             var alt = day.alt || day.image_alt || '';
             var existing = day.image_path || day.existing_image || '';
             var dayId = day.id || 0;
+            var locationName = day.location_name || '';
+            var lat = day.lat != null && day.lat !== '' ? day.lat : '';
+            var lng = day.lng != null && day.lng !== '' ? day.lng : '';
 
             var esc = function(v, m) {
                 if (typeof v !== 'string') v = String(v == null ? '' : v);
@@ -887,6 +904,12 @@ foreach ($allFaqs as $faq) {
             html += '<div class="col-md-4"><div class="form-group"><label>Drive Time</label><input type="text" class="form-control" name="day_drive_time[]" value="' + esc(drive) + '" placeholder="e.g. ~2.5 hrs"></div></div>';
             html += '<div class="col-md-4"><div class="form-group"><label>Meals</label><input type="text" class="form-control" name="day_meals[]" value="' + esc(meals) + '" placeholder="e.g. L, D"></div></div>';
             html += '<div class="col-md-4"><div class="form-group"><label>Accommodation</label><input type="text" class="form-control" name="day_accommodation[]" value="' + esc(accommodation) + '" placeholder="e.g. Serengeti Lodge"></div></div>';
+            html += '</div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="col-md-12"><div class="form-group"><label>Map Location <small class="text-muted">(optional)</small></label><input type="text" class="form-control" name="day_location_name[]" value="' + esc(locationName) + '" placeholder="e.g. Serengeti National Park"></div></div>';
+            html += '<div class="col-md-6"><div class="form-group"><label class="text-muted"><small>Latitude</small></label><input type="text" class="form-control" name="day_lat[]" value="' + esc(lat) + '" placeholder="e.g. -2.332778"></div></div>';
+            html += '<div class="col-md-6"><div class="form-group"><label class="text-muted"><small>Longitude</small></label><input type="text" class="form-control" name="day_lng[]" value="' + esc(lng) + '" placeholder="e.g. 34.560556"></div></div>';
             html += '</div>';
 
             html += '<div class="form-row align-items-end">';

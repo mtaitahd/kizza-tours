@@ -192,6 +192,39 @@ $tourHeroBg = $heroBgUrl
     </div>
 </section>
 
+<!-- FAQ Section (after overview, before itinerary) -->
+<?php
+$tourFaqs = getFAQsByTour($tour['id'] ?? 0);
+$seenQuestions = [];
+$tourFaqs = array_filter($tourFaqs, function($f) use (&$seenQuestions) {
+    $key = strtolower(trim($f['question']));
+    if (isset($seenQuestions[$key])) return false;
+    $seenQuestions[$key] = true;
+    return true;
+});
+$tourFaqs = array_values($tourFaqs);
+$faqs = $tourFaqs;
+?>
+<?php if (!empty($tourFaqs)): ?>
+<script type="application/ld+json"><?php echo json_encode(seoFaqSchema(array_map(function($f) {
+    return ['question' => $f['question'], 'answer' => $f['answer']];
+}, $tourFaqs)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+<section class="section-padding" style="background: var(--off-white);" id="faq-section">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h2 class="section-title"><?php echo __('faq_title'); ?></h2>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-10" data-aos="fade-up">
+                <div class="faq-accordion" id="faqAccordion">
+                    <?php $n = 'faq'; include __DIR__ . '/includes/faq-accordion.php'; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
 <!-- Tour Itinerary (full-width editorial section) -->
 <?php if (!empty($itineraryDays) || !empty($itineraryLines)): ?>
 <section class="tour-itinerary-section" id="tour-itinerary" data-aos="fade-up">
@@ -243,40 +276,6 @@ $tourHeroBg = $heroBgUrl
                 </div>
             </div>
             <?php endforeach; ?>
-        </div>
-    </div>
-</section>
-<?php endif; ?>
-
-<!-- FAQ Section -->
-<?php
-$tourFaqs = getFAQsByTour($tour['id'] ?? 0);
-$seenQuestions = [];
-$tourFaqs = array_filter($tourFaqs, function($f) use (&$seenQuestions) {
-    $key = strtolower(trim($f['question']));
-    if (isset($seenQuestions[$key])) return false;
-    $seenQuestions[$key] = true;
-    return true;
-});
-$tourFaqs = array_values($tourFaqs);
-$faqs = $tourFaqs;
-?>
-<?php if (!empty($tourFaqs)): ?>
-<script type="application/ld+json"><?php echo json_encode(seoFaqSchema(array_map(function($f) {
-    return ['question' => $f['question'], 'answer' => $f['answer']];
-}, $tourFaqs)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-<section class="section-padding" style="background: var(--off-white);" id="faq-section">
-    <div class="container">
-        <div class="text-center mb-5" data-aos="fade-up">
-            <span class="section-subtitle"><?php echo __('faq_subtitle'); ?></span>
-            <h2 class="section-title"><?php echo __('faq_title'); ?></h2>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-lg-10" data-aos="fade-up">
-                <div class="faq-accordion" id="faqAccordion">
-                    <?php $n = 'faq'; include __DIR__ . '/includes/faq-accordion.php'; ?>
-                </div>
-            </div>
         </div>
     </div>
 </section>

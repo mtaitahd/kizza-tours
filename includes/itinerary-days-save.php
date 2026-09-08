@@ -18,7 +18,8 @@
  * @param int   $tourId            The tour id the days belong to.
  * @param array $submittedDays     Each item: day_id, day_number, title,
  *                                 description, drive_time, meals, accommodation,
- *                                 alt, final_image. final_image = the resolved
+ *                                 location_name, lat, lng, alt, final_image.
+ *                                 final_image = the resolved
  *                                 image path (uploaded new, kept existing, or
  *                                 null when removed).
  * @param array $uploadedNewImages Paths of files just uploaded during this
@@ -61,19 +62,22 @@ function saveItineraryDays($tourId, $submittedDays, $uploadedNewImages) {
             $drive     = mb_substr(trim($d['drive_time'] ?? ''), 0, 255);
             $meals     = mb_substr(trim($d['meals'] ?? ''), 0, 255);
             $accom     = mb_substr(trim($d['accommodation'] ?? ''), 0, 255);
+            $locName   = mb_substr(trim($d['location_name'] ?? ''), 0, 255);
+            $lat       = isset($d['lat']) && is_numeric($d['lat']) ? (float)$d['lat'] : null;
+            $lng       = isset($d['lng']) && is_numeric($d['lng']) ? (float)$d['lng'] : null;
             $image     = trim($d['final_image'] ?? '') ?: null;
             $alt       = mb_substr(trim($d['alt'] ?? ''), 0, 255);
 
             if ($id > 0 && isset($oldById[$id])) {
                 $db->query(
-                    "UPDATE itinerary_days SET day_number=?, title=?, description=?, drive_time=?, meals=?, accommodation=?, image_path=?, image_alt=?, sort_order=? WHERE id=? AND tour_id=?",
-                    [$dayNumber, $title, $description, $drive, $meals, $accom, $image, $alt, $sort, $id, $tourId]
+                    "UPDATE itinerary_days SET day_number=?, title=?, description=?, drive_time=?, meals=?, accommodation=?, location_name=?, lat=?, lng=?, image_path=?, image_alt=?, sort_order=? WHERE id=? AND tour_id=?",
+                    [$dayNumber, $title, $description, $drive, $meals, $accom, $locName, $lat, $lng, $image, $alt, $sort, $id, $tourId]
                 );
             } else {
                 $db->insert(
-                    "INSERT INTO itinerary_days (tour_id, day_number, title, description, drive_time, meals, accommodation, image_path, image_alt, sort_order)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$tourId, $dayNumber, $title, $description, $drive, $meals, $accom, $image, $alt, $sort]
+                    "INSERT INTO itinerary_days (tour_id, day_number, title, description, drive_time, meals, accommodation, location_name, lat, lng, image_path, image_alt, sort_order)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$tourId, $dayNumber, $title, $description, $drive, $meals, $accom, $locName, $lat, $lng, $image, $alt, $sort]
                 );
             }
             $sort++;
