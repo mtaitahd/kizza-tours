@@ -130,18 +130,6 @@ $tourHeroBg = $heroBgUrl
 
                 <h2><?php echo __('tour_details_overview'); ?></h2>
                 <p style="color: var(--text-light); font-size: 1.05rem; line-height: 1.8;"><?php echo nl2br(htmlspecialchars($tour['description'] ?? '')); ?></p>
-
-                <?php if (!empty($highlightsArr)): ?>
-                <h3 class="mt-4"><?php echo __('tour_details_highlights'); ?></h3>
-                <ul class="tour-list tour-list--highlights mt-3">
-                    <?php foreach ($highlightsArr as $hl): ?>
-                    <li class="tour-list__item">
-                        <i class="fas fa-check-circle tour-list__icon tour-list__icon--highlight" aria-hidden="true"></i>
-                        <span class="tour-list__text"><?php echo htmlspecialchars($hl); ?></span>
-                    </li>
-                    <?php endforeach; ?>
-                </ul>
-                <?php endif; ?>
             </div>
 
             <div class="col-lg-4">
@@ -157,30 +145,6 @@ $tourHeroBg = $heroBgUrl
                     <a href="https://wa.me/<?php echo $siteWhatsapp; ?>" class="btn btn-premium btn-outline-success btn-lg w-100 mb-4" target="_blank">
                         <i class="fab fa-whatsapp"></i> <?php echo __('tour_details_chat'); ?>
                     </a>
-
-                    <?php if (!empty($includesArr)): ?>
-                    <h5 class="mt-3"><?php echo __('tour_details_includes'); ?></h5>
-                    <ul class="tour-list tour-list--includes">
-                        <?php foreach ($includesArr as $inc): ?>
-                        <li class="tour-list__item">
-                            <i class="fas fa-check tour-list__icon tour-list__icon--include" aria-hidden="true"></i>
-                            <span class="tour-list__text"><?php echo htmlspecialchars($inc); ?></span>
-                        </li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <?php endif; ?>
-
-                    <?php if (!empty($excludesArr)): ?>
-                    <h5 class="mt-3"><?php echo __('tour_details_excludes'); ?></h5>
-                    <ul class="tour-list tour-list--excludes">
-                        <?php foreach ($excludesArr as $exc): ?>
-                        <li class="tour-list__item">
-                            <i class="fas fa-times tour-list__icon tour-list__icon--exclude" aria-hidden="true"></i>
-                            <span class="tour-list__text"><?php echo htmlspecialchars($exc); ?></span>
-                        </li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <?php endif; ?>
 
                     <hr>
                     <a href="<?php echo SITE_URL; ?>/<?php echo $countryPage; ?>" class="btn btn-outline-gold w-100">
@@ -246,6 +210,83 @@ $faqs = $tourFaqs;
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- Highlights -->
+<?php if (!empty($highlightsArr)): ?>
+<section class="section-padding tour-highlights-section" id="tour-highlights" data-aos="fade-up">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-subtitle"><?php echo __('tour_details_highlights_subtitle'); ?></span>
+            <h2 class="section-title"><?php echo __('tour_details_highlights'); ?></h2>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="tour-highlights-grid">
+                    <?php foreach ($highlightsArr as $hl): ?>
+                    <div class="tour-highlight-card">
+                        <div class="tour-highlight-card__icon"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
+                        <div class="tour-highlight-card__text">
+                            <span class="tour-list__text"><?php echo htmlspecialchars($hl); ?></span>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- Includes & Excludes -->
+<?php if (!empty($includesArr) || !empty($excludesArr)): ?>
+<section class="section-padding tour-inc-exc-section" style="background: var(--off-white);" id="tour-includes-excludes" data-aos="fade-up">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-subtitle"><?php echo __('tour_details_inc_exc_subtitle'); ?></span>
+            <h2 class="section-title"><?php echo __('tour_details_inc_exc_title'); ?></h2>
+        </div>
+        <div class="row g-4">
+            <?php if (!empty($includesArr)): ?>
+            <div class="<?php echo (!empty($excludesArr)) ? 'col-lg-6' : 'col-lg-8 mx-auto'; ?>">
+                <div class="tour-inc-exc-card tour-inc-exc-card--include">
+                    <div class="tour-inc-exc-card__header">
+                        <i class="fas fa-check-circle"></i>
+                        <h3><?php echo __('tour_details_includes'); ?></h3>
+                    </div>
+                    <ul class="tour-list tour-list--includes">
+                        <?php foreach ($includesArr as $inc): ?>
+                        <li class="tour-list__item">
+                            <i class="fas fa-check tour-list__icon tour-list__icon--include" aria-hidden="true"></i>
+                            <span class="tour-list__text"><?php echo htmlspecialchars($inc); ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($excludesArr)): ?>
+            <div class="<?php echo (!empty($includesArr)) ? 'col-lg-6' : 'col-lg-8 mx-auto'; ?>">
+                <div class="tour-inc-exc-card tour-inc-exc-card--exclude">
+                    <div class="tour-inc-exc-card__header">
+                        <i class="fas fa-times-circle"></i>
+                        <h3><?php echo __('tour_details_excludes'); ?></h3>
+                    </div>
+                    <ul class="tour-list tour-list--excludes">
+                        <?php foreach ($excludesArr as $exc): ?>
+                        <li class="tour-list__item">
+                            <i class="fas fa-times tour-list__icon tour-list__icon--exclude" aria-hidden="true"></i>
+                            <span class="tour-list__text"><?php echo htmlspecialchars($exc); ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
     </div>
 </section>
 <?php endif; ?>

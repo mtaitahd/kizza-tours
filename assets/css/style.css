@@ -1125,6 +1125,105 @@ h4 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
     font-family: var(--font-primary);
 }
 
+/*===== TOUR HIGHLIGHTS SECTION ===== */
+.tour-highlights-section {
+    background: var(--white);
+}
+.tour-highlights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+}
+.tour-highlight-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(145deg, #ffffff 0%, var(--off-white) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+.tour-highlight-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--secondary) 0%, var(--accent-dark) 100%);
+    border-radius: 0 4px 4px 0;
+}
+.tour-highlight-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+.tour-highlight-card__icon {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--secondary);
+    font-size: 1.25rem;
+}
+.tour-highlight-card__text {
+    padding-top: 0.1rem;
+}
+.tour-highlight-card__text .tour-list__text {
+    font-family: var(--font-primary);
+    font-size: 1.15rem;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+/*===== TOUR INCLUDES / EXCLUDES SECTION ===== */
+.tour-inc-exc-card {
+    height: 100%;
+    padding: 2rem;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid #eee;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+.tour-inc-exc-card:hover {
+    box-shadow: var(--shadow-md);
+}
+.tour-inc-exc-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.tour-inc-exc-card__header i {
+    font-size: 1.6rem;
+}
+.tour-inc-exc-card__header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+.tour-inc-exc-card--include {
+    border-top: 4px solid #16a34a;
+}
+.tour-inc-exc-card--include .tour-inc-exc-card__header i {
+    color: #16a34a;
+}
+.tour-inc-exc-card--exclude {
+    border-top: 4px solid #dc2626;
+}
+.tour-inc-exc-card--exclude .tour-inc-exc-card__header i {
+    color: #dc2626;
+}
+
 /*===== PACKAGE DETAIL MODAL =====*/
 .pkg-modal-overlay {
     position: fixed;
