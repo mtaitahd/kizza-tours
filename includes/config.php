@@ -7,7 +7,17 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// Session
+// Session — 8 hours
+$sessionLifetime = 8 * 3600; // 28800 seconds
+ini_set('session.gc_maxlifetime', (string)$sessionLifetime);
+ini_set('session.cookie_lifetime', (string)$sessionLifetime);
+session_set_cookie_params([
+    'lifetime' => $sessionLifetime,
+    'path'     => '/',
+    'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -407,6 +417,35 @@ function convertToWebp($sourcePath, $quality = 80) {
     if (!$image) {
         return $sourcePath;
     }
+
+    // Downscale oversized uploads before encoding. We decode the source once
+    // (that part can't be avoided) but re-encode a much smaller image, which
+    // makes saving tours with large photos fast and produces lean WebP files.
+    $maxDim = (int)env('MAX_IMAGE_DIMENSION', 1920);
+    if ($maxDim > 0) {
+        $srcW = imagesx($image);
+        $srcH = imagesy($image);
+        $longest = max($srcW, $srcH);
+        if ($longest > $maxDim) {
+            $scale = $maxDim / $longest;
+            $dstW = max(1, (int)round($srcW * $scale));
+            $dstH = max(1, (int)round($srcH * $scale));
+            $resized = imagecreatetruecolor($dstW, $dstH);
+            if ($resized) {
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+                imagefilledrectangle($resized, 0, 0, $dstW, $dstH, imagecolorallocate($resized, 255, 255, 255));
+                if (function_exists('imagecopyresampled')) {
+                    imagecopyresampled($resized, $image, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
+                } else {
+                    imagecopyresized($resized, $image, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
+                }
+                imagedestroy($image);
+                $image = $resized;
+            }
+        }
+    }
+
     $result = @imagewebp($image, $webpPath, $quality);
     imagedestroy($image);
     if ($result) {

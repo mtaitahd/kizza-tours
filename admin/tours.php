@@ -300,6 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour added successfully'];
+            $_SESSION['drafts_cleared'] = true;
             if (!empty($dayImageErrors)) {
                 $_SESSION['flash']['message'] .= ' Removed invalid image uploads: ' . implode(' ', $dayImageErrors);
             }
@@ -353,6 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
+            $_SESSION['drafts_cleared'] = true;
             if (!empty($dayImageErrors)) {
                 $_SESSION['flash']['message'] .= ' Removed invalid image uploads: ' . implode(' ', $dayImageErrors);
             }
@@ -569,11 +571,16 @@ foreach ($allFaqs as $faq) {
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2"> Manage Tours</h4>
-                        <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#tourModal">
+                        <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#tourModal" onclick="openAddTour()">
                             <i class="fas fa-plus"></i> Add Tour
                         </button>
                     </div>
                     
+                    <?php
+                    $draftsCleared = !empty($_SESSION['drafts_cleared']);
+                    unset($_SESSION['drafts_cleared']);
+                    ?>
+
                     <?php if (isset($_SESSION['flash'])): ?>
                         <div class="alert alert-success alert-dismissible fade show">
                             <?php echo htmlspecialchars($_SESSION['flash']['message']); unset($_SESSION['flash']); ?>
@@ -686,6 +693,19 @@ foreach ($allFaqs as $faq) {
                     <div class="modal-body">
                         <input type="hidden" name="action" id="tourAction" value="add">
                         <input type="hidden" name="tour_id" id="tourId" value="0">
+
+                        <div id="tourDraftBanner" class="alert alert-warning d-none" role="alert">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <span><i class="fas fa-save mr-1"></i> <strong>Draft found</strong> — auto-saved <span id="tourDraftTime"></span>. Continue where you left off.</span>
+                                <span class="ml-auto">
+                                    <button type="button" class="btn btn-sm btn-warning" onclick="resumeTourDraft()"><i class="fas fa-redo-alt mr-1"></i> Resume draft</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="discardTourDraft()"><i class="fas fa-trash mr-1"></i> Discard</button>
+                                </span>
+                            </div>
+                            <small class="d-block text-muted mt-2">All text is restored. Images you had picked must be selected again (browsers can't save files in a draft).</small>
+                        </div>
+                        <div id="tourDraftRestoredMsg" class="alert alert-info d-none"></div>
+
                         <div class="row">
                             <div class="col-md-8">
                                 <div class="form-group">
@@ -796,17 +816,15 @@ foreach ($allFaqs as $faq) {
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Highlights</label>
-                                    <div id="tourHighlightsItems" class="mb-2"></div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('tourHighlightsItems', 'highlights[]', '')"><i class="fas fa-plus"></i> Add Highlight</button>
-                                    <small class="d-block text-muted mt-1">One item per row. Each row becomes a bullet on the tour page.</small>
+                                    <textarea class="form-control" name="highlights" id="tourHighlights" rows="4" placeholder="Wildlife viewing, Scenic game drives, Professional guide ..."></textarea>
+                                    <small class="d-block text-muted mt-1">Paste all highlights separated by commas. Each one becomes a bullet on the tour page.</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Includes</label>
-                                    <div id="tourIncludesItems" class="mb-2"></div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('tourIncludesItems', 'includes[]', '')"><i class="fas fa-plus"></i> Add Include</button>
-                                    <small class="d-block text-muted mt-1">One item per row. Each row becomes a bullet on the tour page.</small>
+                                    <textarea class="form-control" name="includes" id="tourIncludes" rows="4" placeholder="Park fees, Accommodation, Meals ..."></textarea>
+                                    <small class="d-block text-muted mt-1">Paste all includes separated by commas. Each one becomes a bullet on the tour page.</small>
                                 </div>
                             </div>
                         </div>
@@ -814,9 +832,8 @@ foreach ($allFaqs as $faq) {
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Excludes</label>
-                                    <div id="tourExcludesItems" class="mb-2"></div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('tourExcludesItems', 'excludes[]', '')"><i class="fas fa-plus"></i> Add Exclude</button>
-                                    <small class="d-block text-muted mt-1">One item per row. Each row becomes a bullet on the tour page.</small>
+                                    <textarea class="form-control" name="excludes" id="tourExcludes" rows="4" placeholder="Flights, Visas, Travel insurance ..."></textarea>
+                                    <small class="d-block text-muted mt-1">Paste all excludes separated by commas. Each one becomes a bullet on the tour page.</small>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -879,6 +896,8 @@ foreach ($allFaqs as $faq) {
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <span id="tourDraftSavedMsg" class="text-muted small mr-auto" style="opacity:0;"></span>
+                        <button type="button" class="btn btn-outline-warning" onclick="saveTourDraftNow()"><i class="fas fa-save mr-1"></i> Save Draft</button>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-outline-secondary">Save Tour</button>
                     </div>
@@ -893,31 +912,30 @@ foreach ($allFaqs as $faq) {
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
+        var TOUR_DRAFTS_CLEARED = <?php echo $draftsCleared ? 'true' : 'false'; ?>;
+
+        function openAddTour() {
+            document.getElementById('tourAction').value = 'add';
+            document.getElementById('tourId').value = '0';
+            document.getElementById('tourModalTitle').textContent = 'Add Tour';
+        }
+
         function escapeAttr(v) {
             if (typeof v !== 'string') v = String(v == null ? '' : v);
             var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
             return v.replace(/[&<>"']/g, function(c) { return map[c]; });
         }
 
-        function addListItem(containerId, fieldName, value) {
-            var container = document.getElementById(containerId);
-            var row = document.createElement('div');
-            row.className = 'input-group input-group-sm mb-2';
-            row.innerHTML = '<input type="text" class="form-control" name="' + escapeAttr(fieldName) + '" value="' + escapeAttr(value || '') + '" placeholder="Enter item...">'
-                + '<div class="input-group-append"><button type="button" class="btn btn-outline-danger" title="Remove item" onclick="this.parentNode.parentNode.remove()"><i class="fas fa-times"></i></button></div>';
-            container.appendChild(row);
-        }
-
-        function loadListItems(containerId, fieldName, raw) {
-            var container = document.getElementById(containerId);
-            container.innerHTML = '';
+        function listToComma(raw) {
             var items = [];
             if (raw) {
                 if (typeof raw === 'string') {
                     raw = raw.trim();
                     if (raw.charAt(0) === '[') {
-                        try { var arr = JSON.parse(raw); items = Array.isArray(arr) ? arr : []; }
-                        catch (e) { items = []; }
+                        try {
+                            var arr = JSON.parse(raw);
+                            if (Array.isArray(arr)) items = arr;
+                        } catch (e) { items = []; }
                     } else {
                         items = raw.split(/\r\n|\r|\n|,/).map(function(s) { return s.trim(); });
                     }
@@ -925,9 +943,266 @@ foreach ($allFaqs as $faq) {
                     items = raw;
                 }
             }
-            items = items.filter(function(s) { return typeof s === 'string' && s.trim() !== ''; });
-            if (!items.length) items = [''];
-            items.forEach(function(item) { addListItem(containerId, fieldName, item); });
+            return items.filter(function(s) { return typeof s === 'string' && s.trim() !== ''; }).join(', ');
+        }
+
+        // ── Auto-Save Draft (localStorage) ─────────────────────────────
+        // Every field of the tour form (text, itinerary days, FAQs) is saved to
+        // localStorage a moment after each edit and when the modal closes. When
+        // you come back later and reopen the same "Add Tour" / "Edit Tour", a
+        // banner lets you resume the draft. Browsers can't save files, so image
+        // uploads must be re-picked (the form tells you which ones).
+
+        var TOUR_DRAFT = (function () {
+            var PREFIX = 'kizza_tour_draft_';
+            function cleanId(id) {
+                var n = parseInt(id, 10);
+                return isNaN(n) ? 0 : n;
+            }
+            function keyFor(mode, id) {
+                return PREFIX + (mode === 'edit' ? 'edit_' + cleanId(id) : 'add_0');
+            }
+            function currentKey() {
+                var action = document.getElementById('tourAction');
+                var idEl = document.getElementById('tourId');
+                var mode = action && action.value === 'edit' ? 'edit' : 'add';
+                return keyFor(mode, idEl ? idEl.value : 0);
+            }
+            function read(key) {
+                try { return JSON.parse(localStorage.getItem(key) || 'null'); }
+                catch (e) { return null; }
+            }
+            function save(key) {
+                var form = document.querySelector('#tourModal form');
+                if (!form) return false;
+                var action = document.getElementById('tourAction');
+                var idEl = document.getElementById('tourId');
+                var mode = action && action.value === 'edit' ? 'edit' : 'add';
+                var data = serializeTourForm();
+                if (!draftHasContent(data)) return false;
+                var draft = {
+                    ts: Date.now(),
+                    mode: mode,
+                    tourId: idEl ? idEl.value : '0',
+                    values: data
+                };
+                try {
+                    localStorage.setItem(key || currentKey(), JSON.stringify(draft));
+                    return true;
+                } catch (e) { return false; }
+            }
+            function draftHasContent(d) {
+                var keys = ['title', 'slug', 'duration', 'price', 'description',
+                            'highlights', 'includes', 'excludes', 'gallery',
+                            'country', 'destination_id',
+                            'meta_title', 'meta_keywords', 'meta_description'];
+                for (var i = 0; i < keys.length; i++) {
+                    if (d[keys[i]] !== undefined && String(d[keys[i]]).trim() !== '') return true;
+                }
+                if ((d.day_title || []).some(function (t) { return t && String(t).trim() !== ''; })) return true;
+                if ((d.faq_question || []).some(function (q) { return q && String(q).trim() !== ''; })) return true;
+                return false;
+            }
+            function clear(key) {
+                try { localStorage.removeItem(key || currentKey()); } catch (e) {}
+            }
+            function clearAll() {
+                try {
+                    var doomed = [];
+                    for (var i = 0; i < localStorage.length; i++) {
+                        var k = localStorage.key(i);
+                        if (k && k.indexOf(PREFIX) === 0) doomed.push(k);
+                    }
+                    doomed.forEach(function (k) { localStorage.removeItem(k); });
+                } catch (e) {}
+            }
+            return { currentKey: currentKey, keyFor: keyFor, read: read, save: save, clear: clear, clearAll: clearAll };
+        })();
+
+        function serializeTourForm() {
+            var form = document.querySelector('#tourModal form');
+            var data = {};
+            if (!form) return data;
+            Array.prototype.forEach.call(form.elements, function (el) {
+                if (!el.name || el.name === 'csrf_token') return;
+                var isArr = el.name.slice(-2) === '[]';
+                var key = isArr ? el.name.slice(0, -2) : el.name;
+                var val;
+                if (el.type === 'file') {
+                    val = (el.files && el.files[0]) ? el.files[0].name : '';
+                } else if (el.type === 'checkbox' || el.type === 'radio') {
+                    val = el.checked;
+                } else {
+                    val = el.value;
+                }
+                if (isArr) {
+                    if (!data[key]) data[key] = [];
+                    data[key].push(val);
+                } else {
+                    data[key] = val;
+                }
+            });
+            return data;
+        }
+
+        function timeAgo(ts) {
+            if (!ts) return '';
+            var mins = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+            if (mins < 1) return 'just now';
+            if (mins < 60) return mins + ' min ago';
+            var h = Math.floor(mins / 60);
+            var m = mins % 60;
+            return h + (m ? 'h ' + m + 'm' : 'h') + ' ago';
+        }
+
+        function updateDraftBanner() {
+            var banner = document.getElementById('tourDraftBanner');
+            if (!banner) return;
+            var draft = TOUR_DRAFT.read(TOUR_DRAFT.currentKey());
+            if (!draft || !draft.values) { banner.classList.add('d-none'); return; }
+            banner.classList.remove('d-none');
+            document.getElementById('tourDraftTime').textContent = timeAgo(draft.ts);
+        }
+
+        function showRestoreNotice(missing) {
+            var el = document.getElementById('tourDraftRestoredMsg');
+            if (!el) return;
+            var msg = 'Draft restored.';
+            if (missing && missing.length) {
+                msg = 'Draft restored. Images to re-select: ' + missing.join(', ') + '.';
+            }
+            el.textContent = msg;
+            el.classList.remove('d-none');
+            setTimeout(function () { el.classList.add('d-none'); }, 9000);
+        }
+
+        function resumeTourDraft() {
+            var draft = TOUR_DRAFT.read(TOUR_DRAFT.currentKey());
+            if (!draft || !draft.values) return;
+            var d = draft.values;
+            var actionEl = document.getElementById('tourAction');
+            var idEl = document.getElementById('tourId');
+            var modalTitle = document.getElementById('tourModalTitle');
+            if (actionEl) actionEl.value = draft.mode === 'edit' ? 'edit' : 'add';
+            if (idEl) idEl.value = draft.tourId || '0';
+            if (modalTitle) modalTitle.textContent = draft.mode === 'edit' ? 'Edit Tour' : 'Add Tour';
+
+            var simple = {
+                title: 'tourTitle', slug: 'tourSlug', duration: 'tourDuration', price: 'tourPrice',
+                rating: 'tourRating', country: 'tourCountry', destination_id: 'tourDest',
+                max_guests: 'tourGuests', status: 'tourStatus', description: 'tourDescription',
+                highlights: 'tourHighlights', includes: 'tourIncludes', excludes: 'tourExcludes',
+                gallery: 'tourGallery', meta_title: 'tourMetaTitle', meta_keywords: 'tourMetaKeywords',
+                meta_description: 'tourMetaDesc', no_robots: 'tourNoRobots'
+            };
+            Object.keys(simple).forEach(function (k) {
+                var el = document.getElementById(simple[k]);
+                if (el && d[k] !== undefined) el.value = d[k];
+            });
+
+            for (var i = 1; i <= 3; i++) {
+                setOverviewSlot(i, d['overview_image_' + i + '_current'] || '');
+            }
+
+            var form = document.querySelector('#tourModal form');
+            if (form) {
+                Array.prototype.forEach.call(form.elements, function (el) {
+                    if (!el.name || el.name.indexOf('[]') !== -1 || el.name === 'csrf_token') return;
+                    if (el.type !== 'checkbox' && el.type !== 'radio') return;
+                    if (d[el.name] !== undefined) el.checked = !!d[el.name];
+                });
+            }
+
+            restoreItineraryDays(d);
+            restoreTourFaqs(d);
+
+            var banner = document.getElementById('tourDraftBanner');
+            if (banner) banner.classList.add('d-none');
+            showRestoreNotice(collectMissingFiles(d));
+        }
+
+        function restoreItineraryDays(d) {
+            var container = document.getElementById('itineraryDaysContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            var n = (d.day_title || []).length;
+            if (!n) { addItineraryDay({ day_number: 1 }); return; }
+            for (var i = 0; i < n; i++) {
+                addItineraryDay({
+                    id: (d.day_id && d.day_id[i]) || 0,
+                    day_number: (d.day_number && d.day_number[i]) || (i + 1),
+                    title: (d.day_title && d.day_title[i]) || '',
+                    description: (d.day_description && d.day_description[i]) || '',
+                    drive_time: (d.day_drive_time && d.day_drive_time[i]) || '',
+                    meals: (d.day_meals && d.day_meals[i]) || '',
+                    accommodation: (d.day_accommodation && d.day_accommodation[i]) || '',
+                    location_name: (d.day_location_name && d.day_location_name[i]) || '',
+                    lat: (d.day_lat && d.day_lat[i]) || '',
+                    lng: (d.day_lng && d.day_lng[i]) || '',
+                    alt: (d.day_alt && d.day_alt[i]) || '',
+                    existing_image: (d.day_existing_image && d.day_existing_image[i]) || ''
+                });
+            }
+            if (!container.children.length) addItineraryDay({ day_number: 1 });
+            Array.prototype.forEach.call(container.querySelectorAll('.itinerary-day-row'), function (row, idx) {
+                if (d.day_remove_image && d.day_remove_image[idx]) {
+                    var cb = row.querySelector('input[type=checkbox]');
+                    var hidden = row.querySelector('.itinerary-day-remove-value');
+                    if (cb) cb.checked = true;
+                    if (hidden) hidden.value = '1';
+                }
+            });
+        }
+
+        function restoreTourFaqs(d) {
+            var n = (d.faq_question || []).length;
+            var faqs = [];
+            for (var i = 0; i < n; i++) {
+                faqs.push({
+                    id: (d.faq_id && d.faq_id[i]) || 0,
+                    question: (d.faq_question && d.faq_question[i]) || '',
+                    answer: (d.faq_answer && d.faq_answer[i]) || '',
+                    category: (d.faq_category && d.faq_category[i]) || '',
+                    status: (d.faq_status && d.faq_status[i]) || 'active'
+                });
+            }
+            loadTourFaqs(faqs);
+        }
+
+        function collectMissingFiles(d) {
+            var names = [];
+            ['image', 'hero_image', 'overview_image_1', 'overview_image_2', 'overview_image_3'].forEach(function (k) {
+                if (d[k]) names.push(d[k]);
+            });
+            if (Array.isArray(d.day_image)) {
+                d.day_image.forEach(function (v) { if (v) names.push(v); });
+            }
+            return names;
+        }
+
+        function discardTourDraft() {
+            TOUR_DRAFT.clear();
+            var banner = document.getElementById('tourDraftBanner');
+            if (banner) banner.classList.add('d-none');
+        }
+
+        function saveTourDraftNow() {
+            var ok = TOUR_DRAFT.save();
+            var msg = document.getElementById('tourDraftSavedMsg');
+            if (!msg) return;
+            msg.textContent = ok ? 'Draft saved (just now)' : 'Could not save draft';
+            msg.style.opacity = '1';
+            clearTimeout(msg._t);
+            msg._t = setTimeout(function () { msg.style.opacity = '0.4'; }, 4000);
+        }
+
+        var isTourModalActive = false;
+        var draftSaveTimer = null;
+
+        function scheduleDraftSave() {
+            if (!isTourModalActive) return;
+            if (draftSaveTimer) clearTimeout(draftSaveTimer);
+            draftSaveTimer = setTimeout(function () { TOUR_DRAFT.save(); }, 1500);
         }
 
         function addTourFaq(f) {
@@ -1016,9 +1291,9 @@ foreach ($allFaqs as $faq) {
             document.getElementById('tourGuests').value = t.max_guests || 10;
             document.getElementById('tourStatus').value = t.status || 'active';
             document.getElementById('tourDescription').value = t.description || '';
-            loadListItems('tourHighlightsItems', 'highlights[]', t.highlights || '');
-            loadListItems('tourIncludesItems', 'includes[]', t.includes || '');
-            loadListItems('tourExcludesItems', 'excludes[]', t.excludes || '');
+            document.getElementById('tourHighlights').value = listToComma(t.highlights);
+            document.getElementById('tourIncludes').value = listToComma(t.includes);
+            document.getElementById('tourExcludes').value = listToComma(t.excludes);
             document.getElementById('tourGallery').value = t.gallery || '';
             setOverviewImages(t);
             document.getElementById('tourMetaTitle').value = t.meta_title || '';
@@ -1188,15 +1463,17 @@ foreach ($allFaqs as $faq) {
         }
 
         (function() {
+            var tourForm = document.querySelector('#tourModal form');
             $('#tourModal').on('show.bs.modal', function() {
+                isTourModalActive = true;
                 if (document.getElementById('tourAction').value === 'add') {
                     var container = document.getElementById('itineraryDaysContainer');
                     container.innerHTML = '';
                     addItineraryDay({ day_number: 1 });
                     document.getElementById('legacyItineraryNote').style.display = 'none';
-                    loadListItems('tourHighlightsItems', 'highlights[]', '');
-                    loadListItems('tourIncludesItems', 'includes[]', '');
-                    loadListItems('tourExcludesItems', 'excludes[]', '');
+                    document.getElementById('tourHighlights').value = '';
+                    document.getElementById('tourIncludes').value = '';
+                    document.getElementById('tourExcludes').value = '';
                     loadTourFaqs([]);
                     resetOverviewImages();
                 } else {
@@ -1204,7 +1481,21 @@ foreach ($allFaqs as $faq) {
                     // have coordinates set.
                     setTimeout(initDayLocationMaps, 350);
                 }
+                updateDraftBanner();
             });
+            $('#tourModal').on('hidden.bs.modal', function() {
+                isTourModalActive = false;
+                if (draftSaveTimer) clearTimeout(draftSaveTimer);
+                TOUR_DRAFT.save();
+            });
+            if (tourForm) {
+                tourForm.addEventListener('input', scheduleDraftSave);
+                tourForm.addEventListener('change', scheduleDraftSave);
+            }
+            window.addEventListener('beforeunload', function() {
+                if (isTourModalActive) TOUR_DRAFT.save();
+            });
+            if (TOUR_DRAFTS_CLEARED) TOUR_DRAFT.clearAll();
         })();
     </script>
     <script>

@@ -440,6 +440,11 @@ $overviewToggleId = 'tour-overview-toggle';
 
     var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // The button's aria-expanded attribute is the single source of truth for
+    // whether the overview is open. Nothing else can reset it, so a stray
+    // re-measurement (resize/font/ResizeObserver) can never steal the "Show
+    // less" state while the user has the text expanded.
+
     // Collapsed cap comes from CSS (varies by breakpoint). Reset any inline
     // value first so it reads the current breakpoint rule, then floor it to a
     // whole number of line-heights so the last visible line is never sliced.
@@ -453,80 +458,74 @@ $overviewToggleId = 'tour-overview-toggle';
         return Math.max(line, Math.floor(cap / line) * line);
     }
 
+    function isOpen() {
+        return btn.getAttribute('aria-expanded') === 'true';
+    }
+
+    function setOpen(open) {
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        var txt = btn.getAttribute(open ? 'data-label-less' : 'data-label-more');
+        var label = btn.querySelector('.tour-overview__toggle-label');
+        if (label && txt) label.textContent = txt;
+    }
+
     function applyCollapsed() {
+        // Never collapse a block the user has opened. When open, just keep the
+        // max-height in sync with the real text height so the layout settles
+        // correctly (images, fonts, resize) without closing the text.
+        if (isOpen()) {
+            descEl.style.maxHeight = innerEl.scrollHeight + 'px';
+            return;
+        }
         var cap = collapsedCap();
         if (cap === null) {
             descEl.style.maxHeight = '';
             descEl.classList.remove('is-truncated');
+            btn.hidden = true;
+            setOpen(false);
             return;
         }
         descEl.style.maxHeight = cap + 'px';
         var truncated = innerEl.scrollHeight > cap + 1;
         descEl.classList.toggle('is-truncated', truncated);
         btn.hidden = !truncated;
-        btn.setAttribute('aria-expanded', 'false');
-        btn.classList.remove('is-open');
-    }
-
-    function setLabel(open) {
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        btn.classList.toggle('is-open', open);
-        var txt = btn.getAttribute(open ? 'data-label-less' : 'data-label-more');
-        var label = btn.querySelector('.tour-overview__toggle-label');
-        if (label && txt) label.textContent = txt;
-    }
-
-    function isOpen() {
-        return btn.classList.contains('is-open');
-    }
-
-    function fullHeight() {
-        return innerEl.scrollHeight;
-    }
-
-    function expand() {
-        // Fade out the collapsed hint, then grow to the text's real height so
-        // the max-height transition animates smoothly and nothing gets clipped.
-        descEl.classList.remove('is-truncated');
-        descEl.style.maxHeight = fullHeight() + 'px';
-        setLabel(true);
-    }
-
-    function collapse() {
-        var cap = collapsedCap();
-        descEl.classList.add('is-truncated');
-        descEl.style.maxHeight = cap ? cap + 'px' : '';
-        setLabel(false);
-        // If the user has scrolled below the overview heading, glide back to it.
-        var heading = section.querySelector('.tour-overview__heading');
-        var target = heading || section;
-        var top = target.getBoundingClientRect().top + window.pageYOffset;
-        if (window.pageYOffset > top - 80) {
-            target.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
-        }
+        setOpen(false);
     }
 
     btn.addEventListener('click', function () {
         if (isOpen()) {
-            collapse();
+            // Collapse back to the truncated preview. Fade the hint back in,
+            // then animate down to the CSS cap.
+            descEl.classList.add('is-truncated');
+            var cap = collapsedCap();
+            descEl.style.maxHeight = cap ? cap + 'px' : '';
+            setOpen(false);
+            // If the user has scrolled below the overview heading, glide back
+            // to it so the "before" layout returns.
+            var heading = section.querySelector('.tour-overview__heading');
+            var target = heading || section;
+            var top = target.getBoundingClientRect().top + window.pageYOffset;
+            if (window.pageYOffset > top - 80) {
+                target.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+            }
         } else {
-            expand();
+            // Expand to the text's real height so the max-height transition
+            // animates smoothly and nothing gets clipped.
+            descEl.classList.remove('is-truncated');
+            descEl.style.maxHeight = innerEl.scrollHeight + 'px';
+            setOpen(true);
         }
     });
 
-    // Keep the open state's max-height in sync with the real text height when
-    // the layout settles (images, fonts, resize). Closed states re-classify.
+    // Re-measure on layout changes. Open blocks stay open (only their height
+    // is refreshed); closed blocks are re-classified cheaply.
     var rafPending = false;
     function scheduleApply() {
         if (rafPending) return;
         rafPending = true;
         requestAnimationFrame(function () {
             rafPending = false;
-            if (isOpen()) {
-                descEl.style.maxHeight = fullHeight() + 'px';
-            } else {
-                applyCollapsed();
-            }
+            applyCollapsed();
         });
     }
     window.addEventListener('resize', scheduleApply);
