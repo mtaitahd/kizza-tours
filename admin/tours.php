@@ -141,6 +141,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $image = $uploaded;
                 $hasNewImage = true;
             }
+        } else {
+            $galleryImage = trim($_POST['image_gallery'] ?? '');
+            if ($galleryImage !== '' && strpos($galleryImage, 'uploads/') === 0) {
+                $image = $galleryImage;
+                $hasNewImage = true;
+            }
         }
 
         $heroImage = '';
@@ -149,6 +155,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploaded = uploadFile($_FILES['hero_image'], BASE_PATH . 'uploads/tours/', 'hero_' . $slug);
             if ($uploaded) {
                 $heroImage = $uploaded;
+                $hasNewHero = true;
+            }
+        } else {
+            $galleryHero = trim($_POST['hero_image_gallery'] ?? '');
+            if ($galleryHero !== '' && strpos($galleryHero, 'uploads/') === 0) {
+                $heroImage = $galleryHero;
                 $hasNewHero = true;
             }
         }
@@ -313,7 +325,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $params = [$title, $slug, $duration, $price, $country, $destination_id, $rating, $max_guests, $description, $highlights, $includes, $excludes, $gallery, $itinerary, $status, $meta_title, $meta_description, $meta_keywords, $no_robots];
             if ($hasNewImage) { $sql .= ", image=?"; $params[] = $image; }
             if ($hasNewHero) { $sql .= ", hero_image=?"; $params[] = $heroImage; }
-            if ($overviewImagesChanged) {
+            // Overview slots may have been changed simply by picking a different
+            // gallery image in the dropdown, so compare the submitted paths with
+            // what's already stored before deciding whether to write them.
+            $ovDiffers = false;
+            foreach ([1 => $overviewImage1, 2 => $overviewImage2, 3 => $overviewImage3] as $ovNum => $ovVal) {
+                if ((string)($existingRow['overview_image_' . $ovNum] ?? '') !== (string)$ovVal) {
+                    $ovDiffers = true;
+                    break;
+                }
+            }
+            if ($overviewImagesChanged || $ovDiffers) {
                 $sql .= ", overview_image_1=?, overview_image_2=?, overview_image_3=?";
                 $params[] = $overviewImage1;
                 $params[] = $overviewImage2;
@@ -321,6 +343,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $sql .= " WHERE id=?";
             $params[] = $tourId;
+
+            // A gallery picker always submits its current value, so only treat
+            // the main/hero image as "new" when the submitted path actually
+            // differs from what's stored. Otherwise a plain re-save would
+            // rewrite (and then orphan-delete) the still-referenced file.
+            if ($hasNewImage && $image === ($existingRow['image'] ?? '')) {
+                $hasNewImage = false;
+                $image = $existingRow['image'] ?? '';
+            }
+            if ($hasNewHero && $heroImage === ($existingRow['hero_image'] ?? '')) {
+                $hasNewHero = false;
+                $heroImage = $existingRow['hero_image'] ?? '';
+            }
 
             // The tour row, its itinerary days and its FAQs are saved atomically.
             try {
@@ -393,6 +428,54 @@ $allFaqs = $db->fetchAll("SELECT id, tour_id, question, answer, category, sort_o
 $faqsByTour = [];
 foreach ($allFaqs as $faq) {
     $faqsByTour[$faq['tour_id']][] = $faq;
+}
+
+// Active gallery images grouped by category, used by the image pickers in the
+// tour form. Picking an already-web-optimised gallery image avoids the slow
+// per-upload conversion that used to happen on every tour save.
+$galleryImages = $db->fetchAll("SELECT title, category, image FROM gallery WHERE status = 'active' AND image IS NOT NULL AND image != '' ORDER BY category ASC, title ASC");
+$galleryCategoryRows = $db->fetchAll("SELECT name, slug FROM gallery_categories ORDER BY sort_order ASC, name ASC");
+$galleryCatNames = [];
+foreach ($galleryCategoryRows as $cat) {
+    $galleryCatNames[$cat['slug']] = $cat['name'];
+}
+$galleryTree = [];
+foreach ($galleryImages as $g) {
+    $catSlug = !empty($g['category']) ? $g['category'] : 'general';
+    if (!isset($galleryTree[$catSlug])) {
+        $galleryTree[$catSlug] = [
+            'name'  => $galleryCatNames[$catSlug] ?? ucwords(str_replace(['_', '-'], ' ', $catSlug)),
+            'items' => [],
+        ];
+    }
+    $galleryTree[$catSlug]['items'][] = [
+        'path'  => $g['image'],
+        'title' => !empty($g['title']) ? $g['title'] : basename($g['image']),
+    ];
+}
+// Mix in any images that are already saved on tours but not in the gallery yet
+// (e.g. legacy uploads/tours images) so the picker never shows a broken choice.
+$referencedPaths = ['uploads/tours/' => true];
+foreach ($tours as $tour) {
+    foreach (['image', 'hero_image', 'overview_image_1', 'overview_image_2', 'overview_image_3'] as $imgField) {
+        if (!empty($tour[$imgField])) $referencedPaths[$tour[$imgField]] = true;
+    }
+    foreach ($daysByTour[$tour['id']] ?? [] as $day) {
+        if (!empty($day['image_path'])) $referencedPaths[$day['image_path']] = true;
+    }
+}
+$knownPaths = [];
+foreach ($galleryTree as $cat) {
+    foreach ($cat['items'] as $item) $knownPaths[$item['path']] = true;
+}
+$legacyBucket = ['name' => 'Previously uploaded', 'items' => []];
+foreach ($referencedPaths as $path => $_) {
+    if (!isset($knownPaths[$path])) {
+        $legacyBucket['items'][] = ['path' => $path, 'title' => basename($path)];
+    }
+}
+if (!empty($legacyBucket['items'])) {
+    $galleryTree['_legacy'] = $legacyBucket;
 }
 ?>
 <!DOCTYPE html>
@@ -776,15 +859,20 @@ foreach ($allFaqs as $faq) {
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-group">
+                                <div class="form-group tour-image-field">
                                     <label>Image</label>
-                                    <input type="file" class="form-control-file" name="image" accept="image/*">
+                                    <select class="form-control" id="image_gallery" name="image_gallery" data-preview-id="imagePreview" onchange="updateImageField(this)"></select>
+                                    <input type="file" class="form-control-file tour-file-upload d-none" name="image" accept="image/*">
+                                    <img id="imagePreview" class="tour-image-preview d-none" src="" alt="" style="max-width:100%;max-height:90px;object-fit:cover;border-radius:4px;margin-top:6px;">
+                                    <small class="text-muted d-block mt-1">Pick a ready WebP photo from the gallery, or choose <strong>Upload a new image</strong>.</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-group">
+                                <div class="form-group tour-image-field">
                                     <label>Hero Image <small class="text-muted">(full-width banner)</small></label>
-                                    <input type="file" class="form-control-file" name="hero_image" accept="image/*">
+                                    <select class="form-control" id="hero_image_gallery" name="hero_image_gallery" data-preview-id="heroPreview" onchange="updateImageField(this)"></select>
+                                    <input type="file" class="form-control-file tour-file-upload d-none" name="hero_image" accept="image/*">
+                                    <img id="heroPreview" class="tour-image-preview d-none" src="" alt="" style="max-width:100%;max-height:90px;object-fit:cover;border-radius:4px;margin-top:6px;">
                                 </div>
                             </div>
                         </div>
@@ -798,7 +886,10 @@ foreach ($allFaqs as $faq) {
                                         <span id="ovEmpty<?php echo $ov; ?>" class="text-muted small"><i class="fas fa-image"></i> no image</span>
                                     </div>
                                     <input type="hidden" name="overview_image_<?php echo $ov; ?>_current" id="ovCur<?php echo $ov; ?>" value="">
-                                    <input type="file" class="form-control-file form-control-sm" name="overview_image_<?php echo $ov; ?>" id="ovFile<?php echo $ov; ?>" accept="image/*" onchange="previewOverviewFile(<?php echo $ov; ?>, this)">
+                                    <select class="form-control form-control-sm mb-1" id="ovSel<?php echo $ov; ?>" data-ov="<?php echo $ov; ?>" onchange="setOverviewGallery(<?php echo $ov; ?>, this.value)">
+                                        <option value=""></option>
+                                    </select>
+                                    <input type="file" class="form-control-file form-control-sm ov-file d-none" name="overview_image_<?php echo $ov; ?>" id="ovFile<?php echo $ov; ?>" accept="image/*" onchange="previewOverviewFile(<?php echo $ov; ?>, this)">
                                     <div class="form-check form-check-inline mt-1">
                                         <input class="form-check-input" type="checkbox" name="overview_image_<?php echo $ov; ?>_remove" id="ovRemove<?php echo $ov; ?>" value="1">
                                         <label class="form-check-label small" for="ovRemove<?php echo $ov; ?>">Remove</label>
@@ -806,7 +897,7 @@ foreach ($allFaqs as $faq) {
                                 </div>
                                 <?php endfor; ?>
                             </div>
-                            <small class="text-muted">Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery). Uploads are stored in <code>uploads/tours/</code>.</small>
+                            <small class="text-muted">Pick ready WebP photos from the gallery (grouped by category), or choose <strong>Upload a new image</strong>. Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery).</small>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
@@ -913,6 +1004,68 @@ foreach ($allFaqs as $faq) {
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
         var TOUR_DRAFTS_CLEARED = <?php echo $draftsCleared ? 'true' : 'false'; ?>;
+        var TOUR_GALLERY_TREE = <?php echo json_encode($galleryTree ?: new stdClass()); ?>;
+
+        // ── Gallery image pickers ─────────────────────────────────
+        // Every image field in the tour form now offers a dropdown grouped by
+        // gallery category (Wildlife, Beaches, ...). Selecting an image simply
+        // stores its existing "uploads/..." WebP path, so saving a tour no
+        // longer re-uploads/re-converts whole folders of photos.
+
+        function galleryOptionsHtml(selected) {
+            selected = selected || '';
+            var known = {};
+            var html = '<option value="">-- Choose image from gallery --</option>';
+            (function walk(bucket) {
+                var names = Object.keys(bucket);
+                for (var i = 0; i < names.length; i++) {
+                    var cat = bucket[names[i]] || {};
+                    html += '<optgroup label="' + escapeAttr(cat.name || names[i]) + '">';
+                    (cat.items || []).forEach(function (item) {
+                        known[item.path] = true;
+                        var s = item.path === selected ? ' selected' : '';
+                        html += '<option value="' + escapeAttr(item.path) + '"' + s + '>' +
+                            escapeAttr(item.title || '') + ' &middot; ' + escapeAttr(item.path) + '</option>';
+                    });
+                    html += '</optgroup>';
+                }
+            })(TOUR_GALLERY_TREE || {});
+            if (selected && selected !== '__upload' && !known[selected]) {
+                html = '<option value="">-- Choose image from gallery --</option>' +
+                    '<option value="' + escapeAttr(selected) + '" selected>Currently set: ' + escapeAttr(selected) + '</option>' +
+                    html.slice(html.indexOf('<optgroup'));
+            }
+            html += '<option value="__upload">-- Upload a new image --</option>';
+            return html;
+        }
+
+        function updateImageField(sel) {
+            if (!sel) return;
+            var preview = document.getElementById(sel.getAttribute('data-preview-id'));
+            var fileInput = sel.closest('.tour-image-field').querySelector('.tour-file-upload');
+            if (!sel.value || sel.value === '__upload') {
+                if (fileInput) { fileInput.classList.remove('d-none'); if (sel.value === '__upload') fileInput.value = ''; }
+                if (preview) { preview.style.display = 'none'; preview.removeAttribute('src'); }
+            } else {
+                if (fileInput) { fileInput.value = ''; fileInput.classList.add('d-none'); }
+                if (preview) { preview.src = '../' + sel.value.replace(/^\//, ''); preview.style.display = 'inline-block'; }
+            }
+        }
+
+        function resetMainImages() {
+            var imgSel = document.getElementById('image_gallery');
+            if (imgSel) { imgSel.innerHTML = galleryOptionsHtml(''); imgSel.value = ''; updateImageField(imgSel); }
+            var heroSel = document.getElementById('hero_image_gallery');
+            if (heroSel) { heroSel.innerHTML = galleryOptionsHtml(''); heroSel.value = ''; updateImageField(heroSel); }
+        }
+
+        function setMainImages(imagePath, heroPath) {
+            resetMainImages();
+            var imgSel = document.getElementById('image_gallery');
+            if (imgSel) { imgSel.innerHTML = galleryOptionsHtml(imagePath || ''); imgSel.value = imagePath || ''; updateImageField(imgSel); }
+            var heroSel = document.getElementById('hero_image_gallery');
+            if (heroSel) { heroSel.innerHTML = galleryOptionsHtml(heroPath || ''); heroSel.value = heroPath || ''; updateImageField(heroSel); }
+        }
 
         function openAddTour() {
             document.getElementById('tourAction').value = 'add';
@@ -1100,6 +1253,15 @@ foreach ($allFaqs as $faq) {
                 if (el && d[k] !== undefined) el.value = d[k];
             });
 
+            ['image_gallery', 'hero_image_gallery'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && d[id] !== undefined) {
+                    el.innerHTML = galleryOptionsHtml(d[id] || '');
+                    el.value = d[id] || '';
+                    updateImageField(el);
+                }
+            });
+
             for (var i = 1; i <= 3; i++) {
                 setOverviewSlot(i, d['overview_image_' + i + '_current'] || '');
             }
@@ -1257,16 +1419,43 @@ foreach ($allFaqs as $faq) {
             var cur = document.getElementById('ovCur' + i);
             var file = document.getElementById('ovFile' + i);
             var rem = document.getElementById('ovRemove' + i);
+            var sel = document.getElementById('ovSel' + i);
+            if (sel) { sel.innerHTML = galleryOptionsHtml(path || ''); sel.value = path || ''; }
             if (cur) cur.value = path || '';
             if (rem) rem.checked = false;
             if (file) file.value = '';
-            if (path) {
+            if (sel) {
+                var isUpload = sel.value === '__upload' && !path;
+                if (file) file.classList.toggle('d-none', !isUpload);
+            } else if (file) {
+                file.classList.add('d-none');
+            }
+            if (path && path !== '__upload') {
                 setOverviewPreview(i, '../' + path.replace(/^\//, ''));
             } else {
                 var img = document.getElementById('ovPrev' + i);
                 var empty = document.getElementById('ovEmpty' + i);
                 if (img) img.style.display = 'none';
                 if (empty) empty.style.display = '';
+            }
+        }
+
+        function setOverviewGallery(i, val) {
+            if (val === '__upload') {
+                var sel = document.getElementById('ovSel' + i);
+                var cur = document.getElementById('ovCur' + i);
+                var rem = document.getElementById('ovRemove' + i);
+                var file = document.getElementById('ovFile' + i);
+                if (sel) { sel.innerHTML = galleryOptionsHtml('__upload'); sel.value = '__upload'; }
+                if (cur) cur.value = '';
+                if (rem) rem.checked = false;
+                if (file) { file.value = ''; file.classList.remove('d-none'); }
+                var img = document.getElementById('ovPrev' + i);
+                var empty = document.getElementById('ovEmpty' + i);
+                if (img) img.style.display = 'none';
+                if (empty) empty.style.display = '';
+            } else {
+                setOverviewSlot(i, val);
             }
         }
 
@@ -1300,6 +1489,7 @@ foreach ($allFaqs as $faq) {
             document.getElementById('tourMetaDesc').value = t.meta_description || '';
             document.getElementById('tourMetaKeywords').value = t.meta_keywords || '';
             document.getElementById('tourNoRobots').value = t.no_robots || 0;
+            setMainImages(t.image || '', t.hero_image || '');
             document.getElementById('tourModalTitle').textContent = 'Edit Tour';
             loadItineraryDays(t.days || []);
             loadTourFaqs(t.faqs || []);
@@ -1384,8 +1574,12 @@ foreach ($allFaqs as $faq) {
             html += '<input type="hidden" name="day_lng[]" class="loc-field-lng" value="' + esc(lng) + '">';
 
             html += '<div class="form-row align-items-end">';
-            html += '<div class="col-md-6"><div class="form-group"><label>Image</label><input type="file" class="form-control-file itinerary-day-file" name="day_image[]" accept="image/*" onchange="previewDayImage(this)"></div></div>';
-            html += '<div class="col-md-6"><div class="form-group"><label>Image Alt Text</label><input type="text" class="form-control" name="day_alt[]" value="' + esc(alt) + '"></div></div>';
+            html += '<div class="col-md-6"><div class="form-group"><label>Image <small class="text-muted">from gallery</small></label>';
+            html += '<select class="form-control itinerary-day-gallery" data-day-idx="' + idxKey + '" onchange="onDayGalleryPick(this)">' + galleryOptionsHtml(existing) + '</select>';
+            html += '<input type="file" class="form-control-file itinerary-day-file d-none" name="day_image[]" accept="image/*" onchange="previewDayImage(this)">';
+            html += '<small class="text-muted d-block mt-1">Pick a gallery photo, or choose <strong>Upload a new image</strong>.</small>';
+            html += '</div></div>';
+            html += '<div class="col-md-6"><div class="form-group"><label>Image Alt Text</label><input type="text" class="form-control itinerary-day-alt" name="day_alt[]" value="' + esc(alt) + '"></div></div>';
             html += '</div>';
 
             html += '<input type="hidden" class="itinerary-day-existing" name="day_existing_image[]" value="' + esc(existing) + '">';
@@ -1394,7 +1588,7 @@ foreach ($allFaqs as $faq) {
             html += '<div class="itinerary-day-preview" style="display:none;"></div>';
 
             if (existing) {
-                html += '<div class="mt-2 d-flex align-items-center">';
+                html += '<div class="mt-2 d-flex align-items-center itinerary-day-existing-block">';
                 html += '<img src="../' + esc(existing) + '" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:4px;margin-right:10px;">';
                 html += '<div class="form-check">';
                 html += '<input class="form-check-input" type="checkbox" onchange="this.closest(\'.itinerary-day-row\').querySelector(\'.itinerary-day-remove-value\').value = this.checked ? 1 : 0" ' + (existing && false ? 'checked' : '') + '>';
@@ -1433,6 +1627,46 @@ foreach ($allFaqs as $faq) {
                 var label = row.querySelector('.itinerary-day-label');
                 if (label && num) label.textContent = 'Day ' + num.value;
             });
+        }
+
+        function onDayGalleryPick(sel) {
+            if (!sel) return;
+            var row = sel.closest('.itinerary-day-row');
+            if (!row) return;
+            var existingHidden = row.querySelector('.itinerary-day-existing');
+            var removeVal = row.querySelector('.itinerary-day-remove-value');
+            var fileInput = row.querySelector('.itinerary-day-file');
+            var block = row.querySelector('.itinerary-day-existing-block');
+            var removeCheckbox = block ? block.querySelector('input[type=checkbox]') : null;
+            var galleryPreview = row.querySelector('.itinerary-day-preview');
+            if (sel.value === '__upload') {
+                if (fileInput) { fileInput.value = ''; fileInput.classList.remove('d-none'); }
+                if (removeVal) removeVal.value = '0';
+                if (removeCheckbox) removeCheckbox.checked = false;
+                if (galleryPreview) { galleryPreview.style.display = 'none'; galleryPreview.innerHTML = ''; }
+                return;
+            }
+            if (fileInput) { fileInput.value = ''; fileInput.classList.add('d-none'); }
+            if (removeVal) removeVal.value = '0';
+            if (removeCheckbox) removeCheckbox.checked = false;
+            if (existingHidden) existingHidden.value = sel.value || '';
+            if (block) {
+                if (sel.value) {
+                    var img = block.querySelector('img');
+                    if (img) img.src = '../' + sel.value.replace(/^\//, '');
+                    block.style.display = '';
+                } else {
+                    block.style.display = 'none';
+                }
+            } else if (galleryPreview) {
+                if (sel.value) {
+                    galleryPreview.style.display = 'block';
+                    galleryPreview.innerHTML = '<img src="../' + sel.value.replace(/^\//, '') + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
+                } else {
+                    galleryPreview.style.display = 'none';
+                    galleryPreview.innerHTML = '';
+                }
+            }
         }
 
         function previewDayImage(input) {
@@ -1476,6 +1710,7 @@ foreach ($allFaqs as $faq) {
                     document.getElementById('tourExcludes').value = '';
                     loadTourFaqs([]);
                     resetOverviewImages();
+                    resetMainImages();
                 } else {
                     // Editing: (re)create preview maps for days that already
                     // have coordinates set.
