@@ -1137,6 +1137,16 @@ if (!empty($legacyBucket['items'])) {
             TOUR_GALLERY_PICK_TARGET = null;
         }
 
+        // Bootstrap 4 bug: with two stacked modals, hiding the top one removes
+        // body.modal-open, which disables scrolling inside the tour modal below
+        // (only the background then scrolls). Restore it while the tour modal
+        // is still open so the user can keep scrolling the form.
+        $('#galleryPickerModal').on('hidden.bs.modal', function () {
+            if ($('#tourModal').hasClass('show')) {
+                document.body.classList.add('modal-open');
+            }
+        });
+
         function setThumbFromHidden(inputId, previewImgId, wrapId) {
             var input = document.getElementById(inputId);
             var previewImg = document.getElementById(previewImgId);
