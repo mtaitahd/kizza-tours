@@ -574,6 +574,58 @@ if (!empty($legacyBucket['items'])) {
             z-index: 2;
         }
         .loc-result-item { cursor: pointer; }
+
+        /* ── Gallery image picker ── */
+        .gal-filter-btn.active,
+        .gal-filter-btn.active:hover {
+            background-color: #0A2540 !important;
+            border-color: #0A2540 !important;
+            color: #fff !important;
+        }
+        .gal-thumb {
+            flex: 0 0 auto;
+            width: 92px;
+            margin: 0 6px 8px 0;
+            padding: 4px;
+            border: 1px solid #dce3ea;
+            border-radius: 6px;
+            background: #fff;
+            text-align: center;
+            cursor: pointer;
+            vertical-align: top;
+        }
+        .gal-thumb:hover,
+        .gal-thumb:focus {
+            border-color: #0A2540;
+            box-shadow: 0 1px 4px rgba(10, 37, 64, 0.25);
+            outline: none;
+        }
+        .gal-thumb img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            display: block;
+            margin: 0 auto;
+        }
+        .gal-thumb span {
+            display: block;
+            font-size: 0.66rem;
+            color: #555;
+            margin-top: 3px;
+            line-height: 1.15;
+            max-height: 2.3em;
+            overflow: hidden;
+        }
+        .gal-cat { margin-bottom: 10px; }
+        .tour-image-thumb img {
+            width: 72px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #dce3ea;
+        }
     </style>
 </head>
 <body id="page-top">
@@ -861,18 +913,26 @@ if (!empty($legacyBucket['items'])) {
                             <div class="col-md-4">
                                 <div class="form-group tour-image-field">
                                     <label>Image</label>
-                                    <select class="form-control" id="image_gallery" name="image_gallery" data-preview-id="imagePreview" onchange="updateImageField(this)"></select>
-                                    <input type="file" class="form-control-file tour-file-upload d-none" name="image" accept="image/*">
-                                    <img id="imagePreview" class="tour-image-preview d-none" src="" alt="" style="max-width:100%;max-height:90px;object-fit:cover;border-radius:4px;margin-top:6px;">
-                                    <small class="text-muted d-block mt-1">Pick a ready WebP photo from the gallery, or choose <strong>Upload a new image</strong>.</small>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="openGalleryPicker({type:'main', inputId:'image_gallery', previewImgId:'imagePreview', wrapId:'imagePreviewWrap', fileName:'image'})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
+                                    <div class="tour-image-thumb d-none my-1 text-center" id="imagePreviewWrap">
+                                        <img src="" alt="" id="imagePreview" onclick="openGalleryPicker({type:'main', inputId:'image_gallery', previewImgId:'imagePreview', wrapId:'imagePreviewWrap', fileName:'image'})">
+                                        <button type="button" class="btn btn-sm btn-outline-danger ml-1 align-top" title="Remove" onclick="clearGalleryField('image_gallery','imagePreview','imagePreviewWrap')"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <input type="hidden" name="image_gallery" id="image_gallery" value="">
+                                    <input type="file" class="form-control-file" name="image" accept="image/*" onchange="clearGalleryField('image_gallery','imagePreview','imagePreviewWrap')">
+                                    <small class="text-muted d-block">Pick a ready WebP photo, or upload a new one via the file input.</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group tour-image-field">
                                     <label>Hero Image <small class="text-muted">(full-width banner)</small></label>
-                                    <select class="form-control" id="hero_image_gallery" name="hero_image_gallery" data-preview-id="heroPreview" onchange="updateImageField(this)"></select>
-                                    <input type="file" class="form-control-file tour-file-upload d-none" name="hero_image" accept="image/*">
-                                    <img id="heroPreview" class="tour-image-preview d-none" src="" alt="" style="max-width:100%;max-height:90px;object-fit:cover;border-radius:4px;margin-top:6px;">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="openGalleryPicker({type:'main', inputId:'hero_image_gallery', previewImgId:'heroPreview', wrapId:'heroPreviewWrap', fileName:'hero_image'})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
+                                    <div class="tour-image-thumb d-none my-1 text-center" id="heroPreviewWrap">
+                                        <img src="" alt="" id="heroPreview" onclick="openGalleryPicker({type:'main', inputId:'hero_image_gallery', previewImgId:'heroPreview', wrapId:'heroPreviewWrap', fileName:'hero_image'})">
+                                        <button type="button" class="btn btn-sm btn-outline-danger ml-1 align-top" title="Remove" onclick="clearGalleryField('hero_image_gallery','heroPreview','heroPreviewWrap')"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <input type="hidden" name="hero_image_gallery" id="hero_image_gallery" value="">
+                                    <input type="file" class="form-control-file" name="hero_image" accept="image/*" onchange="clearGalleryField('hero_image_gallery','heroPreview','heroPreviewWrap')">
                                 </div>
                             </div>
                         </div>
@@ -886,10 +946,8 @@ if (!empty($legacyBucket['items'])) {
                                         <span id="ovEmpty<?php echo $ov; ?>" class="text-muted small"><i class="fas fa-image"></i> no image</span>
                                     </div>
                                     <input type="hidden" name="overview_image_<?php echo $ov; ?>_current" id="ovCur<?php echo $ov; ?>" value="">
-                                    <select class="form-control form-control-sm mb-1" id="ovSel<?php echo $ov; ?>" data-ov="<?php echo $ov; ?>" onchange="setOverviewGallery(<?php echo $ov; ?>, this.value)">
-                                        <option value=""></option>
-                                    </select>
-                                    <input type="file" class="form-control-file form-control-sm ov-file d-none" name="overview_image_<?php echo $ov; ?>" id="ovFile<?php echo $ov; ?>" accept="image/*" onchange="previewOverviewFile(<?php echo $ov; ?>, this)">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block mb-1" onclick="openGalleryPicker({type:'overview', idx:<?php echo $ov; ?>})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
+                                    <input type="file" class="form-control-file form-control-sm" name="overview_image_<?php echo $ov; ?>" id="ovFile<?php echo $ov; ?>" accept="image/*" onchange="previewOverviewFile(<?php echo $ov; ?>, this)">
                                     <div class="form-check form-check-inline mt-1">
                                         <input class="form-check-input" type="checkbox" name="overview_image_<?php echo $ov; ?>_remove" id="ovRemove<?php echo $ov; ?>" value="1">
                                         <label class="form-check-label small" for="ovRemove<?php echo $ov; ?>">Remove</label>
@@ -897,7 +955,7 @@ if (!empty($legacyBucket['items'])) {
                                 </div>
                                 <?php endfor; ?>
                             </div>
-                            <small class="text-muted">Pick ready WebP photos from the gallery (grouped by category), or choose <strong>Upload a new image</strong>. Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery).</small>
+                            <small class="text-muted">Pick ready WebP photos from the gallery (shown as thumbnail previews, grouped by category), or upload a new one via the file input. Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery).</small>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
@@ -997,6 +1055,27 @@ if (!empty($legacyBucket['items'])) {
         </div>
     </div>
 
+    <!-- Shared Gallery Picker Modal (centred, thumbnail previews by category) -->
+    <div class="modal fade" id="galleryPickerModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title"><i class="fas fa-images mr-1"></i> Choose image from gallery</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body p-3">
+                    <div id="galPickerFilter" class="d-flex flex-wrap align-items-center mb-2"></div>
+                    <input type="search" id="galPickerSearch" class="form-control form-control-sm mb-2" placeholder="Filter images by name...">
+                    <div id="galPickerGrid" style="max-height:55vh;overflow-y:auto;padding-right:4px;"></div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger mr-auto" id="galPickerClear"><i class="fas fa-times mr-1"></i> No image</button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
@@ -1006,65 +1085,155 @@ if (!empty($legacyBucket['items'])) {
         var TOUR_DRAFTS_CLEARED = <?php echo $draftsCleared ? 'true' : 'false'; ?>;
         var TOUR_GALLERY_TREE = <?php echo json_encode($galleryTree ?: new stdClass()); ?>;
 
-        // ── Gallery image pickers ─────────────────────────────────
-        // Every image field in the tour form now offers a dropdown grouped by
-        // gallery category (Wildlife, Beaches, ...). Selecting an image simply
-        // stores its existing "uploads/..." WebP path, so saving a tour no
-        // longer re-uploads/re-converts whole folders of photos.
+        // ── Gallery image picker ─────────────────────────────────
+        // Every image field in the tour form opens a centred picker that shows
+        // small square WebP previews grouped by category. Picking one just
+        // stores its existing "uploads/..." path, so saving a tour no longer
+        // re-uploads/re-converts whole folders of photos.
 
-        function galleryOptionsHtml(selected) {
-            selected = selected || '';
-            var known = {};
-            var html = '<option value="">-- Choose image from gallery --</option>';
-            (function walk(bucket) {
-                var names = Object.keys(bucket);
-                for (var i = 0; i < names.length; i++) {
-                    var cat = bucket[names[i]] || {};
-                    html += '<optgroup label="' + escapeAttr(cat.name || names[i]) + '">';
-                    (cat.items || []).forEach(function (item) {
-                        known[item.path] = true;
-                        var s = item.path === selected ? ' selected' : '';
-                        html += '<option value="' + escapeAttr(item.path) + '"' + s + '>' +
-                            escapeAttr(item.title || '') + ' &middot; ' + escapeAttr(item.path) + '</option>';
-                    });
-                    html += '</optgroup>';
-                }
-            })(TOUR_GALLERY_TREE || {});
-            if (selected && selected !== '__upload' && !known[selected]) {
-                html = '<option value="">-- Choose image from gallery --</option>' +
-                    '<option value="' + escapeAttr(selected) + '" selected>Currently set: ' + escapeAttr(selected) + '</option>' +
-                    html.slice(html.indexOf('<optgroup'));
+        var TOUR_GALLERY_PICKER_BUILT = false;
+        var TOUR_GALLERY_ACTIVE_CAT = '';
+        var TOUR_GALLERY_PICK_TARGET = null;
+
+        function openGalleryPicker(target) {
+            if (!TOUR_GALLERY_PICKER_BUILT) {
+                renderGalleryPicker();
+                setupGalleryPickerEvents();
+                TOUR_GALLERY_PICKER_BUILT = true;
             }
-            html += '<option value="__upload">-- Upload a new image --</option>';
-            return html;
+            TOUR_GALLERY_PICK_TARGET = target || null;
+            TOUR_GALLERY_ACTIVE_CAT = '';
+            var btns = document.querySelectorAll('.gal-filter-btn');
+            Array.prototype.forEach.call(btns, function (b) {
+                b.classList.toggle('active', b.getAttribute('data-cat') === '');
+            });
+            var search = document.getElementById('galPickerSearch');
+            if (search) search.value = '';
+            filterGalleryGrid();
+            $('#galleryPickerModal').modal('show');
         }
 
-        function updateImageField(sel) {
-            if (!sel) return;
-            var preview = document.getElementById(sel.getAttribute('data-preview-id'));
-            var fileInput = sel.closest('.tour-image-field').querySelector('.tour-file-upload');
-            if (!sel.value || sel.value === '__upload') {
-                if (fileInput) { fileInput.classList.remove('d-none'); if (sel.value === '__upload') fileInput.value = ''; }
-                if (preview) { preview.style.display = 'none'; preview.removeAttribute('src'); }
-            } else {
-                if (fileInput) { fileInput.value = ''; fileInput.classList.add('d-none'); }
-                if (preview) { preview.src = '../' + sel.value.replace(/^\//, ''); preview.style.display = 'inline-block'; }
+        function renderGalleryPicker() {
+            var filter = document.getElementById('galPickerFilter');
+            var grid = document.getElementById('galPickerGrid');
+            if (!filter || !grid) return;
+            var cats = Object.keys(TOUR_GALLERY_TREE || {});
+            var catHtml = '<button type="button" class="btn btn-sm btn-outline-secondary mr-1 mb-1 gal-filter-btn active" data-cat="">All</button>';
+            cats.forEach(function (slug) {
+                if (slug === '_legacy') return;
+                var cat = TOUR_GALLERY_TREE[slug] || {};
+                catHtml += '<button type="button" class="btn btn-sm btn-outline-secondary mr-1 mb-1 gal-filter-btn" data-cat="' + escapeAttr(slug) + '">' + escapeAttr(cat.name || slug) + '</button>';
+            });
+            filter.innerHTML = catHtml;
+            var g = '';
+            cats.forEach(function (slug) {
+                var cat = TOUR_GALLERY_TREE[slug] || {};
+                g += '<div class="gal-cat" data-cat="' + escapeAttr(slug) + '">';
+                g += '<div class="gal-cat-title small font-weight-bold text-uppercase text-muted my-1">' + escapeAttr(cat.name || slug) + '</div>';
+                g += '<div class="d-flex flex-wrap">';
+                (cat.items || []).forEach(function (item) {
+                    g += '<button type="button" class="gal-thumb" data-path="' + escapeAttr(item.path) + '" data-title="' + escapeAttr(item.title || '') + '">'
+                        + '<img src="../' + escapeAttr(item.path).replace(/^\//, '') + '" alt="" loading="lazy">'
+                        + '<span>' + escapeAttr(item.title || '') + '</span></button>';
+                });
+                g += '</div></div>';
+            });
+            if (!cats.length) g = '<p class="text-muted small mb-0">No images in the gallery yet. Add some in the Gallery section first.</p>';
+            grid.innerHTML = g;
+        }
+
+        function setupGalleryPickerEvents() {
+            var filter = document.getElementById('galPickerFilter');
+            if (filter) {
+                filter.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.gal-filter-btn');
+                    if (!btn) return;
+                    TOUR_GALLERY_ACTIVE_CAT = btn.getAttribute('data-cat') || '';
+                    Array.prototype.forEach.call(filter.querySelectorAll('.gal-filter-btn'), function (b) {
+                        b.classList.toggle('active', b === btn);
+                    });
+                    filterGalleryGrid();
+                });
             }
+            var search = document.getElementById('galPickerSearch');
+            if (search) search.addEventListener('input', filterGalleryGrid);
+            var grid = document.getElementById('galPickerGrid');
+            if (grid) {
+                grid.addEventListener('click', function (e) {
+                    var thumb = e.target.closest('.gal-thumb');
+                    if (thumb) pickGalleryImage(thumb.getAttribute('data-path'));
+                });
+            }
+            var clearBtn = document.getElementById('galPickerClear');
+            if (clearBtn) clearBtn.addEventListener('click', function () { pickGalleryImage(''); });
+        }
+
+        function filterGalleryGrid() {
+            var grid = document.getElementById('galPickerGrid');
+            if (!grid) return;
+            var search = document.getElementById('galPickerSearch');
+            var q = search ? search.value.trim().toLowerCase() : '';
+            Array.prototype.forEach.call(grid.querySelectorAll('.gal-cat'), function (cat) {
+                var catSlug = cat.getAttribute('data-cat') || '';
+                var showCat = TOUR_GALLERY_ACTIVE_CAT === '' || catSlug === TOUR_GALLERY_ACTIVE_CAT;
+                var anyVisible = false;
+                Array.prototype.forEach.call(cat.querySelectorAll('.gal-thumb'), function (thumb) {
+                    var hay = ((thumb.getAttribute('data-title') || '') + ' ' + (thumb.getAttribute('data-path') || '')).toLowerCase();
+                    var visible = showCat && (!q || hay.indexOf(q) > -1);
+                    thumb.style.display = visible ? '' : 'none';
+                    if (visible) anyVisible = true;
+                });
+                cat.style.display = showCat && anyVisible ? '' : 'none';
+            });
+        }
+
+        function pickGalleryImage(path) {
+            path = path || '';
+            var t = TOUR_GALLERY_PICK_TARGET;
+            $('#galleryPickerModal').modal('hide');
+            if (!t) return;
+            if (t.type === 'main') {
+                var input = document.getElementById(t.inputId);
+                if (input) input.value = path;
+                var file = t.fileName ? document.querySelector('input[name="' + t.fileName + '"]') : null;
+                if (file) file.value = '';
+                var wrap = document.getElementById(t.wrapId);
+                var previewImg = document.getElementById(t.previewImgId);
+                if (previewImg) previewImg.src = path ? '../' + path.replace(/^\//, '') : '';
+                if (wrap) wrap.classList.toggle('d-none', !path);
+            } else if (t.type === 'overview') {
+                setOverviewSlot(t.idx, path);
+            } else if (t.type === 'day') {
+                setDayGalleryImage(t.row, path);
+            }
+            TOUR_GALLERY_PICK_TARGET = null;
+        }
+
+        function setThumbFromHidden(inputId, previewImgId, wrapId) {
+            var input = document.getElementById(inputId);
+            var previewImg = document.getElementById(previewImgId);
+            var wrap = document.getElementById(wrapId);
+            var path = input ? input.value : '';
+            if (previewImg) previewImg.src = path ? '../' + path.replace(/^\//, '') : '';
+            if (wrap) wrap.classList.toggle('d-none', !path);
+        }
+
+        function clearGalleryField(inputId, previewImgId, wrapId) {
+            var input = document.getElementById(inputId);
+            if (input) input.value = '';
+            setThumbFromHidden(inputId, previewImgId, wrapId);
         }
 
         function resetMainImages() {
-            var imgSel = document.getElementById('image_gallery');
-            if (imgSel) { imgSel.innerHTML = galleryOptionsHtml(''); imgSel.value = ''; updateImageField(imgSel); }
-            var heroSel = document.getElementById('hero_image_gallery');
-            if (heroSel) { heroSel.innerHTML = galleryOptionsHtml(''); heroSel.value = ''; updateImageField(heroSel); }
+            clearGalleryField('image_gallery', 'imagePreview', 'imagePreviewWrap');
+            clearGalleryField('hero_image_gallery', 'heroPreview', 'heroPreviewWrap');
         }
 
         function setMainImages(imagePath, heroPath) {
-            resetMainImages();
-            var imgSel = document.getElementById('image_gallery');
-            if (imgSel) { imgSel.innerHTML = galleryOptionsHtml(imagePath || ''); imgSel.value = imagePath || ''; updateImageField(imgSel); }
-            var heroSel = document.getElementById('hero_image_gallery');
-            if (heroSel) { heroSel.innerHTML = galleryOptionsHtml(heroPath || ''); heroSel.value = heroPath || ''; updateImageField(heroSel); }
+            var imgInput = document.getElementById('image_gallery');
+            if (imgInput) { imgInput.value = imagePath || ''; setThumbFromHidden('image_gallery', 'imagePreview', 'imagePreviewWrap'); }
+            var heroInput = document.getElementById('hero_image_gallery');
+            if (heroInput) { heroInput.value = heroPath || ''; setThumbFromHidden('hero_image_gallery', 'heroPreview', 'heroPreviewWrap'); }
         }
 
         function openAddTour() {
@@ -1253,12 +1422,11 @@ if (!empty($legacyBucket['items'])) {
                 if (el && d[k] !== undefined) el.value = d[k];
             });
 
-            ['image_gallery', 'hero_image_gallery'].forEach(function (id) {
-                var el = document.getElementById(id);
-                if (el && d[id] !== undefined) {
-                    el.innerHTML = galleryOptionsHtml(d[id] || '');
-                    el.value = d[id] || '';
-                    updateImageField(el);
+            [['image_gallery', 'imagePreview', 'imagePreviewWrap'], ['hero_image_gallery', 'heroPreview', 'heroPreviewWrap']].forEach(function (m) {
+                var el = document.getElementById(m[0]);
+                if (el && d[m[0]] !== undefined) {
+                    el.value = d[m[0]] || '';
+                    setThumbFromHidden(m[0], m[1], m[2]);
                 }
             });
 
@@ -1419,43 +1587,16 @@ if (!empty($legacyBucket['items'])) {
             var cur = document.getElementById('ovCur' + i);
             var file = document.getElementById('ovFile' + i);
             var rem = document.getElementById('ovRemove' + i);
-            var sel = document.getElementById('ovSel' + i);
-            if (sel) { sel.innerHTML = galleryOptionsHtml(path || ''); sel.value = path || ''; }
             if (cur) cur.value = path || '';
             if (rem) rem.checked = false;
             if (file) file.value = '';
-            if (sel) {
-                var isUpload = sel.value === '__upload' && !path;
-                if (file) file.classList.toggle('d-none', !isUpload);
-            } else if (file) {
-                file.classList.add('d-none');
-            }
-            if (path && path !== '__upload') {
+            if (path) {
                 setOverviewPreview(i, '../' + path.replace(/^\//, ''));
             } else {
                 var img = document.getElementById('ovPrev' + i);
                 var empty = document.getElementById('ovEmpty' + i);
                 if (img) img.style.display = 'none';
                 if (empty) empty.style.display = '';
-            }
-        }
-
-        function setOverviewGallery(i, val) {
-            if (val === '__upload') {
-                var sel = document.getElementById('ovSel' + i);
-                var cur = document.getElementById('ovCur' + i);
-                var rem = document.getElementById('ovRemove' + i);
-                var file = document.getElementById('ovFile' + i);
-                if (sel) { sel.innerHTML = galleryOptionsHtml('__upload'); sel.value = '__upload'; }
-                if (cur) cur.value = '';
-                if (rem) rem.checked = false;
-                if (file) { file.value = ''; file.classList.remove('d-none'); }
-                var img = document.getElementById('ovPrev' + i);
-                var empty = document.getElementById('ovEmpty' + i);
-                if (img) img.style.display = 'none';
-                if (empty) empty.style.display = '';
-            } else {
-                setOverviewSlot(i, val);
             }
         }
 
@@ -1574,12 +1715,12 @@ if (!empty($legacyBucket['items'])) {
             html += '<input type="hidden" name="day_lng[]" class="loc-field-lng" value="' + esc(lng) + '">';
 
             html += '<div class="form-row align-items-end">';
-            html += '<div class="col-md-6"><div class="form-group"><label>Image <small class="text-muted">from gallery</small></label>';
-            html += '<select class="form-control itinerary-day-gallery" data-day-idx="' + idxKey + '" onchange="onDayGalleryPick(this)">' + galleryOptionsHtml(existing) + '</select>';
-            html += '<input type="file" class="form-control-file itinerary-day-file d-none" name="day_image[]" accept="image/*" onchange="previewDayImage(this)">';
-            html += '<small class="text-muted d-block mt-1">Pick a gallery photo, or choose <strong>Upload a new image</strong>.</small>';
+            html += '<div class="col-md-8"><div class="form-group"><label>Image <small class="text-muted">from gallery</small></label>';
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary btn-block text-left" onclick="openDayGalleryPicker(this)"><i class="fas fa-images mr-1"></i> <span class="itinerary-day-gallery-label">' + (existing ? 'Change image' : 'Choose from gallery') + '</span></button>';
+            html += '<input type="file" class="form-control-file itinerary-day-file" name="day_image[]" accept="image/*" onchange="previewDayImage(this)">';
+            html += '<small class="text-muted d-block">Pick a gallery photo, or upload a new one via the file input.</small>';
             html += '</div></div>';
-            html += '<div class="col-md-6"><div class="form-group"><label>Image Alt Text</label><input type="text" class="form-control itinerary-day-alt" name="day_alt[]" value="' + esc(alt) + '"></div></div>';
+            html += '<div class="col-md-4"><div class="form-group"><label>Image Alt Text</label><input type="text" class="form-control itinerary-day-alt" name="day_alt[]" value="' + esc(alt) + '"></div></div>';
             html += '</div>';
 
             html += '<input type="hidden" class="itinerary-day-existing" name="day_existing_image[]" value="' + esc(existing) + '">';
@@ -1629,42 +1770,38 @@ if (!empty($legacyBucket['items'])) {
             });
         }
 
-        function onDayGalleryPick(sel) {
-            if (!sel) return;
-            var row = sel.closest('.itinerary-day-row');
+        function openDayGalleryPicker(btn) {
+            if (!btn) return;
+            openGalleryPicker({ type: 'day', row: btn.closest('.itinerary-day-row') });
+        }
+
+        function setDayGalleryImage(row, path) {
             if (!row) return;
             var existingHidden = row.querySelector('.itinerary-day-existing');
             var removeVal = row.querySelector('.itinerary-day-remove-value');
-            var fileInput = row.querySelector('.itinerary-day-file');
             var block = row.querySelector('.itinerary-day-existing-block');
             var removeCheckbox = block ? block.querySelector('input[type=checkbox]') : null;
-            var galleryPreview = row.querySelector('.itinerary-day-preview');
-            if (sel.value === '__upload') {
-                if (fileInput) { fileInput.value = ''; fileInput.classList.remove('d-none'); }
-                if (removeVal) removeVal.value = '0';
-                if (removeCheckbox) removeCheckbox.checked = false;
-                if (galleryPreview) { galleryPreview.style.display = 'none'; galleryPreview.innerHTML = ''; }
-                return;
-            }
-            if (fileInput) { fileInput.value = ''; fileInput.classList.add('d-none'); }
+            var preview = row.querySelector('.itinerary-day-preview');
+            var label = row.querySelector('.itinerary-day-gallery-label');
             if (removeVal) removeVal.value = '0';
             if (removeCheckbox) removeCheckbox.checked = false;
-            if (existingHidden) existingHidden.value = sel.value || '';
+            if (existingHidden) existingHidden.value = path || '';
+            if (label) label.textContent = path ? 'Change image' : 'Choose from gallery';
             if (block) {
-                if (sel.value) {
+                if (path) {
                     var img = block.querySelector('img');
-                    if (img) img.src = '../' + sel.value.replace(/^\//, '');
+                    if (img) img.src = '../' + path.replace(/^\//, '');
                     block.style.display = '';
                 } else {
                     block.style.display = 'none';
                 }
-            } else if (galleryPreview) {
-                if (sel.value) {
-                    galleryPreview.style.display = 'block';
-                    galleryPreview.innerHTML = '<img src="../' + sel.value.replace(/^\//, '') + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
+            } else if (preview) {
+                if (path) {
+                    preview.style.display = 'block';
+                    preview.innerHTML = '<img src="../' + path.replace(/^\//, '') + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
                 } else {
-                    galleryPreview.style.display = 'none';
-                    galleryPreview.innerHTML = '';
+                    preview.style.display = 'none';
+                    preview.innerHTML = '';
                 }
             }
         }
