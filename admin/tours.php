@@ -751,7 +751,7 @@ if (!empty($legacyBucket['items'])) {
 
     <!-- Tour Modal -->
     <div class="modal fade" id="tourModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="tourModalTitle">Add Tour</h5>
