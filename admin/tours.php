@@ -135,59 +135,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $image = '';
         $hasNewImage = false;
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $uploaded = uploadFile($_FILES['image'], BASE_PATH . 'uploads/tours/', 'tour_' . $slug);
-            if ($uploaded) {
-                $image = $uploaded;
-                $hasNewImage = true;
-            }
-        } else {
-            $galleryImage = trim($_POST['image_gallery'] ?? '');
-            if ($galleryImage !== '' && strpos($galleryImage, 'uploads/') === 0) {
-                $image = $galleryImage;
-                $hasNewImage = true;
-            }
+        $galleryImage = trim($_POST['image_gallery'] ?? '');
+        if ($galleryImage !== '' && strpos($galleryImage, 'uploads/') === 0) {
+            $image = $galleryImage;
+            $hasNewImage = true;
         }
 
         $heroImage = '';
         $hasNewHero = false;
-        if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
-            $uploaded = uploadFile($_FILES['hero_image'], BASE_PATH . 'uploads/tours/', 'hero_' . $slug);
-            if ($uploaded) {
-                $heroImage = $uploaded;
-                $hasNewHero = true;
-            }
-        } else {
-            $galleryHero = trim($_POST['hero_image_gallery'] ?? '');
-            if ($galleryHero !== '' && strpos($galleryHero, 'uploads/') === 0) {
-                $heroImage = $galleryHero;
-                $hasNewHero = true;
-            }
+        $galleryHero = trim($_POST['hero_image_gallery'] ?? '');
+        if ($galleryHero !== '' && strpos($galleryHero, 'uploads/') === 0) {
+            $heroImage = $galleryHero;
+            $hasNewHero = true;
         }
         
         // ---- Tour Overview images (the 3 collage photos) ----
-        // Each slot keeps its previously saved file unless replaced by a new
-        // upload or explicitly removed. The three values are written together
+        // Each slot keeps its previously saved file unless a gallery pick replaces
+        // it or it is explicitly removed. The three values are written together
         // whenever any of them changed, so untouched slots are preserved.
         $overviewImage1 = trim($_POST['overview_image_1_current'] ?? '');
         $overviewImage2 = trim($_POST['overview_image_2_current'] ?? '');
         $overviewImage3 = trim($_POST['overview_image_3_current'] ?? '');
         $overviewImagesChanged = false;
-        $uploadedOverviewImages = [];
         foreach ([1 => 'overview_image_1', 2 => 'overview_image_2', 3 => 'overview_image_3'] as $ov => $field) {
             $current = trim($_POST[$field . '_current'] ?? '');
             $remove = !empty($_POST[$field . '_remove']);
-            $newPath = '';
-            if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
-                $up = uploadFile($_FILES[$field], BASE_PATH . 'uploads/tours/', 'overview' . $ov . '_' . $slug);
-                if ($up) {
-                    $newPath = $up;
-                    $uploadedOverviewImages[] = $up;
-                    $overviewImagesChanged = true;
-                }
-            }
-            $final = $newPath !== '' ? $newPath : ($remove ? '' : $current);
-            if ($newPath === '' && $remove) $overviewImagesChanged = true;
+            $final = $remove ? '' : $current;
+            if ($remove) $overviewImagesChanged = true;
             ${'overviewImage' . $ov} = $final;
         }
         
@@ -205,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dayAlts = $_POST['day_alt'] ?? [];
         $dayExistingImgs = $_POST['day_existing_image'] ?? [];
         $dayRemoveImgs = $_POST['day_remove_image'] ?? [];
-        $dayFiles = $_FILES['day_image'] ?? null;
 
         $submittedDays = [];
         for ($i = 0; $i < count($dayTitles); $i++) {
@@ -225,45 +198,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'alt'           => trim($dayAlts[$i] ?? ''),
                 'existing_image'=> trim($dayExistingImgs[$i] ?? ''),
                 'remove_image'  => !empty($dayRemoveImgs[$i]),
-                'new_image'     => ($dayFiles && $dayFiles['error'][$i] === UPLOAD_ERR_OK) ? [
-                                    'tmp_name' => $dayFiles['tmp_name'][$i],
-                                    'name'     => $dayFiles['name'][$i],
-                                    'size'     => $dayFiles['size'][$i],
-                                    'error'    => $dayFiles['error'][$i],
-                                  ] : null,
             ];
         }
 
-        // Upload new images now (track them so we can clean up if save fails).
+        // Resolve each day's final image from its gallery pick (currently only
+        // gallery-picked paths are supported; an uploaded file is never sent).
         $uploadedNewImages = [];
-        $dayImageErrors = [];
         foreach ($submittedDays as &$d) {
-            $finalImage = null;
-            if ($d['new_image']) {
-                $ext = strtolower(pathinfo($d['new_image']['name'], PATHINFO_EXTENSION));
-                $dayImgAllowed = ['jpg', 'jpeg', 'png', 'webp'];
-                $isImage = in_array($ext, $dayImgAllowed, true)
-                    && (getimagesize($d['new_image']['tmp_name']) !== false)
-                    && $d['new_image']['size'] <= MAX_FILE_SIZE;
-                if (!$isImage) {
-                    $dayImageErrors[] = ($d['title'] !== '' ? $d['title'] : ('Day ' . $d['day_number']))
-                        . ': image must be JPG, PNG or WebP and under ' . round(MAX_FILE_SIZE / 1048576) . ' MB.';
-                    $finalImage = $d['remove_image'] ? null : $d['existing_image'];
-                } else {
-                    $up = uploadFile($d['new_image'], BASE_PATH . 'uploads/tours/', 'day_' . $slug);
-                    if ($up) {
-                        $finalImage = $up;
-                        $uploadedNewImages[] = $up;
-                    } else {
-                        $finalImage = $d['remove_image'] ? null : $d['existing_image'];
-                    }
-                }
-            } elseif ($d['remove_image']) {
-                $finalImage = null;
-            } else {
-                $finalImage = $d['existing_image'];
-            }
-            $d['final_image'] = $finalImage;
+            $d['final_image'] = $d['remove_image'] ? null : $d['existing_image'];
         }
         unset($d);
 
@@ -303,7 +245,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($uploadedNewImages as $p) deleteFile($p);
                 if ($hasNewImage && !empty($image)) deleteFile($image);
                 if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
-                foreach ($uploadedOverviewImages as $p) deleteFile($p);
                 try { $db->query("DELETE FROM tour_packages WHERE id = ?", [$newTourId]); } catch (\Throwable $ignore) {}
                 error_log("Tour add error: " . $e->getMessage());
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Could not save the tour with its itinerary days and FAQs.'];
@@ -313,9 +254,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour added successfully'];
             $_SESSION['drafts_cleared'] = true;
-            if (!empty($dayImageErrors)) {
-                $_SESSION['flash']['message'] .= ' Removed invalid image uploads: ' . implode(' ', $dayImageErrors);
-            }
         } else {
             // Preserve existing legacy itinerary text (never overwrite old tours).
             $existingRow = $db->fetchOne("SELECT itinerary, image, hero_image, overview_image_1, overview_image_2, overview_image_3 FROM tour_packages WHERE id = ?", [$tourId]);
@@ -369,7 +307,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($uploadedNewImages as $p) deleteFile($p);
                 if ($hasNewImage && !empty($image)) deleteFile($image);
                 if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
-                foreach ($uploadedOverviewImages as $p) deleteFile($p);
                 error_log("Tour update save error: " . $e->getMessage());
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'The tour could not be fully saved. No changes were applied.'];
                 header('Location: tours');
@@ -390,9 +327,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
             $_SESSION['drafts_cleared'] = true;
-            if (!empty($dayImageErrors)) {
-                $_SESSION['flash']['message'] .= ' Removed invalid image uploads: ' . implode(' ', $dayImageErrors);
-            }
         }
     } elseif ($action === 'delete') {
         $tourId = intval($_POST['tour_id'] ?? 0);
@@ -913,26 +847,23 @@ if (!empty($legacyBucket['items'])) {
                             <div class="col-md-4">
                                 <div class="form-group tour-image-field">
                                     <label>Image</label>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="openGalleryPicker({type:'main', inputId:'image_gallery', previewImgId:'imagePreview', wrapId:'imagePreviewWrap', fileName:'image'})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="openGalleryPicker({type:'main', inputId:'image_gallery', previewImgId:'imagePreview', wrapId:'imagePreviewWrap'})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
                                     <div class="tour-image-thumb d-none my-1 text-center" id="imagePreviewWrap">
-                                        <img src="" alt="" id="imagePreview" onclick="openGalleryPicker({type:'main', inputId:'image_gallery', previewImgId:'imagePreview', wrapId:'imagePreviewWrap', fileName:'image'})">
+                                        <img src="" alt="" id="imagePreview" onclick="openGalleryPicker({type:'main', inputId:'image_gallery', previewImgId:'imagePreview', wrapId:'imagePreviewWrap'})">
                                         <button type="button" class="btn btn-sm btn-outline-danger ml-1 align-top" title="Remove" onclick="clearGalleryField('image_gallery','imagePreview','imagePreviewWrap')"><i class="fas fa-times"></i></button>
                                     </div>
                                     <input type="hidden" name="image_gallery" id="image_gallery" value="">
-                                    <input type="file" class="form-control-file" name="image" accept="image/*" onchange="clearGalleryField('image_gallery','imagePreview','imagePreviewWrap')">
-                                    <small class="text-muted d-block">Pick a ready WebP photo, or upload a new one via the file input.</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group tour-image-field">
                                     <label>Hero Image <small class="text-muted">(full-width banner)</small></label>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="openGalleryPicker({type:'main', inputId:'hero_image_gallery', previewImgId:'heroPreview', wrapId:'heroPreviewWrap', fileName:'hero_image'})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="openGalleryPicker({type:'main', inputId:'hero_image_gallery', previewImgId:'heroPreview', wrapId:'heroPreviewWrap'})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
                                     <div class="tour-image-thumb d-none my-1 text-center" id="heroPreviewWrap">
-                                        <img src="" alt="" id="heroPreview" onclick="openGalleryPicker({type:'main', inputId:'hero_image_gallery', previewImgId:'heroPreview', wrapId:'heroPreviewWrap', fileName:'hero_image'})">
+                                        <img src="" alt="" id="heroPreview" onclick="openGalleryPicker({type:'main', inputId:'hero_image_gallery', previewImgId:'heroPreview', wrapId:'heroPreviewWrap'})">
                                         <button type="button" class="btn btn-sm btn-outline-danger ml-1 align-top" title="Remove" onclick="clearGalleryField('hero_image_gallery','heroPreview','heroPreviewWrap')"><i class="fas fa-times"></i></button>
                                     </div>
                                     <input type="hidden" name="hero_image_gallery" id="hero_image_gallery" value="">
-                                    <input type="file" class="form-control-file" name="hero_image" accept="image/*" onchange="clearGalleryField('hero_image_gallery','heroPreview','heroPreviewWrap')">
                                 </div>
                             </div>
                         </div>
@@ -947,7 +878,6 @@ if (!empty($legacyBucket['items'])) {
                                     </div>
                                     <input type="hidden" name="overview_image_<?php echo $ov; ?>_current" id="ovCur<?php echo $ov; ?>" value="">
                                     <button type="button" class="btn btn-sm btn-outline-secondary btn-block mb-1" onclick="openGalleryPicker({type:'overview', idx:<?php echo $ov; ?>})"><i class="fas fa-images mr-1"></i> Choose from gallery</button>
-                                    <input type="file" class="form-control-file form-control-sm" name="overview_image_<?php echo $ov; ?>" id="ovFile<?php echo $ov; ?>" accept="image/*" onchange="previewOverviewFile(<?php echo $ov; ?>, this)">
                                     <div class="form-check form-check-inline mt-1">
                                         <input class="form-check-input" type="checkbox" name="overview_image_<?php echo $ov; ?>_remove" id="ovRemove<?php echo $ov; ?>" value="1">
                                         <label class="form-check-label small" for="ovRemove<?php echo $ov; ?>">Remove</label>
@@ -955,7 +885,7 @@ if (!empty($legacyBucket['items'])) {
                                 </div>
                                 <?php endfor; ?>
                             </div>
-                            <small class="text-muted">Pick ready WebP photos from the gallery (shown as thumbnail previews, grouped by category), or upload a new one via the file input. Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery).</small>
+                            <small class="text-muted">Pick ready WebP photos from the gallery — shown as thumbnail previews grouped by category. Slot 1 is the large image; slots 2 &amp; 3 are the overlapping photos. Leave all three empty to keep the old auto-behaviour (featured image + gallery).</small>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
@@ -1195,8 +1125,6 @@ if (!empty($legacyBucket['items'])) {
             if (t.type === 'main') {
                 var input = document.getElementById(t.inputId);
                 if (input) input.value = path;
-                var file = t.fileName ? document.querySelector('input[name="' + t.fileName + '"]') : null;
-                if (file) file.value = '';
                 var wrap = document.getElementById(t.wrapId);
                 var previewImg = document.getElementById(t.previewImgId);
                 if (previewImg) previewImg.src = path ? '../' + path.replace(/^\//, '') : '';
@@ -1350,9 +1278,7 @@ if (!empty($legacyBucket['items'])) {
                 var isArr = el.name.slice(-2) === '[]';
                 var key = isArr ? el.name.slice(0, -2) : el.name;
                 var val;
-                if (el.type === 'file') {
-                    val = (el.files && el.files[0]) ? el.files[0].name : '';
-                } else if (el.type === 'checkbox' || el.type === 'radio') {
+                if (el.type === 'checkbox' || el.type === 'radio') {
                     val = el.checked;
                 } else {
                     val = el.value;
@@ -1448,7 +1374,7 @@ if (!empty($legacyBucket['items'])) {
 
             var banner = document.getElementById('tourDraftBanner');
             if (banner) banner.classList.add('d-none');
-            showRestoreNotice(collectMissingFiles(d));
+            showRestoreNotice([]);
         }
 
         function restoreItineraryDays(d) {
@@ -1497,17 +1423,6 @@ if (!empty($legacyBucket['items'])) {
                 });
             }
             loadTourFaqs(faqs);
-        }
-
-        function collectMissingFiles(d) {
-            var names = [];
-            ['image', 'hero_image', 'overview_image_1', 'overview_image_2', 'overview_image_3'].forEach(function (k) {
-                if (d[k]) names.push(d[k]);
-            });
-            if (Array.isArray(d.day_image)) {
-                d.day_image.forEach(function (v) { if (v) names.push(v); });
-            }
-            return names;
         }
 
         function discardTourDraft() {
@@ -1565,16 +1480,6 @@ if (!empty($legacyBucket['items'])) {
             (faqs || []).forEach(function(f) { addTourFaq(f); });
         }
 
-        function previewOverviewFile(i, input) {
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    setOverviewPreview(i, e.target.result);
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
         function setOverviewPreview(i, src) {
             var img = document.getElementById('ovPrev' + i);
             var empty = document.getElementById('ovEmpty' + i);
@@ -1585,11 +1490,9 @@ if (!empty($legacyBucket['items'])) {
 
         function setOverviewSlot(i, path) {
             var cur = document.getElementById('ovCur' + i);
-            var file = document.getElementById('ovFile' + i);
             var rem = document.getElementById('ovRemove' + i);
             if (cur) cur.value = path || '';
             if (rem) rem.checked = false;
-            if (file) file.value = '';
             if (path) {
                 setOverviewPreview(i, '../' + path.replace(/^\//, ''));
             } else {
@@ -1717,8 +1620,7 @@ if (!empty($legacyBucket['items'])) {
             html += '<div class="form-row align-items-end">';
             html += '<div class="col-md-8"><div class="form-group"><label>Image <small class="text-muted">from gallery</small></label>';
             html += '<button type="button" class="btn btn-sm btn-outline-secondary btn-block text-left" onclick="openDayGalleryPicker(this)"><i class="fas fa-images mr-1"></i> <span class="itinerary-day-gallery-label">' + (existing ? 'Change image' : 'Choose from gallery') + '</span></button>';
-            html += '<input type="file" class="form-control-file itinerary-day-file" name="day_image[]" accept="image/*" onchange="previewDayImage(this)">';
-            html += '<small class="text-muted d-block">Pick a gallery photo, or upload a new one via the file input.</small>';
+            html += '<small class="text-muted d-block">Pick a gallery photo — shown as thumbnail previews grouped by category.</small>';
             html += '</div></div>';
             html += '<div class="col-md-4"><div class="form-group"><label>Image Alt Text</label><input type="text" class="form-control itinerary-day-alt" name="day_alt[]" value="' + esc(alt) + '"></div></div>';
             html += '</div>';
@@ -1803,23 +1705,6 @@ if (!empty($legacyBucket['items'])) {
                     preview.style.display = 'none';
                     preview.innerHTML = '';
                 }
-            }
-        }
-
-        function previewDayImage(input) {
-            var row = input.closest('.itinerary-day-row');
-            if (!row) return;
-            var preview = row.querySelector('.itinerary-day-preview');
-            preview.innerHTML = '';
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.style.display = 'block';
-                    preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
-                };
-                reader.readAsDataURL(input.files[0]);
-            } else {
-                preview.style.display = 'none';
             }
         }
 
