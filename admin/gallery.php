@@ -17,6 +17,7 @@ if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
 }
 
 // Handle upload
+$redirectAnchor = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     verify_csrf();
     if ($_POST['action'] === 'upload' && isset($_FILES['image'])) {
@@ -40,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     [$title, $dbPath, $category, $location]
                 );
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image uploaded successfully'];
+                $redirectAnchor = '#recent';
             }
         }
     } elseif ($_POST['action'] === 'delete') {
@@ -51,19 +53,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $db->query("DELETE FROM gallery WHERE id = ?", [$id]);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image deleted successfully'];
     }
-    header('Location: gallery');
+    header('Location: gallery' . $redirectAnchor);
     exit;
 }
 
 $images = $db->fetchAll("SELECT * FROM gallery ORDER BY sort_order ASC, created_at DESC");
 $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_order ASC");
 
-// Group gallery images by category. Use the gallery_categories table for
-// ordering and names, then append any extra slugs still found on older images.
+function galleryFolderFiles($dir) {
+    $out = [];
+    $abs = BASE_PATH . trim($dir, '/');
+    if (!is_dir($abs)) return $out;
+    foreach (new FilesystemIterator($abs) as $f) {
+        if (!$f->isFile()) continue;
+        $ext = strtolower($f->getExtension());
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'], true)) continue;
+        $out[] = trim($dir, '/') . '/' . $f->getFilename();
+    }
+    sort($out);
+    return $out;
+}
+
+// Group gallery-table images by category (gallery_categories order first, then
+// any extra slugs still referenced by older images). The most recent uploads
+// are kept aside for their own "recent" section at the top of the page.
 $galleryByCat = [];
 foreach ($categories as $cat) {
     $galleryByCat[$cat['slug']] = ['name' => $cat['name'], 'items' => []];
 }
+$knownPaths = [];
+$recentItems = [];
 foreach ($images as $img) {
     $slug = trim($img['category'] ?? '');
     if ($slug === '') $slug = 'general';
@@ -71,7 +90,41 @@ foreach ($images as $img) {
         $galleryByCat[$slug] = ['name' => ucwords(str_replace(['_', '-'], ' ', $slug)), 'items' => []];
     }
     $galleryByCat[$slug]['items'][] = $img;
+    $knownPaths[$img['image']] = true;
+    $recentItems[] = $img;
 }
+$recentItems = array_slice($recentItems, 0, 8);
+
+// Include every image file still on disk that is NOT already in the gallery
+// table — e.g. images picked/saved while editing tours, plus destination and
+// page images — so the page truly shows all uploaded photos.
+$extraGroups = [
+    'Tour Images'    => 'uploads/tours',
+    'Destination Images' => 'uploads/destinations',
+    'Page Images'    => 'uploads/pages',
+];
+$hasDiskImages = false;
+foreach ($extraGroups as $groupName => $dir) {
+    $items = [];
+    foreach (galleryFolderFiles($dir) as $path) {
+        if (isset($knownPaths[$path])) continue;
+        $knownPaths[$path] = true;
+        $items[] = [
+            'id'       => 0,
+            'image'    => $path,
+            'title'    => basename($path),
+            'category' => $groupName,
+            'location' => $dir,
+            'status'   => 'active',
+        ];
+    }
+    if ($items) {
+        $hasDiskImages = true;
+        $galleryByCat['disk-' . $groupName] = ['name' => $groupName, 'items' => $items];
+    }
+}
+
+$galleryHasAny = !empty($images) || $hasDiskImages;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -100,6 +153,11 @@ foreach ($images as $img) {
             display: flex; align-items: center; gap: .5rem;
             font-size: 1rem; font-weight: 700; color: #0A2540;
             border-bottom: 2px solid #e8edf2; padding-bottom: .5rem; margin-bottom: 1rem;
+        }
+        .gallery-cat-label {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.7rem;
+            text-transform: capitalize;
         }
         @media (max-width: 768px) {
             #accordionSidebar { width: 0; }
@@ -200,14 +258,41 @@ foreach ($images as $img) {
                         </div>
                     <?php endif; ?>
 
-                    <?php if (empty($images)): ?>
+                    <?php if (!$galleryHasAny): ?>
                         <p class="text-muted text-center py-4">No images in gallery yet. Upload your first image!</p>
                     <?php else: ?>
+                        <?php if ($recentItems): ?>
+                        <div class="gallery-cat-block" id="recent">
+                            <h5 class="gallery-cat-title"><i class="fas fa-clock text-muted mr-1"></i>Recently Uploaded</h5>
+                            <div class="gallery-grid">
+                                <?php foreach ($recentItems as $item): ?>
+                                <div class="gallery-item">
+                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='../assets/images/log.png';">
+                                    <div class="overlay">
+                                        <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
+                                    </div>
+                                    <?php if ($item['id']): ?>
+                                    <form method="POST" onsubmit="return confirm('Delete this image?');">
+                                        <?php csrf_field(); ?>
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo $item['id']; ?>">
+                                        <button type="submit" class="delete-btn"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
                         <?php foreach ($galleryByCat as $slug => $group): ?>
                         <div class="gallery-cat-block">
                             <h5 class="gallery-cat-title">
                                 <i class="fas fa-images text-muted mr-1"></i><?php echo htmlspecialchars($group['name']); ?>
                                 <span class="badge badge-pill badge-dark ml-1"><?php echo count($group['items']); ?></span>
+                                <?php if (strpos($slug, 'disk-') === 0): ?>
+                                <span class="badge badge-secondary ml-1">on disk</span>
+                                <?php endif; ?>
                             </h5>
                             <?php if (empty($group['items'])): ?>
                                 <p class="text-muted small mb-0">No images in this category yet.</p>
@@ -215,17 +300,19 @@ foreach ($images as $img) {
                             <div class="gallery-grid">
                                 <?php foreach ($group['items'] as $item): ?>
                                 <div class="gallery-item">
-                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" loading="lazy" decoding="async">
+                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='../assets/images/log.png';">
                                     <div class="overlay">
                                         <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
-                                        <span style="color: #0A2540; font-size: 0.7rem;"><?php echo htmlspecialchars(ucfirst($item['category'] ?: 'general')); ?></span>
+                                        <span class="gallery-cat-label"><?php echo htmlspecialchars($item['category'] ?: 'general'); ?></span>
                                     </div>
+                                    <?php if ($item['id']): ?>
                                     <form method="POST" onsubmit="return confirm('Delete this image?');">
                                         <?php csrf_field(); ?>
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $item['id']; ?>">
                                         <button type="submit" class="delete-btn"><i class="fas fa-times"></i></button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
@@ -335,18 +422,21 @@ foreach ($images as $img) {
 
         form.addEventListener('submit', function (e) {
             var file = fileInput.files && fileInput.files[0];
-            if (!file || !file.type || file.type === 'image/webp') return;
+            if (!file || !file.type || file.type === 'image/webp' || !window.DataTransfer) return;
             e.preventDefault();
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compressing & uploading...';
             }
             compressToWebp(file, 1920, 0.8).then(function (outFile) {
-                var fd = new FormData(form);
-                fd.set('image', outFile, outFile.name);
-                fetch(form.action || window.location.href, { method: 'POST', body: fd, credentials: 'same-origin' })
-                    .then(function () { window.location.reload(); })
-                    .catch(function () { form.submit(); });
+                // Swap in the compressed WebP, then submit natively so the
+                // normal POST -> redirect flow runs (success flash + #recent).
+                try {
+                    var dt = new DataTransfer();
+                    dt.items.add(outFile);
+                    fileInput.files = dt.files;
+                } catch (err) { /* keep original file */ }
+                form.submit();
             });
         });
     })();
