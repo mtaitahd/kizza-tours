@@ -560,6 +560,27 @@ if (!empty($legacyBucket['items'])) {
             cursor: pointer;
             border: 1px solid #dce3ea;
         }
+        #tourModal .modal-content { position: relative; }
+        .tour-scroll-btn {
+            position: absolute;
+            right: 16px;
+            bottom: 72px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            background: #0A2540;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+            z-index: 1055;
+            cursor: pointer;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .tour-scroll-btn:hover { opacity: 1; }
     </style>
 </head>
 <body id="page-top">
@@ -981,6 +1002,9 @@ if (!empty($legacyBucket['items'])) {
                         <button type="submit" class="btn btn-outline-secondary">Save Tour</button>
                     </div>
                 </form>
+                <button type="button" class="tour-scroll-btn" id="tourScrollBtn" title="Scroll down to remaining fields">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -1031,6 +1055,8 @@ if (!empty($legacyBucket['items'])) {
                 setupGalleryPickerEvents();
                 TOUR_GALLERY_PICKER_BUILT = true;
             }
+            var sb = document.getElementById('tourScrollBtn');
+            if (sb) sb.style.display = 'none';
             TOUR_GALLERY_PICK_TARGET = target || null;
             TOUR_GALLERY_ACTIVE_CAT = '';
             var btns = document.querySelectorAll('.gal-filter-btn');
@@ -1145,7 +1171,27 @@ if (!empty($legacyBucket['items'])) {
             if ($('#tourModal').hasClass('show')) {
                 document.body.classList.add('modal-open');
             }
+            var sb = document.getElementById('tourScrollBtn');
+            if (sb) sb.style.display = 'flex';
         });
+
+        // Floating scroll button for the tour modal: scrolls the form down to
+        // the remaining fields, and back up when at the bottom.
+        (function () {
+            var body = document.querySelector('#tourModal .modal-body');
+            var btn = document.getElementById('tourScrollBtn');
+            if (!btn || !body) return;
+            btn.addEventListener('click', function () {
+                var atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 10;
+                if (atBottom) {
+                    body.scrollTo({ top: 0, behavior: 'smooth' });
+                    btn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                } else {
+                    body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
+                    btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                }
+            });
+        })();
 
         function setThumbFromHidden(inputId, previewImgId, wrapId) {
             var input = document.getElementById(inputId);
