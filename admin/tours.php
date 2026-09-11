@@ -560,27 +560,43 @@ if (!empty($legacyBucket['items'])) {
             cursor: pointer;
             border: 1px solid #dce3ea;
         }
-        #tourModal .modal-content { position: relative; }
-        .tour-scroll-btn {
-            position: absolute;
-            right: 16px;
-            bottom: 72px;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            border: none;
-            background: #0A2540;
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-            z-index: 1055;
-            cursor: pointer;
-            opacity: 0.9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.2s;
+        #tourModal .modal-dialog {
+            height: calc(100vh - 2rem);
+            max-height: calc(100vh - 2rem);
+            margin: 1rem auto;
         }
-        .tour-scroll-btn:hover { opacity: 1; }
+        #tourModal .modal-content {
+            height: 100%;
+            max-height: calc(100vh - 2rem);
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-direction: column;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #tourModal .modal-header,
+        #tourModal .modal-footer {
+            -ms-flex-negative: 0;
+            flex-shrink: 0;
+        }
+        #tourModal form {
+            -ms-flex: 1 1 auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-direction: column;
+            flex-direction: column;
+        }
+        #tourModal .modal-body {
+            -ms-flex: 1 1 auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body id="page-top">
@@ -772,7 +788,7 @@ if (!empty($legacyBucket['items'])) {
 
     <!-- Tour Modal -->
     <div class="modal fade" id="tourModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="tourModalTitle">Add Tour</h5>
@@ -780,7 +796,7 @@ if (!empty($legacyBucket['items'])) {
                 </div>
                 <form method="POST" enctype="multipart/form-data">
                     <?php csrf_field(); ?>
-                    <div class="modal-body">
+                    <div class="modal-body" tabindex="-1">
                         <input type="hidden" name="action" id="tourAction" value="add">
                         <input type="hidden" name="tour_id" id="tourId" value="0">
 
@@ -1002,9 +1018,6 @@ if (!empty($legacyBucket['items'])) {
                         <button type="submit" class="btn btn-outline-secondary">Save Tour</button>
                     </div>
                 </form>
-                <button type="button" class="tour-scroll-btn" id="tourScrollBtn" title="Scroll down to remaining fields">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
             </div>
         </div>
     </div>
@@ -1055,8 +1068,6 @@ if (!empty($legacyBucket['items'])) {
                 setupGalleryPickerEvents();
                 TOUR_GALLERY_PICKER_BUILT = true;
             }
-            var sb = document.getElementById('tourScrollBtn');
-            if (sb) sb.style.display = 'none';
             TOUR_GALLERY_PICK_TARGET = target || null;
             TOUR_GALLERY_ACTIVE_CAT = '';
             var btns = document.querySelectorAll('.gal-filter-btn');
@@ -1164,34 +1175,15 @@ if (!empty($legacyBucket['items'])) {
         }
 
         // Bootstrap 4 bug: with two stacked modals, hiding the top one removes
-        // body.modal-open, which disables scrolling inside the tour modal below
-        // (only the background then scrolls). Restore it while the tour modal
-        // is still open so the user can keep scrolling the form.
+        // body.modal-open, which would re-enable scrolling of the background
+        // page. Restore it while the tour modal is still open.
         $('#galleryPickerModal').on('hidden.bs.modal', function () {
             if ($('#tourModal').hasClass('show')) {
                 document.body.classList.add('modal-open');
             }
-            var sb = document.getElementById('tourScrollBtn');
-            if (sb) sb.style.display = 'flex';
-        });
-
-        // Floating scroll button for the tour modal: scrolls the form down to
-        // the remaining fields, and back up when at the bottom.
-        (function () {
             var body = document.querySelector('#tourModal .modal-body');
-            var btn = document.getElementById('tourScrollBtn');
-            if (!btn || !body) return;
-            btn.addEventListener('click', function () {
-                var atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 10;
-                if (atBottom) {
-                    body.scrollTo({ top: 0, behavior: 'smooth' });
-                    btn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                } else {
-                    body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
-                    btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-                }
-            });
-        })();
+            if (body) body.focus();
+        });
 
         function setThumbFromHidden(inputId, previewImgId, wrapId) {
             var input = document.getElementById(inputId);
