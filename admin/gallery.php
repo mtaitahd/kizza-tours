@@ -351,10 +351,6 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
                             <small class="text-muted d-block">Large photos are resized and compressed in your browser before uploading, so uploads are quick.</small>
                         </div>
                         <div class="form-group">
-                            <label>Title</label>
-                            <input type="text" class="form-control" name="title" placeholder="Image title">
-                        </div>
-                        <div class="form-group">
                             <label>Category</label>
                             <select class="form-control" name="category">
                                 <option value="">Select category</option>
@@ -368,10 +364,7 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
                                 <option value="lodges">Lodges</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Location</label>
-                            <input type="text" class="form-control" name="location" placeholder="e.g., Serengeti, Tanzania">
-                        </div>
+                        <input type="hidden" name="title" id="uploadTitle" value="">
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -424,6 +417,8 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
             var file = fileInput.files && fileInput.files[0];
             if (!file || !file.type || file.type === 'image/webp' || !window.DataTransfer) return;
             e.preventDefault();
+            var titleEl = document.getElementById('uploadTitle');
+            if (titleEl) titleEl.value = file.name.replace(/\.[^.]+$/, '');
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compressing & uploading...';
