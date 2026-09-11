@@ -57,6 +57,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 $images = $db->fetchAll("SELECT * FROM gallery ORDER BY sort_order ASC, created_at DESC");
 $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_order ASC");
+
+// Group gallery images by category. Use the gallery_categories table for
+// ordering and names, then append any extra slugs still found on older images.
+$galleryByCat = [];
+foreach ($categories as $cat) {
+    $galleryByCat[$cat['slug']] = ['name' => $cat['name'], 'items' => []];
+}
+foreach ($images as $img) {
+    $slug = trim($img['category'] ?? '');
+    if ($slug === '') $slug = 'general';
+    if (!isset($galleryByCat[$slug])) {
+        $galleryByCat[$slug] = ['name' => ucwords(str_replace(['_', '-'], ' ', $slug)), 'items' => []];
+    }
+    $galleryByCat[$slug]['items'][] = $img;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -80,6 +95,12 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
         .topbar { position: fixed; top: 0; right: 0; left: 14rem; z-index: 1020; transition: left 0.3s ease-in-out; }
         body.sidebar-toggled .topbar { left: 6.5rem; }
         #content { padding-top: 70px; }
+        .gallery-cat-block { margin-bottom: 1.75rem; }
+        .gallery-cat-title {
+            display: flex; align-items: center; gap: .5rem;
+            font-size: 1rem; font-weight: 700; color: #0A2540;
+            border-bottom: 2px solid #e8edf2; padding-bottom: .5rem; margin-bottom: 1rem;
+        }
         @media (max-width: 768px) {
             #accordionSidebar { width: 0; }
             #content-wrapper { margin-left: 0; }
@@ -182,23 +203,35 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
                     <?php if (empty($images)): ?>
                         <p class="text-muted text-center py-4">No images in gallery yet. Upload your first image!</p>
                     <?php else: ?>
-                        <div class="gallery-grid">
-                            <?php foreach ($images as $item): ?>
-                            <div class="gallery-item">
-                                <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" loading="lazy" decoding="async">
-                                <div class="overlay">
-                                    <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
-                                    <span style="color: #0A2540; font-size: 0.7rem;"><?php echo htmlspecialchars(ucfirst($item['category'] ?: 'general')); ?></span>
+                        <?php foreach ($galleryByCat as $slug => $group): ?>
+                        <div class="gallery-cat-block">
+                            <h5 class="gallery-cat-title">
+                                <i class="fas fa-images text-muted mr-1"></i><?php echo htmlspecialchars($group['name']); ?>
+                                <span class="badge badge-pill badge-dark ml-1"><?php echo count($group['items']); ?></span>
+                            </h5>
+                            <?php if (empty($group['items'])): ?>
+                                <p class="text-muted small mb-0">No images in this category yet.</p>
+                            <?php else: ?>
+                            <div class="gallery-grid">
+                                <?php foreach ($group['items'] as $item): ?>
+                                <div class="gallery-item">
+                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" loading="lazy" decoding="async">
+                                    <div class="overlay">
+                                        <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
+                                        <span style="color: #0A2540; font-size: 0.7rem;"><?php echo htmlspecialchars(ucfirst($item['category'] ?: 'general')); ?></span>
+                                    </div>
+                                    <form method="POST" onsubmit="return confirm('Delete this image?');">
+                                        <?php csrf_field(); ?>
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo $item['id']; ?>">
+                                        <button type="submit" class="delete-btn"><i class="fas fa-times"></i></button>
+                                    </form>
                                 </div>
-                                <form method="POST" onsubmit="return confirm('Delete this image?');">
-                                    <?php csrf_field(); ?>
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="id" value="<?php echo $item['id']; ?>">
-                                    <button type="submit" class="delete-btn"><i class="fas fa-times"></i></button>
-                                </form>
+                                <?php endforeach; ?>
                             </div>
-                            <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
