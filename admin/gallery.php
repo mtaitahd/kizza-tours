@@ -185,7 +185,7 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
                         <div class="gallery-grid">
                             <?php foreach ($images as $item): ?>
                             <div class="gallery-item">
-                                <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" loading="lazy">
+                                <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" loading="lazy" decoding="async">
                                 <div class="overlay">
                                     <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
                                     <span style="color: #0A2540; font-size: 0.7rem;"><?php echo htmlspecialchars(ucfirst($item['category'] ?: 'general')); ?></span>
@@ -221,13 +221,14 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
                     <h5 class="modal-title">Upload Image</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
                     <?php csrf_field(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="action" value="upload">
                         <div class="form-group">
                             <label>Image</label>
                             <input type="file" class="form-control-file" name="image" accept="image/*" required>
+                            <small class="text-muted d-block">Large photos are resized and compressed in your browser before uploading, so uploads are quick.</small>
                         </div>
                         <div class="form-group">
                             <label>Title</label>
@@ -254,7 +255,7 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-outline-secondary"><i class="fas fa-upload"></i> Upload</button>
+                        <button type="submit" class="btn btn-outline-secondary" id="uploadBtn"><i class="fas fa-upload"></i> Upload</button>
                     </div>
                 </form>
             </div>
@@ -265,5 +266,57 @@ $categories = $db->fetchAll("SELECT * FROM gallery_categories ORDER BY sort_orde
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
+    <script>
+    // Compress + resize photos in the browser before upload so large camera
+    // images upload fast and never hit the server's full-size decode/resize.
+    (function () {
+        var form = document.getElementById('uploadForm');
+        if (!form) return;
+        var fileInput = form.querySelector('input[type=file]');
+        var submitBtn = document.getElementById('uploadBtn');
+        if (!fileInput || !window.createImageBitmap || !HTMLCanvasElement.prototype.toBlob) return;
+
+        function compressToWebp(file, maxDim, quality) {
+            return createImageBitmap(file, { imageOrientation: 'from-image' })
+                .then(function (bmp) {
+                    var scale = 1;
+                    var longest = Math.max(bmp.width, bmp.height);
+                    if (longest > maxDim) scale = maxDim / longest;
+                    var w = Math.max(1, Math.round(bmp.width * scale));
+                    var h = Math.max(1, Math.round(bmp.height * scale));
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    var ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.drawImage(bmp, 0, 0, w, h);
+                    if (typeof bmp.close === 'function') bmp.close();
+                    return new Promise(function (resolve) {
+                        canvas.toBlob(function (blob) {
+                            resolve(blob ? new File([blob], file.name.replace(/\.[a-z0-9]+$/i, '.webp'), { type: 'image/webp' }) : file);
+                        }, 'image/webp', quality);
+                    });
+                })
+                .catch(function () { return file; });
+        }
+
+        form.addEventListener('submit', function (e) {
+            var file = fileInput.files && fileInput.files[0];
+            if (!file || !file.type || file.type === 'image/webp') return;
+            e.preventDefault();
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compressing & uploading...';
+            }
+            compressToWebp(file, 1920, 0.8).then(function (outFile) {
+                var fd = new FormData(form);
+                fd.set('image', outFile, outFile.name);
+                fetch(form.action || window.location.href, { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(function () { window.location.reload(); })
+                    .catch(function () { form.submit(); });
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
