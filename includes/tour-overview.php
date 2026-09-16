@@ -4,12 +4,11 @@
  *
  * Expects:
  *   $tour           tour_packages row (with destination_name/destination_country
- *                   joined from destinations) containing image, gallery,
- *                   description, highlights.
- *   $highlightsArr  normalized highlight items (see tourListItems()).
+ *                   joined from destinations) containing image, gallery and
+ *                   description.
  *
  * Renders a two-column "premium" overview: layered image collage on the left
- * (~45%) and eyebrow + heading + description + highlights + Read More on the
+ * (~45%) and eyebrow + heading + description + Read More on the
  * right (~55%). The collage resolves images dynamically from the tour's
  * featured image and its gallery/media collection — nothing is hard-coded —
  * and gracefully degrades to 2, 1 or 0 images. Long descriptions get a
@@ -93,9 +92,6 @@ foreach ($collageUrls as $ci => $url) {
 }
 $collageCount = count($collageImages);
 
-/* ── Max three highlights in this overview row ── */
-$overviewHighlights = array_slice((array)$highlightsArr, 0, 3);
-
 /* ── Escaped / translated labels ── */
 $eyebrowPrefix = __('tour_overview_eyebrow');
 $eyebrowText = $overviewDestination !== ''
@@ -142,18 +138,7 @@ $overviewToggleId = 'tour-overview-toggle';
         </button>
         <?php endif; ?>
 
-        <?php if (!empty($overviewHighlights)): ?>
-        <ul class="tour-overview__highlights">
-            <?php foreach ($overviewHighlights as $hl): ?>
-            <li class="tour-overview__highlight">
-                <span class="tour-overview__highlight-icon" aria-hidden="true"><i class="fas fa-check"></i></span>
-                <span class="tour-overview__highlight-text"><?php echo htmlspecialchars($hl); ?></span>
-            </li>
-            <?php endforeach; ?>
-        </ul>
-        <div class="tour-overview__divider" aria-hidden="true"></div>
-        <?php endif; ?>
-    </div>
+        </div>
 </div>
 
 <style>
@@ -330,48 +315,6 @@ $overviewToggleId = 'tour-overview-toggle';
     transform: rotate(180deg);
 }
 
-/* Highlights row: horizontal on desktop, wraps gracefully */
-.tour-overview__highlights {
-    list-style: none;
-    margin: 1.75rem 0 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 2rem;
-}
-.tour-overview__highlight {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-}
-.tour-overview__highlight-icon {
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--secondary);
-    color: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.78rem;
-}
-.tour-overview__highlight-text {
-    color: var(--primary);
-    font-family: var(--font-primary);
-    font-size: 1.125rem;
-    font-weight: 500;
-    line-height: 1.4;
-}
-.tour-overview__divider {
-    height: 2px;
-    width: 100%;
-    max-width: 320px;
-    margin: 1.75rem 0 0;
-    background: linear-gradient(90deg, rgba(212, 175, 55, 0.85), rgba(212, 175, 55, 0.12));
-    border-radius: 2px;
-}
-
 /* Tablet: stack — collage first, content below, single column */
 @media (max-width: 991.98px) {
     .tour-overview {
@@ -409,14 +352,8 @@ $overviewToggleId = 'tour-overview-toggle';
     .tour-overview__desc {
         max-height: 220px;
     }
-    .tour-overview__highlight-text {
-        font-size: 1.05rem;
-    }
-    .tour-overview__highlights {
-        gap: 0.9rem 1.25rem;
-    }
-    /* Keep the Read More control + highlights clear of the floating
-       WhatsApp circle while scrolling on small screens. */
+    /* Keep the Read More control clear of the floating WhatsApp circle while
+       scrolling on small screens. */
     .tour-overview__content {
         padding-bottom: 2rem;
     }
