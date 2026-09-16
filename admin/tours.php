@@ -351,7 +351,7 @@ $tours = $db->fetchAll("SELECT p.*, d.name as dest_name FROM tour_packages p LEF
 $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE status = 'active' ORDER BY name");
 
 // Load all itinerary days once, grouped by tour, for the edit modal.
-$allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, image_path, image_alt, location_name, lat, lng FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
+$allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, drive_time, meals, accommodation, image_path, image_alt, location_name, lat, lng FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
 $daysByTour = [];
 foreach ($allDays as $day) {
     $daysByTour[$day['tour_id']][] = $day;
@@ -722,8 +722,8 @@ if (!empty($legacyBucket['items'])) {
                                         ?>
                                         <tr>
                                             <td>
-                                                <?php if ($tour['image'] && file_exists(BASE_PATH . $tour['image'])): ?>
-                                                    <img src="../<?php echo $tour['image']; ?>" style="width:60px;height:40px;object-fit:cover;border-radius:4px;">
+                                                <?php if (!empty($tour['image'])): ?>
+                                                    <img src="../<?php echo htmlspecialchars($tour['image']); ?>" style="width:60px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" alt="Thumb" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg';">
                                                 <?php else: ?>
                                                     <span class="text-muted"><i class="fas fa-image"></i></span>
                                                 <?php endif; ?>
