@@ -208,6 +208,12 @@ class ImageCompressor
         @file_put_contents($this->stateFile, json_encode($data), LOCK_EX);
     }
 
+    /** Returns the optimization history map (rel path => record) for the page UI. */
+    public function getHistory()
+    {
+        return $this->readHistory();
+    }
+
     private function readHistory()
     {
         if (is_file($this->historyFile)) {

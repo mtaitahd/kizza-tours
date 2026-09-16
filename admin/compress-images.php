@@ -118,8 +118,15 @@ function compressorTotals($state)
     ];
 }
 
+function isImageCompressed(array $history, $rel, $size)
+{
+    $h = $history[$rel] ?? null;
+    return is_array($h) && ($h['status'] ?? '') === 'done' && (int)($h['size'] ?? 0) === (int)$size;
+}
+
 // ------------------------------------------------ Page listing
 $allImageFiles = $compressor->scan();
+$compressHistory = $compressor->getHistory();
 $grouped = [];
 foreach ($allImageFiles as $file) {
     $dirName = dirname($file['rel']);
@@ -130,9 +137,29 @@ foreach ($allImageFiles as $file) {
         'size' => $file['size'],
         'ext'  => $file['ext'],
         'name' => basename($file['abs']),
+        'compressed' => isImageCompressed($compressHistory, $file['rel'], $file['size']),
     ];
 }
 $totalImages = count($allImageFiles);
+
+// Most recently added files (by file mtime), shown first like the Gallery
+// "Recently Uploaded" section. They also still appear in the full list below.
+$recentImages = [];
+foreach ($allImageFiles as $file) {
+    $mtime = @filemtime($file['abs']);
+    if ($mtime === false) continue;
+    $recentImages[] = [
+        'rel'   => $file['rel'],
+        'size'  => $file['size'],
+        'name'  => basename($file['abs']),
+        'mtime' => $mtime,
+        'compressed' => isImageCompressed($compressHistory, $file['rel'], $file['size']),
+    ];
+}
+usort($recentImages, function ($a, $b) {
+    return $b['mtime'] - $a['mtime'];
+});
+$recentImages = array_slice($recentImages, 0, 8);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -181,6 +208,8 @@ $totalImages = count($allImageFiles);
         .img-card .img-check { position: absolute; top: 8px; left: 8px; z-index: 2; transform: scale(1.2); }
         .img-card .replace-btn { font-size: 0.7rem; padding: 2px 10px; }
         .img-card.selected { border-color: #0A2540; box-shadow: 0 0 0 2px rgba(10,37,64,0.25); }
+        .img-card .status-badge { font-size: 0.62rem; padding: 2px 6px; margin-top: 4px; }
+        .dir-group.filter-hide, .img-card.filter-hide { display: none; }
         #toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .dir-badge { font-size: 0.7rem; padding: 2px 10px; border-radius: 20px; background: #e9ecef; color: #555; display: inline-block; margin-bottom: 4px; }
         .progress { height: 22px; }
@@ -285,11 +314,60 @@ $totalImages = count($allImageFiles);
                         </div>
                     </div>
 
+                    <!-- Recently added images -->
+                    <div class="card compress-card mb-4">
+                        <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-clock mr-2"></i>Recently Added <span class="badge badge-secondary ml-2"><?php echo count($recentImages); ?></span></h6>
+                        </div>
+                        <div class="card-body">
+                            <?php if (empty($recentImages)): ?>
+                                <p class="text-muted text-center py-3">No recent images found.</p>
+                            <?php else: ?>
+                                <div class="img-grid">
+                                    <?php foreach ($recentImages as $img): ?>
+                                    <div class="img-card" data-path="<?php echo htmlspecialchars($img['rel']); ?>">
+                                        <input type="checkbox" class="img-check" value="<?php echo htmlspecialchars($img['rel']); ?>" onchange="this.closest('.img-card').classList.toggle('selected', this.checked); updateCount();">
+                                        <div class="thumb-wrap">
+                                            <img src="../<?php echo htmlspecialchars($img['rel']); ?>" alt="<?php echo htmlspecialchars($img['name']); ?>" loading="lazy" onerror="this.closest('.thumb-wrap').innerHTML = '<i class=\'fas fa-image\' style=\'font-size:3rem;color:#ccc;\'></i>'">
+                                        </div>
+                                        <div class="img-info">
+                                            <div class="filename" title="<?php echo htmlspecialchars($img['name']); ?>"><?php echo htmlspecialchars($img['name']); ?></div>
+                                            <div class="filesize"><?php echo round($img['size'] / 1024); ?> KB</div>
+                                            <?php if ($img['compressed']): ?>
+                                            <span class="badge badge-success status-badge"><i class="fas fa-check mr-1"></i>Compressed</span>
+                                            <?php else: ?>
+                                            <span class="badge badge-warning status-badge"><i class="fas fa-times mr-1"></i>Not compressed</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="img-actions">
+                                            <button class="btn btn-outline-secondary replace-btn" onclick="openReplaceModal('<?php echo htmlspecialchars($img['rel']); ?>')"><i class="fas fa-upload mr-1"></i>Replace</button>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
                     <!-- Image library -->
                     <div class="card compress-card mb-4">
                         <div class="card-header py-3 d-flex align-items-center justify-content-between">
                             <h6 class="m-0 font-weight-bold" style="color:#0A2540;"><i class="fas fa-images mr-2"></i>All Images <span class="badge badge-secondary ml-2"><?php echo $totalImages; ?></span></h6>
                             <div id="toolbar">
+                                <div class="input-group input-group-sm" style="width:230px; max-width:100%;">
+                                    <select id="catFilter" class="custom-select custom-select-sm">
+                                        <option value="">All categories</option>
+                                        <?php foreach ($grouped as $dirName => $images): ?>
+                                        <option value="<?php echo htmlspecialchars($dirName); ?>"><?php echo htmlspecialchars($dirName); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="input-group input-group-sm" style="width:220px; max-width:100%;">
+                                    <input type="text" id="nameFilter" class="form-control form-control-sm" placeholder="Search filename…" aria-label="Search by filename">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-primary" type="button" id="searchBtn" title="Search"><i class="fas fa-search"></i></button>
+                                    </div>
+                                </div>
                                 <button class="btn btn-sm btn-outline-primary" id="selectAllBtn"><i class="fas fa-check-square mr-1"></i>Select All</button>
                                 <button class="btn btn-sm btn-outline-secondary" id="deselectAllBtn"><i class="fas fa-square mr-1"></i>Deselect All</button>
                             </div>
@@ -298,8 +376,10 @@ $totalImages = count($allImageFiles);
                             <?php if ($totalImages === 0): ?>
                                 <p class="text-muted text-center py-3">No images found in scanned directories.</p>
                             <?php else: ?>
+                                <p class="text-muted small" id="filterSummary"></p>
+                                <div id="imageLibrary">
                                 <?php foreach ($grouped as $dirName => $images): ?>
-                                <div class="mb-4">
+                                <div class="mb-4 dir-group" data-category="<?php echo htmlspecialchars($dirName); ?>">
                                     <span class="dir-badge"><i class="far fa-folder mr-1"></i><?php echo htmlspecialchars($dirName); ?></span>
                                     <div class="img-grid mt-2">
                                         <?php foreach ($images as $img): ?>
@@ -311,6 +391,11 @@ $totalImages = count($allImageFiles);
                                             <div class="img-info">
                                                 <div class="filename" title="<?php echo htmlspecialchars($img['name']); ?>"><?php echo htmlspecialchars($img['name']); ?></div>
                                                 <div class="filesize"><?php echo round($img['size'] / 1024); ?> KB</div>
+                                                <?php if ($img['compressed']): ?>
+                                                <span class="badge badge-success status-badge"><i class="fas fa-check mr-1"></i>Compressed</span>
+                                                <?php else: ?>
+                                                <span class="badge badge-warning status-badge"><i class="fas fa-times mr-1"></i>Not compressed</span>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="img-actions">
                                                 <button class="btn btn-outline-secondary replace-btn" onclick="openReplaceModal('<?php echo htmlspecialchars($img['rel']); ?>')"><i class="fas fa-upload mr-1"></i>Replace</button>
@@ -320,6 +405,7 @@ $totalImages = count($allImageFiles);
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -380,7 +466,7 @@ $totalImages = count($allImageFiles);
         }
 
         document.getElementById('selectAllBtn').addEventListener('click', function() {
-            document.querySelectorAll('.img-check').forEach(function(cb) {
+            document.querySelectorAll('.img-card:not(.filter-hide) .img-check').forEach(function(cb) {
                 cb.checked = true;
                 cb.closest('.img-card').classList.add('selected');
             });
@@ -394,6 +480,45 @@ $totalImages = count($allImageFiles);
             });
             updateCount();
         });
+
+        // Filter the All Images library by category folder and/or filename.
+        function applyFilter() {
+            var cat = document.getElementById('catFilter').value;
+            var query = document.getElementById('nameFilter').value.trim().toLowerCase();
+            var totalVisible = 0;
+            document.querySelectorAll('#imageLibrary .dir-group').forEach(function(group) {
+                var catMatch = (cat === '' || group.getAttribute('data-category') === cat);
+                var visible = 0;
+                group.querySelectorAll('.img-card').forEach(function(card) {
+                    var nameEl = card.querySelector('.filename');
+                    var name = nameEl ? nameEl.textContent.toLowerCase() : '';
+                    var show = catMatch && (query === '' || name.indexOf(query) !== -1);
+                    card.classList.toggle('filter-hide', !show);
+                    if (show) visible++;
+                });
+                group.classList.toggle('filter-hide', visible === 0);
+                totalVisible += visible;
+            });
+            var summary = document.getElementById('filterSummary');
+            if (summary) {
+                if (cat === '' && query === '') {
+                    summary.textContent = '';
+                } else {
+                    summary.textContent = totalVisible + ' image' + (totalVisible === 1 ? '' : 's') + ' matching' + (cat !== '' ? ' "' + cat + '"' : '') + (query !== '' ? ' "' + query + '"' : '');
+                }
+            }
+        }
+        var catFilterEl = document.getElementById('catFilter');
+        var nameFilterEl = document.getElementById('nameFilter');
+        if (catFilterEl) catFilterEl.addEventListener('change', applyFilter);
+        if (nameFilterEl) {
+            nameFilterEl.addEventListener('input', applyFilter);
+            nameFilterEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); applyFilter(); }
+            });
+        }
+        var searchBtnEl = document.getElementById('searchBtn');
+        if (searchBtnEl) searchBtnEl.addEventListener('click', applyFilter);
 
         function openReplaceModal(path) {
             document.getElementById('replacePath').value = path;
