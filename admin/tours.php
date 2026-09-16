@@ -353,6 +353,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $tours = $db->fetchAll("SELECT p.*, d.name as dest_name FROM tour_packages p LEFT JOIN destinations d ON p.destination_id = d.id ORDER BY p.created_at DESC");
 $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE status = 'active' ORDER BY name");
 
+// Distinct years among tours (from created_at) for the month/year/date filter.
+$tourYears = [];
+foreach ($tours as $t) {
+    if (!empty($t['created_at'])) {
+        $tourYears[date('Y', strtotime($t['created_at']))] = true;
+    }
+}
+$tourYears = array_keys($tourYears);
+rsort($tourYears);
+
 // Load all itinerary days once, grouped by tour, for the edit modal.
 $allDays = $db->fetchAll("SELECT * FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
 $daysByTour = [];
@@ -641,6 +651,7 @@ if (!empty($legacyBucket['items'])) {
                 <nav class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top" style="background-color: #0A2540;">
                     <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3"><i class="fa fa-bars text-white"></i></button>
                     <ul class="navbar-nav ml-auto">
+                    <?php echo admin_image_search_menu(); ?>
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-search fa-fw text-white"></i>
@@ -698,8 +709,24 @@ if (!empty($legacyBucket['items'])) {
                     <?php endif; ?>
 
                     <div class="card mb-4">
-                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                            <input type="text" id="tableSearch" class="form-control form-control-sm" style="max-width: 300px;" placeholder="Filter tours..." onkeyup="filterTable(this.value)">
+                        <div class="card-header py-3">
+                            <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                <input type="text" id="tableSearch" class="form-control form-control-sm" style="max-width: 300px;" placeholder="Filter tours..." onkeyup="filterTable()">
+                                <select id="monthFilter" class="form-control form-control-sm" style="max-width: 150px;" onchange="filterTable()" title="Filter by month added">
+                                    <option value="">All months</option>
+                                    <?php foreach (['01' => 'January', '02' => 'February', '03' => 'March', '04' => 'April', '05' => 'May', '06' => 'June', '07' => 'July', '08' => 'August', '09' => 'September', '10' => 'October', '11' => 'November', '12' => 'December'] as $mNum => $mName): ?>
+                                    <option value="<?php echo $mNum; ?>"><?php echo $mName; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <select id="yearFilter" class="form-control form-control-sm" style="max-width: 120px;" onchange="filterTable()" title="Filter by year added">
+                                    <option value="">All years</option>
+                                    <?php foreach ($tourYears as $y): ?>
+                                    <option value="<?php echo htmlspecialchars($y); ?>"><?php echo htmlspecialchars($y); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="date" id="dateFilter" class="form-control form-control-sm" style="max-width: 180px;" onchange="filterTable()" title="Filter by date added">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetTourFilters()" title="Clear filters"><i class="fas fa-times mr-1"></i>Clear</button>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -722,8 +749,9 @@ if (!empty($legacyBucket['items'])) {
                                             $editTourData = $tour;
                                             $editTourData['days'] = $daysByTour[intval($tour['id'])] ?? [];
                                             $editTourData['faqs'] = $faqsByTour[intval($tour['id'])] ?? [];
+                                            $tourCreated = !empty($tour['created_at']) ? date('Y-m-d', strtotime($tour['created_at'])) : '';
                                         ?>
-                                        <tr>
+                                        <tr data-created="<?php echo htmlspecialchars($tourCreated); ?>">
                                             <td>
                                                 <?php if (!empty($tour['image'])): ?>
                                                     <img src="../<?php echo htmlspecialchars($tour['image']); ?>" style="width:60px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" alt="Thumb" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg';">
@@ -731,7 +759,11 @@ if (!empty($legacyBucket['items'])) {
                                                     <span class="text-muted"><i class="fas fa-image"></i></span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><strong><?php echo htmlspecialchars($tour['title']); ?></strong></td>
+                                            <td><strong><?php echo htmlspecialchars($tour['title']); ?></strong>
+                                                <?php if ($tourCreated): ?>
+                                                <div class="text-muted" style="font-size: 0.72rem;"><i class="far fa-calendar-alt mr-1"></i><?php echo htmlspecialchars(date('M d, Y', strtotime($tour['created_at']))); ?></div>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><?php echo htmlspecialchars($tour['dest_name'] ?: $tour['country'] ?: '-'); ?></td>
                                             <td><?php echo htmlspecialchars($tour['duration'] ?: '-'); ?></td>
                                             <td>$<?php echo number_format($tour['price'], 0); ?></td>
@@ -2015,9 +2047,36 @@ if (!empty($legacyBucket['items'])) {
         }
     </script>
     <script>
-        function filterTable(val) {
+        function filterTable() {
+            var textEl = document.getElementById('tableSearch');
+            var monthEl = document.getElementById('monthFilter');
+            var yearEl = document.getElementById('yearFilter');
+            var dateEl = document.getElementById('dateFilter');
+            var text = textEl ? textEl.value.trim().toLowerCase() : '';
+            var month = monthEl ? monthEl.value : '';
+            var year = yearEl ? yearEl.value : '';
+            var date = dateEl ? dateEl.value : '';
             var rows = document.querySelectorAll('#dataTable tbody tr');
-            rows.forEach(function(row) { row.style.display = row.textContent.toLowerCase().indexOf(val.toLowerCase()) > -1 ? '' : 'none'; });
+            rows.forEach(function(row) {
+                var created = row.getAttribute('data-created') || '';
+                var parts = created ? created.split('-') : [];
+                var rowYear = parts[0] || '';
+                var rowMonth = parts[1] || '';
+                var textMatch = text === '' || row.textContent.toLowerCase().indexOf(text) > -1;
+                var monthMatch = month === '' || rowMonth === month;
+                var yearMatch = year === '' || rowYear === year;
+                var dateMatch = date === '' || created === date;
+                row.style.display = (textMatch && monthMatch && yearMatch && dateMatch) ? '' : 'none';
+            });
+        }
+
+        function resetTourFilters() {
+            var ids = ['tableSearch', 'monthFilter', 'yearFilter', 'dateFilter'];
+            ids.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            filterTable();
         }
     </script>
 </body>
