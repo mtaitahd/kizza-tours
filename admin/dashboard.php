@@ -186,6 +186,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                         <i class="fa fa-bars text-white"></i>
                     </button>
                     <ul class="navbar-nav ml-auto">
+                    <?php echo admin_image_search_menu(); ?>
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-search fa-fw text-white"></i>

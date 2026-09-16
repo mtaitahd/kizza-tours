@@ -186,6 +186,7 @@ $siteUrl = defined('SITE_URL') ? SITE_URL : '';
                 <nav class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top" style="background-color: #0A2540;">
                     <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3"><i class="fa fa-bars text-white"></i></button>
                     <ul class="navbar-nav ml-auto">
+                    <?php echo admin_image_search_menu(); ?>
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-search fa-fw text-white"></i>

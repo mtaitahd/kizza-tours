@@ -10,6 +10,10 @@ if (!isset($_SESSION['admin_id'])) {
 
 $db = db();
 
+// Filter passed in from the global header image search (?cat=folder&q=name).
+$filterCat = trim($_GET['cat'] ?? '');
+$filterQ = trim($_GET['q'] ?? '');
+
 $scanDirs = [
     __DIR__ . '/../uploads',
     __DIR__ . '/../assets/images',
@@ -118,15 +122,8 @@ function compressorTotals($state)
     ];
 }
 
-function isImageCompressed(array $history, $rel, $size)
-{
-    $h = $history[$rel] ?? null;
-    return is_array($h) && ($h['status'] ?? '') === 'done' && (int)($h['size'] ?? 0) === (int)$size;
-}
-
 // ------------------------------------------------ Page listing
 $allImageFiles = $compressor->scan();
-$compressHistory = $compressor->getHistory();
 $grouped = [];
 foreach ($allImageFiles as $file) {
     $dirName = dirname($file['rel']);
@@ -137,7 +134,6 @@ foreach ($allImageFiles as $file) {
         'size' => $file['size'],
         'ext'  => $file['ext'],
         'name' => basename($file['abs']),
-        'compressed' => isImageCompressed($compressHistory, $file['rel'], $file['size']),
     ];
 }
 $totalImages = count($allImageFiles);
@@ -153,13 +149,19 @@ foreach ($allImageFiles as $file) {
         'size'  => $file['size'],
         'name'  => basename($file['abs']),
         'mtime' => $mtime,
-        'compressed' => isImageCompressed($compressHistory, $file['rel'], $file['size']),
     ];
 }
 usort($recentImages, function ($a, $b) {
     return $b['mtime'] - $a['mtime'];
 });
 $recentImages = array_slice($recentImages, 0, 8);
+
+// Category options for the filter; include the incoming category even if it
+// currently has no images so the selected filter is always preserved.
+$catOptions = array_keys($grouped);
+if ($filterCat !== '' && !in_array($filterCat, $catOptions, true)) {
+    $catOptions[] = $filterCat;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -208,7 +210,6 @@ $recentImages = array_slice($recentImages, 0, 8);
         .img-card .img-check { position: absolute; top: 8px; left: 8px; z-index: 2; transform: scale(1.2); }
         .img-card .replace-btn { font-size: 0.7rem; padding: 2px 10px; }
         .img-card.selected { border-color: #0A2540; box-shadow: 0 0 0 2px rgba(10,37,64,0.25); }
-        .img-card .status-badge { font-size: 0.62rem; padding: 2px 6px; margin-top: 4px; }
         .dir-group.filter-hide, .img-card.filter-hide { display: none; }
         #toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .dir-badge { font-size: 0.7rem; padding: 2px 10px; border-radius: 20px; background: #e9ecef; color: #555; display: inline-block; margin-bottom: 4px; }
@@ -261,6 +262,9 @@ $recentImages = array_slice($recentImages, 0, 8);
                 <nav class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top">
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3"><i class="fa fa-bars text-white"></i></button>
                     <span class="text-white font-weight-bold" style="font-size:1.1rem;"><i class="fas fa-compress-alt mr-2"></i>Image Manager</span>
+                    <ul class="navbar-nav ml-auto">
+                    <?php echo admin_image_search_menu(); ?>
+                    </ul>
                 </nav>
 
                 <div class="container-fluid" id="container-wrapper">
@@ -333,11 +337,6 @@ $recentImages = array_slice($recentImages, 0, 8);
                                         <div class="img-info">
                                             <div class="filename" title="<?php echo htmlspecialchars($img['name']); ?>"><?php echo htmlspecialchars($img['name']); ?></div>
                                             <div class="filesize"><?php echo round($img['size'] / 1024); ?> KB</div>
-                                            <?php if ($img['compressed']): ?>
-                                            <span class="badge badge-success status-badge"><i class="fas fa-check mr-1"></i>Compressed</span>
-                                            <?php else: ?>
-                                            <span class="badge badge-warning status-badge"><i class="fas fa-times mr-1"></i>Not compressed</span>
-                                            <?php endif; ?>
                                         </div>
                                         <div class="img-actions">
                                             <button class="btn btn-outline-secondary replace-btn" onclick="openReplaceModal('<?php echo htmlspecialchars($img['rel']); ?>')"><i class="fas fa-upload mr-1"></i>Replace</button>
@@ -357,13 +356,13 @@ $recentImages = array_slice($recentImages, 0, 8);
                                 <div class="input-group input-group-sm" style="width:230px; max-width:100%;">
                                     <select id="catFilter" class="custom-select custom-select-sm">
                                         <option value="">All categories</option>
-                                        <?php foreach ($grouped as $dirName => $images): ?>
-                                        <option value="<?php echo htmlspecialchars($dirName); ?>"><?php echo htmlspecialchars($dirName); ?></option>
+                                        <?php foreach ($catOptions as $dirName): ?>
+                                        <option value="<?php echo htmlspecialchars($dirName); ?>"<?php echo $filterCat === $dirName ? ' selected' : ''; ?>><?php echo htmlspecialchars($dirName); ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="input-group input-group-sm" style="width:220px; max-width:100%;">
-                                    <input type="text" id="nameFilter" class="form-control form-control-sm" placeholder="Search filename…" aria-label="Search by filename">
+                                    <input type="text" id="nameFilter" class="form-control form-control-sm" placeholder="Search filename…" aria-label="Search by filename" value="<?php echo htmlspecialchars($filterQ); ?>">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-primary" type="button" id="searchBtn" title="Search"><i class="fas fa-search"></i></button>
                                     </div>
@@ -391,11 +390,6 @@ $recentImages = array_slice($recentImages, 0, 8);
                                             <div class="img-info">
                                                 <div class="filename" title="<?php echo htmlspecialchars($img['name']); ?>"><?php echo htmlspecialchars($img['name']); ?></div>
                                                 <div class="filesize"><?php echo round($img['size'] / 1024); ?> KB</div>
-                                                <?php if ($img['compressed']): ?>
-                                                <span class="badge badge-success status-badge"><i class="fas fa-check mr-1"></i>Compressed</span>
-                                                <?php else: ?>
-                                                <span class="badge badge-warning status-badge"><i class="fas fa-times mr-1"></i>Not compressed</span>
-                                                <?php endif; ?>
                                             </div>
                                             <div class="img-actions">
                                                 <button class="btn btn-outline-secondary replace-btn" onclick="openReplaceModal('<?php echo htmlspecialchars($img['rel']); ?>')"><i class="fas fa-upload mr-1"></i>Replace</button>
@@ -519,6 +513,9 @@ $recentImages = array_slice($recentImages, 0, 8);
         }
         var searchBtnEl = document.getElementById('searchBtn');
         if (searchBtnEl) searchBtnEl.addEventListener('click', applyFilter);
+
+        // Apply any filter arriving from the global header image search.
+        applyFilter();
 
         function openReplaceModal(path) {
             document.getElementById('replacePath').value = path;

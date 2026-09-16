@@ -107,6 +107,7 @@ $sitemapUrl = SITE_URL . '/sitemap.xml';
             <nav class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top" style="background-color: #0A2540;">
                 <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3"><i class="fa fa-bars text-white"></i></button>
                 <ul class="navbar-nav ml-auto">
+                    <?php echo admin_image_search_menu(); ?>
                     <li class="nav-item dropdown no-arrow">
                         <a class="nav-link" href="profile"><i class="fas fa-user-circle text-white"></i><span class="ml-2 text-white"><?= htmlspecialchars($_SESSION['admin_name'] ?? 'Admin') ?></span></a>
                     </li>

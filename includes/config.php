@@ -603,3 +603,6 @@ require_once __DIR__ . '/seo.php';
 
 // Load language module
 require_once __DIR__ . '/lang.php';
+
+// Load admin global image-search menu (top header helper)
+require_once __DIR__ . '/admin-image-search.php';
