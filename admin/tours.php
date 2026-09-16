@@ -83,9 +83,12 @@ function ensureItineraryDaysTable() {
         return true;
     } catch (\Throwable $e) { return false; }
 }
-ensureToursTable();
-ensureItineraryDaysTable();
-ensureFaqTourColumn();
+require_once __DIR__ . '/../includes/admin-schema.php';
+adminSchemaOnce('tours_schema_v1', function () {
+    ensureToursTable();
+    ensureItineraryDaysTable();
+    ensureFaqTourColumn();
+});
 
 require_once __DIR__ . '/../includes/itinerary-days-save.php';
 require_once __DIR__ . '/../includes/tour-faqs-save.php';
@@ -351,17 +354,17 @@ $tours = $db->fetchAll("SELECT p.*, d.name as dest_name FROM tour_packages p LEF
 $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE status = 'active' ORDER BY name");
 
 // Load all itinerary days once, grouped by tour, for the edit modal.
-$allDays = $db->fetchAll("SELECT id, tour_id, day_number, title, description, drive_time, meals, accommodation, image_path, image_alt, location_name, lat, lng FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
+$allDays = $db->fetchAll("SELECT * FROM itinerary_days ORDER BY tour_id ASC, sort_order ASC, id ASC");
 $daysByTour = [];
 foreach ($allDays as $day) {
-    $daysByTour[$day['tour_id']][] = $day;
+    $daysByTour[intval($day['tour_id'])][] = $day;
 }
 
 // Load per-tour FAQs once, grouped by tour, for the edit modal.
 $allFaqs = $db->fetchAll("SELECT id, tour_id, question, answer, category, sort_order, status FROM faq WHERE tour_id IS NOT NULL AND tour_id != 0 ORDER BY sort_order ASC, id ASC");
 $faqsByTour = [];
 foreach ($allFaqs as $faq) {
-    $faqsByTour[$faq['tour_id']][] = $faq;
+    $faqsByTour[intval($faq['tour_id'])][] = $faq;
 }
 
 // Active gallery images grouped by category, used by the image pickers in the
@@ -717,8 +720,8 @@ if (!empty($legacyBucket['items'])) {
                                     <tbody>
                                         <?php foreach ($tours as $tour):
                                             $editTourData = $tour;
-                                            $editTourData['days'] = $daysByTour[$tour['id']] ?? [];
-                                            $editTourData['faqs'] = $faqsByTour[$tour['id']] ?? [];
+                                            $editTourData['days'] = $daysByTour[intval($tour['id'])] ?? [];
+                                            $editTourData['faqs'] = $faqsByTour[intval($tour['id'])] ?? [];
                                         ?>
                                         <tr>
                                             <td>
@@ -752,7 +755,7 @@ if (!empty($legacyBucket['items'])) {
                                                     <a href="../safari/<?php echo htmlspecialchars($tour['slug']); ?>" target="_blank" class="btn btn-sm btn-outline-info mr-1" title="View Tour">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <button class="btn btn-sm btn-outline-secondary mr-1" onclick="editTour(<?php echo htmlspecialchars(json_encode($editTourData)); ?>)">
+                                                    <button class="btn btn-sm btn-outline-secondary mr-1" onclick="editTour(<?php echo htmlspecialchars(json_encode($editTourData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE) ?: '{}'); ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this tour?');">
@@ -969,6 +972,7 @@ if (!empty($legacyBucket['items'])) {
                             </button>
                             <small class="d-block text-muted mt-2" id="legacyItineraryNote" style="display:none;">
                                 <i class="fas fa-info-circle"></i> This tour has legacy itinerary text still shown on the frontend until you add structured days above.
+                                <pre id="legacyItineraryText" class="mt-2 p-2 bg-light border rounded small" style="white-space:pre-wrap;max-height:180px;overflow:auto;display:none;"></pre>
                             </small>
                         </div>
                         <div class="form-group">
@@ -1560,10 +1564,16 @@ if (!empty($legacyBucket['items'])) {
         }
 
         function editTour(t) {
+            if (typeof t === 'string') {
+                try { t = JSON.parse(t); } catch (e) { t = null; }
+            }
+            if (!t) return;
+            var days = Array.isArray(t.days) ? t.days : [];
+            var faqs = Array.isArray(t.faqs) ? t.faqs : [];
             document.getElementById('tourAction').value = 'edit';
             document.getElementById('tourId').value = t.id;
-            document.getElementById('tourTitle').value = t.title;
-            document.getElementById('tourSlug').value = t.slug;
+            document.getElementById('tourTitle').value = t.title || '';
+            document.getElementById('tourSlug').value = t.slug || '';
             document.getElementById('tourDuration').value = t.duration || '';
             document.getElementById('tourPrice').value = t.price || '';
             document.getElementById('tourRating').value = t.rating || 5;
@@ -1583,9 +1593,17 @@ if (!empty($legacyBucket['items'])) {
             document.getElementById('tourNoRobots').value = t.no_robots || 0;
             setMainImages(t.image || '', t.hero_image || '');
             document.getElementById('tourModalTitle').textContent = 'Edit Tour';
-            loadItineraryDays(t.days || []);
-            loadTourFaqs(t.faqs || []);
-            document.getElementById('legacyItineraryNote').style.display = (t.itinerary && (!t.days || !t.days.length)) ? 'block' : 'none';
+            loadItineraryDays(days);
+            loadTourFaqs(faqs);
+            var legacyNote = document.getElementById('legacyItineraryNote');
+            var legacyText = document.getElementById('legacyItineraryText');
+            var legacy = (t.itinerary || '').trim();
+            var showLegacy = legacy !== '' && days.length === 0;
+            legacyNote.style.display = showLegacy ? 'block' : 'none';
+            if (legacyText) {
+                legacyText.textContent = legacy;
+                legacyText.style.display = showLegacy ? 'block' : 'none';
+            }
             $('#tourModal').modal('show');
         }
 

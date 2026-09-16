@@ -74,7 +74,8 @@ function recalcQuote(&$db, $quoteId) {
     $db->query("UPDATE quotes SET subtotal = ?, tax_amount = ?, total = ? WHERE id = ?", [$subtotal, $taxAmount, $total, $quoteId]);
 }
 
-$quotesTablesOk = ensureQuoteTables();
+require_once __DIR__ . '/../includes/admin-schema.php';
+$quotesTablesOk = adminSchemaOnce('quotes_schema_v1', 'ensureQuoteTables');
 
 // Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {

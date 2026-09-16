@@ -32,7 +32,8 @@ function ensurePagesTable() {
         return false;
     }
 }
-ensurePagesTable();
+require_once __DIR__ . '/../includes/admin-schema.php';
+adminSchemaOnce('pages_schema_v1', 'ensurePagesTable');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();

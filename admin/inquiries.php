@@ -48,7 +48,8 @@ function ensureQuoteTables() {
         }
     }
 }
-$quotesTablesOk = ensureQuoteTables();
+require_once __DIR__ . '/../includes/admin-schema.php';
+$quotesTablesOk = adminSchemaOnce('quotes_schema_v1', 'ensureQuoteTables');
 
 function generateQuoteNumber($db) {
     $prefix = 'QTE-' . date('Y') . '-';

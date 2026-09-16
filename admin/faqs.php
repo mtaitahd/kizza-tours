@@ -30,7 +30,8 @@ function ensureFaqTourColumn() {
         return false;
     }
 }
-ensureFaqTourColumn();
+require_once __DIR__ . '/../includes/admin-schema.php';
+adminSchemaOnce('faqs_schema_v1', 'ensureFaqTourColumn');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
