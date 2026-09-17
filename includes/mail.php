@@ -39,7 +39,9 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
     global $phpmailerAvailable, $phpmailerError;
+    $GLOBALS['sendMailError'] = '';
     if (!$phpmailerAvailable) {
+        $GLOBALS['sendMailError'] = 'PHPMailer not available' . ($phpmailerError ? ': ' . $phpmailerError : '');
         error_log("sendMail skipped: PHPMailer not available" . ($phpmailerError ? ': ' . $phpmailerError : ''));
         return false;
     }
@@ -57,7 +59,10 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
             $mail->Host       = $smtpHost;
             $mail->SMTPAuth   = true;
             $mail->Username   = $smtpUser;
-            $mail->Password   = $smtpPass;
+            // Gmail app passwords are stored with formatting spaces (e.g.
+            // "abcd efgh ijkl mnop"); the SMTP AUTH handshake must use the
+            // plain 16-char value or Gmail rejects it, so strip them here.
+            $mail->Password   = str_replace(' ', '', $smtpPass);
             $mail->Port       = $smtpPort;
             $mail->Timeout    = 15;
             $mail->SMTPKeepAlive = false;
@@ -93,7 +98,8 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
         $mail->send();
         return true;
     } catch (\Throwable $e) {
-        error_log("sendMail Error [" . get_class($e) . "]: " . $e->getMessage());
+        $GLOBALS['sendMailError'] = $e->getMessage();
+        error_log("sendMail Error [" . get_class($e) . "]: " . $e->getMessage() . " | host={$smtpHost} port={$smtpPort} user={$smtpUser} enc=" . ($smtpEnc ?? 'tls'));
         return false;
     }
 }
