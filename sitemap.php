@@ -31,6 +31,8 @@ $baseUrl = in_array($siteHost, $prodDomains)
 
 $today = date('Y-m-d');
 
+$removedTourSlugs = ['10-days-luxury-safari-tanzania-kenya', '15-days-kenya-tanzania-zanzibar-luxury-safari-packages'];
+
 $staticPages = [
     ['file' => 'index.php', 'loc' => '/', 'priority' => '1.0', 'changefreq' => 'weekly'],
     ['file' => 'about-us.php', 'loc' => '/about-us', 'priority' => '0.9', 'changefreq' => 'monthly'],
@@ -78,6 +80,7 @@ try {
 
     $tours = $pdo->query("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND (no_robots IS NULL OR no_robots = 0) AND slug IS NOT NULL AND slug != ''")->fetchAll();
     foreach ($tours as $tour) {
+        if (in_array($tour['slug'], $removedTourSlugs, true)) continue;
         $pages[] = [
             'loc' => $baseUrl . '/safari/' . urlencode($tour['slug']),
             'lastmod' => !empty($tour['updated_at']) ? date('Y-m-d', strtotime($tour['updated_at'])) : $today,

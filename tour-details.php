@@ -8,6 +8,12 @@ if (empty($slug)) {
     exit;
 }
 
+$removedTourSlugs = ['10-days-luxury-safari-tanzania-kenya', '15-days-kenya-tanzania-zanzibar-luxury-safari-packages'];
+if (in_array($slug, $removedTourSlugs, true)) {
+    header('HTTP/1.0 410 Gone', true, 410);
+    exit;
+}
+
 try {
     $db = Database::getInstance();
     $tour = $db->fetchOne("SELECT p.*, d.name as destination_name, d.country as destination_country FROM tour_packages p LEFT JOIN destinations d ON p.destination_id = d.id WHERE p.slug = ? AND p.status = 'active' LIMIT 1", [$slug]);

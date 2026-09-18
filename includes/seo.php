@@ -340,7 +340,9 @@ function seoGenerateSitemap() {
     try {
         $db = Database::getInstance();
         $tours = $db->fetchAll("SELECT slug, updated_at FROM tour_packages WHERE status = 'active' AND (no_robots IS NULL OR no_robots = 0) AND slug IS NOT NULL AND slug != ''");
+        $removedTourSlugs = ['10-days-luxury-safari-tanzania-kenya', '15-days-kenya-tanzania-zanzibar-luxury-safari-packages'];
         foreach ($tours as $tour) {
+            if (in_array($tour['slug'], $removedTourSlugs, true)) continue;
             $pages[] = [
                 'loc' => $url . '/safari/' . urlencode($tour['slug']),
                 'lastmod' => !empty($tour['updated_at']) ? date('Y-m-d', strtotime($tour['updated_at'])) : $today,
