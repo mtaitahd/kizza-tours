@@ -210,15 +210,15 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <div class="top-bar">
     <div class="container d-flex align-items-center justify-content-between">
         <div class="top-bar-info d-flex align-items-center gap-3">
-            <a href="mailto:<?php echo $siteEmail; ?>" class="top-bar-link">
+            <a href="mailto:<?php echo $siteEmail; ?>" class="top-bar-link" aria-label="Email Kizza Tours &amp; Safaris">
                 <i class="fas fa-envelope"></i> <span><?php echo $siteEmail; ?></span>
             </a>
-            <a href="tel:<?php echo $sitePhone; ?>" class="top-bar-link">
+            <a href="tel:<?php echo $sitePhone; ?>" class="top-bar-link" aria-label="Call Kizza Tours &amp; Safaris">
                 <i class="fas fa-phone-alt"></i> <span><?php echo $sitePhone; ?></span>
             </a>
         </div>
         <form class="top-bar-search d-flex align-items-center gap-2" action="<?php echo SITE_URL; ?>/search" method="GET">
-            <select name="location" class="top-bar-select">
+            <select name="location" class="top-bar-select" aria-label="Select destination">
                 <option value="">All Destinations</option>
                 <option value="Tanzania">Tanzania</option>
                 <option value="Kenya">Kenya</option>
@@ -228,7 +228,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
                 <option value="Burundi">Burundi</option>
                 <option value="Kenya-Tanzania">Kenya & Tanzania</option>
             </select>
-            <select name="budget" class="top-bar-select">
+            <select name="budget" class="top-bar-select" aria-label="Select budget">
                 <option value="">Any Budget</option>
                 <option value="0-1000">Under $1,000</option>
                 <option value="1000-3000">$1,000 - $3,000</option>
