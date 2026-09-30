@@ -11,6 +11,7 @@ if (!isset($_SESSION['admin_id'])) {
 $db = db();
 require_once __DIR__ . '/../includes/admin-auth.php';
 requireAdminPermission('manage_tours');
+$editTourOnly = max(0, (int)($_GET['edit_tour_id'] ?? 0)) > 0;
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -435,7 +436,7 @@ if (!empty($legacyBucket['items'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tours - Kizza Tours Admin</title>
+    <title><?php echo $editTourOnly ? 'Edit Tour' : 'Tours'; ?> - Kizza Tours Admin</title>
     <link rel="icon" href="../assets/images/log.png" type="image/png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -453,6 +454,7 @@ if (!empty($legacyBucket['items'])) {
         .topbar { position: fixed; top: 0; right: 0; left: 14rem; z-index: 1020; transition: left 0.3s ease-in-out; }
         body.sidebar-toggled .topbar { left: 6.5rem; }
         #content { padding-top: 70px; }
+        body.edit-tour-only #container-wrapper > .card.mb-4 { display: none !important; }
         @media (max-width: 768px) {
             #accordionSidebar { width: 0; }
             #content-wrapper { margin-left: 0; }
@@ -617,7 +619,7 @@ if (!empty($legacyBucket['items'])) {
         }
     </style>
 </head>
-<body id="page-top">
+<body id="page-top" class="<?php echo $editTourOnly ? 'edit-tour-only' : ''; ?>">
     <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
@@ -703,10 +705,10 @@ if (!empty($legacyBucket['items'])) {
 
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2"> Manage Tours</h4>
-                        <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#tourModal" onclick="openAddTour()">
+                        <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2"> <?php echo $editTourOnly ? 'Edit Tour' : 'Manage Tours'; ?></h4>
+                        <?php if ($editTourOnly): ?><a class="btn btn-sm btn-outline-secondary" href="tours"><i class="fas fa-arrow-left mr-1"></i>Back to tours</a><?php else: ?><button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#tourModal" onclick="openAddTour()">
                             <i class="fas fa-plus"></i> Add Tour
-                        </button>
+                        </button><?php endif; ?>
                     </div>
                     
                     <?php
