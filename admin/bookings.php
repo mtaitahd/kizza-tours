@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once '../includes/mail.php';
@@ -475,6 +475,7 @@ if ($quotesTablesOk) {
     </style>
 </head>
 <body id="page-top">
+    <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <!-- Sidebar -->
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">

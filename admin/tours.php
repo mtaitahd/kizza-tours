@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 session_start();
@@ -618,12 +618,18 @@ if (!empty($legacyBucket['items'])) {
     </style>
 </head>
 <body id="page-top">
+    <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
                 <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35"></div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
+            <?php if (adminIsTourManager()): ?>
+            <hr class="sidebar-divider my-0"><li class="nav-item"><a class="nav-link" href="dashboard"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+            <li class="nav-item active"><a class="nav-link" href="tours"><i class="fas fa-fw fa-safari"></i><span>Tours</span></a></li>
+            <hr class="sidebar-divider"><li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li><li class="nav-item"><a class="nav-link" href="logout"><i class="fas fa-fw fa-sign-out-alt"></i><span>Logout</span></a></li>
+            <?php else: ?>
             <hr class="sidebar-divider my-0">
             <li class="nav-item"><a class="nav-link" href="dashboard"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
             <hr class="sidebar-divider">
@@ -650,6 +656,7 @@ if (!empty($legacyBucket['items'])) {
             <li class="nav-item"><a class="nav-link" href="logout"><i class="fas fa-fw fa-sign-out-alt"></i><span>Logout</span></a></li>
             <hr class="sidebar-divider d-none d-md-block">
             <div class="version" id="version-ruangadmin">Version 1.0</div>
+            <?php endif; ?>
         </ul>
 
         <div id="content-wrapper" class="d-flex flex-column">

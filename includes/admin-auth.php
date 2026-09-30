@@ -73,6 +73,33 @@ function adminCan($permissionCode)
     return $permissionCache[$key] = (bool)$row;
 }
 
+function adminIsTourManager()
+{
+    $admin = adminRequireLogin();
+    return $admin && $admin['role'] === 'manager' && $admin['role'] !== 'super_admin';
+}
+
+function adminSidebarPermissionStyles()
+{
+    $admin = adminRequireLogin();
+    if (!$admin || $admin['role'] === 'super_admin') return '';
+
+    $links = [
+        'dashboard' => 'view_dashboard', 'bookings' => 'manage_bookings', 'tours' => 'manage_tours',
+        'destinations' => 'manage_destinations', 'gallery' => 'manage_gallery',
+        'testimonials' => 'manage_testimonials', 'faqs' => 'manage_faqs',
+        'inquiries' => 'manage_inquiries', 'quotes' => 'manage_quotes', 'pages' => 'manage_pages',
+        'compress-images' => 'manage_media', 'sitemap' => 'manage_sitemap', 'settings' => 'manage_settings',
+    ];
+    $css = '#accordionSidebar .nav-item{display:none!important;}';
+    foreach ($links as $href => $permission) {
+        if (adminCan($permission)) $css .= '#accordionSidebar .nav-item:has(a[href="' . $href . '"]){display:block!important;}';
+    }
+    $css .= '#accordionSidebar .nav-item:has(a[href="profile"]),#accordionSidebar .nav-item:has(a[href="logout"]){display:block!important;}';
+    $css .= '#accordionSidebar .sidebar-heading,#accordionSidebar .sidebar-divider,#accordionSidebar .version{display:none!important;}';
+    return '<style>' . $css . '</style>';
+}
+
 function requireAdminPermission($permissionCode)
 {
     if (!adminCan($permissionCode)) {

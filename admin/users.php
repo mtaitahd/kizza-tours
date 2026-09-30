@@ -21,13 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $fullName = trim($_POST['full_name'] ?? '');
-            $role = in_array($_POST['role'] ?? '', ['admin', 'editor'], true) ? $_POST['role'] : 'editor';
+            $role = in_array($_POST['role'] ?? '', ['admin', 'editor', 'manager'], true) ? $_POST['role'] : 'editor';
             $password = (string)($_POST['password'] ?? '');
             if ($username === '' || $email === '' || $fullName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new RuntimeException('Enter a name, username, and valid email address.');
             }
             if (strlen($password) < 12) throw new RuntimeException('Use a password with at least 12 characters.');
-            $granted = array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
+            $granted = $role === 'manager' ? ['view_dashboard', 'manage_tours'] : array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
 
             $db->beginTransaction();
             $newId = (int)$db->insert(
@@ -53,11 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $fullName = trim($_POST['full_name'] ?? '');
-            $role = in_array($_POST['role'] ?? '', ['admin', 'editor'], true) ? $_POST['role'] : 'editor';
+            $role = in_array($_POST['role'] ?? '', ['admin', 'editor', 'manager'], true) ? $_POST['role'] : 'editor';
             if ($username === '' || $fullName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new RuntimeException('Enter a name, username, and valid email address.');
             }
-            $granted = array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
+            $granted = $role === 'manager' ? ['view_dashboard', 'manage_tours'] : array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
             $db->beginTransaction();
             $db->query("UPDATE admin_users SET username = ?, email = ?, full_name = ?, role = ? WHERE id = ?", [$username, $email, $fullName, $role, $targetId]);
             $db->query("DELETE FROM admin_user_permissions WHERE admin_id = ?", [$targetId]);
@@ -99,6 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $users = $db->fetchAll("SELECT id, username, email, full_name, role, is_active, last_login, created_at FROM admin_users ORDER BY role = 'super_admin' DESC, full_name ASC");
+$todayActivity = [];
+foreach ($db->fetchAll("SELECT actor_admin_id, COUNT(*) AS total FROM admin_activity_log WHERE created_at >= CURDATE() AND created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY) GROUP BY actor_admin_id") as $activityRow) {
+    $todayActivity[(int)$activityRow['actor_admin_id']] = (int)$activityRow['total'];
+}
 $editing = null;
 $assigned = [];
 if ($selectedId > 0) {
@@ -146,6 +150,7 @@ unset($_SESSION['flash']);
     </style>
 </head>
 <body id="page-top">
+    <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
@@ -245,7 +250,7 @@ unset($_SESSION['flash']);
                     <div class="card shadow-sm mb-4"><div class="card-header font-weight-bold">Add staff user</div><div class="card-body"><form method="post">
                         <?php csrf_field(); ?><input type="hidden" name="action" value="create">
                         <div class="form-row"><div class="form-group col-md-4"><label>Full name</label><input class="form-control" name="full_name" required></div><div class="form-group col-md-4"><label>Username</label><input class="form-control" name="username" required autocomplete="off"></div><div class="form-group col-md-4"><label>Email</label><input class="form-control" type="email" name="email" required></div></div>
-                        <div class="form-row"><div class="form-group col-md-4"><label>Initial password (12+ characters)</label><input class="form-control" type="password" name="password" minlength="12" required autocomplete="new-password"></div><div class="form-group col-md-4"><label>Account type</label><select class="form-control" name="role"><option value="editor">Editor</option><option value="admin">Admin</option></select><small class="form-text text-muted">Module permissions below control what this user can access.</small></div></div>
+                        <div class="form-row"><div class="form-group col-md-4"><label>Initial password (12+ characters)</label><input class="form-control" type="password" name="password" minlength="12" required autocomplete="new-password"></div><div class="form-group col-md-4"><label>Account type</label><select class="form-control" name="role"><option value="editor">Editor</option><option value="admin">Admin</option><option value="manager">Tour Manager (tours only)</option></select><small class="form-text text-muted">Tour Managers receive dashboard and tour access only.</small></div></div>
                         <label class="font-weight-bold">Permissions</label><div class="permission-grid mb-3">
                         <?php foreach ($permissions as $permission): ?><label class="permission-item mb-0"><input type="checkbox" name="permissions[]" value="<?= htmlspecialchars($permission['permission_code']) ?>" <?= $permission['permission_code'] === 'view_dashboard' ? 'checked' : '' ?>> <?= htmlspecialchars($permission['label']) ?></label><?php endforeach; ?>
                         </div><button class="btn btn-primary" type="submit"><i class="fas fa-user-plus mr-1"></i> Create user</button>
@@ -255,7 +260,7 @@ unset($_SESSION['flash']);
                         <?php if ($editing['role'] === 'super_admin'): ?><div class="alert alert-info mb-0">This is the protected owner account. Its role, access, and status cannot be changed here.</div>
                         <?php else: ?><form method="post"><input type="hidden" name="action" value="save"><input type="hidden" name="admin_id" value="<?= (int)$editing['id'] ?>"><?php csrf_field(); ?>
                             <div class="form-row"><div class="form-group col-md-4"><label>Full name</label><input class="form-control" name="full_name" value="<?= htmlspecialchars($editing['full_name']) ?>" required></div><div class="form-group col-md-4"><label>Username</label><input class="form-control" name="username" value="<?= htmlspecialchars($editing['username']) ?>" required></div><div class="form-group col-md-4"><label>Email</label><input class="form-control" type="email" name="email" value="<?= htmlspecialchars($editing['email']) ?>" required></div></div>
-                            <div class="form-group"><label>Account type</label><select class="form-control" name="role"><option value="editor" <?= $editing['role'] === 'editor' ? 'selected' : '' ?>>Editor</option><option value="admin" <?= $editing['role'] === 'admin' ? 'selected' : '' ?>>Admin</option></select></div>
+                            <div class="form-group"><label>Account type</label><select class="form-control" name="role"><option value="editor" <?= $editing['role'] === 'editor' ? 'selected' : '' ?>>Editor</option><option value="admin" <?= $editing['role'] === 'admin' ? 'selected' : '' ?>>Admin</option><option value="manager" <?= $editing['role'] === 'manager' ? 'selected' : '' ?>>Tour Manager (tours only)</option></select></div>
                             <label class="font-weight-bold">Permissions</label><div class="permission-grid mb-3"><?php foreach ($permissions as $permission): ?><label class="permission-item mb-0"><input type="checkbox" name="permissions[]" value="<?= htmlspecialchars($permission['permission_code']) ?>" <?= in_array($permission['permission_code'], $assigned, true) ? 'checked' : '' ?>> <?= htmlspecialchars($permission['label']) ?></label><?php endforeach; ?></div>
                             <button class="btn btn-primary" type="submit"><i class="fas fa-save mr-1"></i> Save user</button>
                         </form><hr>
@@ -265,8 +270,8 @@ unset($_SESSION['flash']);
                     </div></div>
                     <?php endif; ?>
 
-                    <div class="card shadow-sm"><div class="card-header font-weight-bold">Accounts</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody>
-                    <?php foreach ($users as $user): ?><tr class="<?= $user['role'] === 'super_admin' ? 'owner-row' : '' ?>"><td><?= htmlspecialchars($user['full_name']) ?><?= $user['role'] === 'super_admin' ? ' <span class="badge badge-warning">Owner</span>' : '' ?></td><td><?= htmlspecialchars($user['username']) ?></td><td><?= htmlspecialchars($user['email']) ?></td><td><?= htmlspecialchars(ucwords(str_replace('_', ' ', $user['role']))) ?></td><td><span class="badge badge-<?= (int)$user['is_active'] === 1 ? 'success' : 'secondary' ?>"><?= (int)$user['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td><td><?= htmlspecialchars($user['last_login'] ?: 'Never') ?></td><td><?php if ($user['role'] !== 'super_admin'): ?><a class="btn btn-sm btn-outline-primary" href="users?edit=<?= (int)$user['id'] ?>">Manage</a><?php endif; ?></td></tr><?php endforeach; ?>
+                    <div class="card shadow-sm"><div class="card-header font-weight-bold">Accounts <span class="text-muted font-weight-normal small ml-2">Today’s recorded activity (<?= htmlspecialchars(date('Y-m-d')) ?>)</span></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th>Activity today</th><th></th></tr></thead><tbody>
+                    <?php foreach ($users as $user): ?><tr class="<?= $user['role'] === 'super_admin' ? 'owner-row' : '' ?>"><td><?= htmlspecialchars($user['full_name']) ?><?= $user['role'] === 'super_admin' ? ' <span class="badge badge-warning">Owner</span>' : '' ?></td><td><?= htmlspecialchars($user['username']) ?></td><td><?= htmlspecialchars($user['email']) ?></td><td><?= htmlspecialchars(ucwords(str_replace('_', ' ', $user['role']))) ?></td><td><span class="badge badge-<?= (int)$user['is_active'] === 1 ? 'success' : 'secondary' ?>"><?= (int)$user['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td><td><?= htmlspecialchars($user['last_login'] ?: 'Never') ?></td><td><a href="activity?user_id=<?= (int)$user['id'] ?>&date_from=<?= rawurlencode(date('Y-m-d')) ?>&date_to=<?= rawurlencode(date('Y-m-d')) ?>"><?= number_format($todayActivity[(int)$user['id']] ?? 0) ?> activities</a></td><td><?php if ($user['role'] !== 'super_admin'): ?><a class="btn btn-sm btn-outline-primary" href="users?edit=<?= (int)$user['id'] ?>">Manage</a><?php endif; ?></td></tr><?php endforeach; ?>
                     </tbody></table></div></div>
                 </div>
             </div>

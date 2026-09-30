@@ -113,6 +113,7 @@ $testimonials = $db->fetchAll("SELECT * FROM testimonials ORDER BY created_at DE
     </style>
 </head>
 <body id="page-top">
+    <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">

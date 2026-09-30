@@ -11,7 +11,7 @@ CREATE TABLE admin_users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
-    role ENUM('super_admin', 'admin', 'editor') DEFAULT 'admin',
+    role ENUM('super_admin', 'admin', 'editor', 'manager') DEFAULT 'admin',
     last_login DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

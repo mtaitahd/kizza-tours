@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once __DIR__ . '/../includes/image-compressor.php';
@@ -227,6 +227,7 @@ if ($filterCat !== '' && !in_array($filterCat, $catOptions, true)) {
     </style>
 </head>
 <body id="page-top">
+    <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">

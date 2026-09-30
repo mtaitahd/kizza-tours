@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id'])) {
 $db = db();
 require_once __DIR__ . '/../includes/admin-auth.php';
 requireAdminPermission('view_dashboard');
+$tourManager = adminIsTourManager();
+$currentAdmin = adminRequireLogin();
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -28,6 +30,12 @@ $totalTours = $db->fetchOne("SELECT COUNT(*) as count FROM tour_packages WHERE s
 $totalTestimonials = $db->fetchOne("SELECT COUNT(*) as count FROM testimonials WHERE status = 'approved'")['count'] ?? 0;
 $totalGallery = $db->fetchOne("SELECT COUNT(*) as count FROM gallery WHERE status = 'active'")['count'] ?? 0;
 $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHERE status = 'active'")['count'] ?? 0;
+$myTourCreates = 0;
+$myTourUpdates = 0;
+if ($tourManager) {
+    $myTourCreates = (int)($db->fetchOne("SELECT COUNT(*) AS count FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = 'created'", [(int)$currentAdmin['id']])['count'] ?? 0);
+    $myTourUpdates = (int)($db->fetchOne("SELECT COUNT(*) AS count FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = 'updated'", [(int)$currentAdmin['id']])['count'] ?? 0);
+}
 
 ?>
 <!DOCTYPE html>
@@ -67,6 +75,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
     </style>
 </head>
 <body id="page-top">
+    <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
         <!-- Sidebar -->
         <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
@@ -76,6 +85,13 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                 </div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
+            <?php if ($tourManager): ?>
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item active"><a class="nav-link" href="dashboard"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="tours"><i class="fas fa-fw fa-safari"></i><span>Tours</span></a></li>
+            <hr class="sidebar-divider"><li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="logout"><i class="fas fa-fw fa-sign-out-alt"></i><span>Logout</span></a></li>
+            <?php else: ?>
             <hr class="sidebar-divider my-0">
             <li class="nav-item active">
                 <a class="nav-link" href="dashboard">
@@ -178,6 +194,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
             </li>
             <hr class="sidebar-divider d-none d-md-block">
             <div class="version" id="version-ruangadmin">Version 1.0</div>
+            <?php endif; ?>
         </ul>
         <!-- End Sidebar -->
 
@@ -240,6 +257,13 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                         </ol>
                     </div>
 
+                    <?php if ($tourManager): ?>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Tours added by you</div><div class="h3 mb-0"><?= number_format($myTourCreates) ?></div></div></div></div>
+                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Tours updated by you</div><div class="h3 mb-0"><?= number_format($myTourUpdates) ?></div></div></div></div>
+                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Total active tours</div><div class="h3 mb-0"><?= number_format((int)$totalTours) ?></div><a href="tours" class="small">Manage tours</a></div></div></div>
+                    </div>
+                    <?php else: ?>
                     <!-- Stats Cards -->
                     <div class="row mb-4">
                         <div class="col-xl-3 col-md-6 mb-4">
@@ -343,6 +367,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                 </div>
                 <!-- End Main Content -->
