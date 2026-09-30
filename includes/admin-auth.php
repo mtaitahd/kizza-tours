@@ -73,10 +73,14 @@ function adminCan($permissionCode)
     return $permissionCache[$key] = (bool)$row;
 }
 
-function adminIsTourManager()
+function adminIsTourOnlyUser()
 {
     $admin = adminRequireLogin();
-    return $admin && $admin['role'] === 'manager' && $admin['role'] !== 'super_admin';
+    if (!$admin || $admin['role'] === 'super_admin' || !adminCan('manage_tours')) return false;
+    foreach (['manage_bookings','manage_destinations','manage_gallery','manage_testimonials','manage_faqs','manage_inquiries','manage_quotes','manage_pages','manage_media','manage_sitemap','manage_settings'] as $permission) {
+        if (adminCan($permission)) return false;
+    }
+    return true;
 }
 
 function adminSidebarPermissionStyles()
@@ -181,6 +185,7 @@ function adminOwnerMenu()
     $activityActive = $script === 'activity' ? ' active' : '';
     return '<hr class="sidebar-divider"><div class="sidebar-heading">Owner</div>' .
         '<li class="nav-item' . $usersActive . '"><a class="nav-link" href="users"><i class="fas fa-fw fa-users-cog"></i><span>Manage Users</span></a></li>' .
+        '<li class="nav-item"><a class="nav-link" href="activity?module=tours"><i class="fas fa-fw fa-safari"></i><span>Tour Activity</span></a></li>' .
         '<li class="nav-item' . $activityActive . '"><a class="nav-link" href="activity"><i class="fas fa-fw fa-clipboard-list"></i><span>Activity Log</span></a></li>';
 }
 

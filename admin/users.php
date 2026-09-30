@@ -21,13 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $fullName = trim($_POST['full_name'] ?? '');
-            $role = in_array($_POST['role'] ?? '', ['admin', 'editor', 'manager'], true) ? $_POST['role'] : 'editor';
+            $role = in_array($_POST['role'] ?? '', ['admin', 'editor'], true) ? $_POST['role'] : 'editor';
             $password = (string)($_POST['password'] ?? '');
             if ($username === '' || $email === '' || $fullName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new RuntimeException('Enter a name, username, and valid email address.');
             }
             if (strlen($password) < 12) throw new RuntimeException('Use a password with at least 12 characters.');
-            $granted = $role === 'manager' ? ['view_dashboard', 'manage_tours'] : array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
+            $granted = array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
 
             $db->beginTransaction();
             $newId = (int)$db->insert(
@@ -53,11 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $fullName = trim($_POST['full_name'] ?? '');
-            $role = in_array($_POST['role'] ?? '', ['admin', 'editor', 'manager'], true) ? $_POST['role'] : 'editor';
+            $role = in_array($_POST['role'] ?? '', ['admin', 'editor'], true) ? $_POST['role'] : 'editor';
             if ($username === '' || $fullName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new RuntimeException('Enter a name, username, and valid email address.');
             }
-            $granted = $role === 'manager' ? ['view_dashboard', 'manage_tours'] : array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
+            $granted = array_values(array_intersect(array_map('strval', (array)($_POST['permissions'] ?? [])), array_keys($permissionMap)));
             $db->beginTransaction();
             $db->query("UPDATE admin_users SET username = ?, email = ?, full_name = ?, role = ? WHERE id = ?", [$username, $email, $fullName, $role, $targetId]);
             $db->query("DELETE FROM admin_user_permissions WHERE admin_id = ?", [$targetId]);
@@ -250,7 +250,7 @@ unset($_SESSION['flash']);
                     <div class="card shadow-sm mb-4"><div class="card-header font-weight-bold">Add staff user</div><div class="card-body"><form method="post">
                         <?php csrf_field(); ?><input type="hidden" name="action" value="create">
                         <div class="form-row"><div class="form-group col-md-4"><label>Full name</label><input class="form-control" name="full_name" required></div><div class="form-group col-md-4"><label>Username</label><input class="form-control" name="username" required autocomplete="off"></div><div class="form-group col-md-4"><label>Email</label><input class="form-control" type="email" name="email" required></div></div>
-                        <div class="form-row"><div class="form-group col-md-4"><label>Initial password (12+ characters)</label><input class="form-control" type="password" name="password" minlength="12" required autocomplete="new-password"></div><div class="form-group col-md-4"><label>Account type</label><select class="form-control" name="role"><option value="editor">Editor</option><option value="admin">Admin</option><option value="manager">Tour Manager (tours only)</option></select><small class="form-text text-muted">Tour Managers receive dashboard and tour access only.</small></div></div>
+                        <div class="form-row"><div class="form-group col-md-4"><label>Initial password (12+ characters)</label><input class="form-control" type="password" name="password" minlength="12" required autocomplete="new-password"></div><div class="form-group col-md-4"><label>Account type</label><select class="form-control" name="role"><option value="editor">Editor</option><option value="admin">Admin</option></select><small class="form-text text-muted">Permissions below control the sections this user can access.</small></div></div>
                         <label class="font-weight-bold">Permissions</label><div class="permission-grid mb-3">
                         <?php foreach ($permissions as $permission): ?><label class="permission-item mb-0"><input type="checkbox" name="permissions[]" value="<?= htmlspecialchars($permission['permission_code']) ?>" <?= $permission['permission_code'] === 'view_dashboard' ? 'checked' : '' ?>> <?= htmlspecialchars($permission['label']) ?></label><?php endforeach; ?>
                         </div><button class="btn btn-primary" type="submit"><i class="fas fa-user-plus mr-1"></i> Create user</button>
@@ -260,7 +260,7 @@ unset($_SESSION['flash']);
                         <?php if ($editing['role'] === 'super_admin'): ?><div class="alert alert-info mb-0">This is the protected owner account. Its role, access, and status cannot be changed here.</div>
                         <?php else: ?><form method="post"><input type="hidden" name="action" value="save"><input type="hidden" name="admin_id" value="<?= (int)$editing['id'] ?>"><?php csrf_field(); ?>
                             <div class="form-row"><div class="form-group col-md-4"><label>Full name</label><input class="form-control" name="full_name" value="<?= htmlspecialchars($editing['full_name']) ?>" required></div><div class="form-group col-md-4"><label>Username</label><input class="form-control" name="username" value="<?= htmlspecialchars($editing['username']) ?>" required></div><div class="form-group col-md-4"><label>Email</label><input class="form-control" type="email" name="email" value="<?= htmlspecialchars($editing['email']) ?>" required></div></div>
-                            <div class="form-group"><label>Account type</label><select class="form-control" name="role"><option value="editor" <?= $editing['role'] === 'editor' ? 'selected' : '' ?>>Editor</option><option value="admin" <?= $editing['role'] === 'admin' ? 'selected' : '' ?>>Admin</option><option value="manager" <?= $editing['role'] === 'manager' ? 'selected' : '' ?>>Tour Manager (tours only)</option></select></div>
+                            <div class="form-group"><label>Account type</label><select class="form-control" name="role"><option value="editor" <?= $editing['role'] === 'editor' ? 'selected' : '' ?>>Editor</option><option value="admin" <?= $editing['role'] === 'admin' ? 'selected' : '' ?>>Admin</option></select></div>
                             <label class="font-weight-bold">Permissions</label><div class="permission-grid mb-3"><?php foreach ($permissions as $permission): ?><label class="permission-item mb-0"><input type="checkbox" name="permissions[]" value="<?= htmlspecialchars($permission['permission_code']) ?>" <?= in_array($permission['permission_code'], $assigned, true) ? 'checked' : '' ?>> <?= htmlspecialchars($permission['label']) ?></label><?php endforeach; ?></div>
                             <button class="btn btn-primary" type="submit"><i class="fas fa-save mr-1"></i> Save user</button>
                         </form><hr>

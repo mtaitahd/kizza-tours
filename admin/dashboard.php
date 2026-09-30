@@ -12,7 +12,7 @@ if (!isset($_SESSION['admin_id'])) {
 $db = db();
 require_once __DIR__ . '/../includes/admin-auth.php';
 requireAdminPermission('view_dashboard');
-$tourManager = adminIsTourManager();
+$tourOnlyUser = adminIsTourOnlyUser();
 $currentAdmin = adminRequireLogin();
 
 // Ensure profile image is in session
@@ -32,7 +32,7 @@ $totalGallery = $db->fetchOne("SELECT COUNT(*) as count FROM gallery WHERE statu
 $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHERE status = 'active'")['count'] ?? 0;
 $myTourCreates = 0;
 $myTourUpdates = 0;
-if ($tourManager) {
+if ($tourOnlyUser) {
     $myTourCreates = (int)($db->fetchOne("SELECT COUNT(*) AS count FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = 'created'", [(int)$currentAdmin['id']])['count'] ?? 0);
     $myTourUpdates = (int)($db->fetchOne("SELECT COUNT(*) AS count FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = 'updated'", [(int)$currentAdmin['id']])['count'] ?? 0);
 }
@@ -85,7 +85,7 @@ if ($tourManager) {
                 </div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
-            <?php if ($tourManager): ?>
+            <?php if ($tourOnlyUser): ?>
             <hr class="sidebar-divider my-0">
             <li class="nav-item active"><a class="nav-link" href="dashboard"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
             <li class="nav-item"><a class="nav-link" href="tours"><i class="fas fa-fw fa-safari"></i><span>Tours</span></a></li>
@@ -257,7 +257,7 @@ if ($tourManager) {
                         </ol>
                     </div>
 
-                    <?php if ($tourManager): ?>
+                    <?php if ($tourOnlyUser): ?>
                     <div class="row mb-4">
                         <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Tours added by you</div><div class="h3 mb-0"><?= number_format($myTourCreates) ?></div></div></div></div>
                         <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Tours updated by you</div><div class="h3 mb-0"><?= number_format($myTourUpdates) ?></div></div></div></div>

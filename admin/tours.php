@@ -625,7 +625,7 @@ if (!empty($legacyBucket['items'])) {
                 <div class="sidebar-brand-icon"><img src="../assets/images/log.png" alt="Kizza Tours" height="35"></div>
                 <div class="sidebar-brand-text mx-3 text-white">Admin</div>
             </a>
-            <?php if (adminIsTourManager()): ?>
+            <?php if (adminIsTourOnlyUser()): ?>
             <hr class="sidebar-divider my-0"><li class="nav-item"><a class="nav-link" href="dashboard"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
             <li class="nav-item active"><a class="nav-link" href="tours"><i class="fas fa-fw fa-safari"></i><span>Tours</span></a></li>
             <hr class="sidebar-divider"><li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li><li class="nav-item"><a class="nav-link" href="logout"><i class="fas fa-fw fa-sign-out-alt"></i><span>Logout</span></a></li>

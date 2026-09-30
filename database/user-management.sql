@@ -5,9 +5,6 @@ ALTER TABLE admin_users
     ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER role,
     ADD COLUMN session_version INT UNSIGNED NOT NULL DEFAULT 0 AFTER is_active;
 
--- Permit the dedicated tour-only manager account type.
-ALTER TABLE admin_users
-    MODIFY COLUMN role ENUM('super_admin', 'admin', 'editor', 'manager') DEFAULT 'admin';
 
 CREATE TABLE admin_permissions (
     permission_code VARCHAR(64) NOT NULL PRIMARY KEY,
