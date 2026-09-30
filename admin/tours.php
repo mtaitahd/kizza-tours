@@ -455,12 +455,19 @@ if (!empty($legacyBucket['items'])) {
         body.sidebar-toggled .topbar { left: 6.5rem; }
         #content { padding-top: 70px; }
         body.edit-tour-only #container-wrapper > .card.mb-4 { display: none !important; }
+        body.edit-tour-only.modal-open { overflow: auto !important; padding-right: 0 !important; }
+        body.edit-tour-only .modal-backdrop { display: none !important; }
+        body.edit-tour-only #tourModal { top: 70px; left: 14rem; right: 0; bottom: 0; width: auto; height: auto; overflow-y: auto; background: #f8f9fc; z-index: 1010; }
+        body.edit-tour-only #tourModal .modal-dialog { width: calc(100% - 2rem); max-width: 1100px; height: calc(100% - 2rem); max-height: calc(100% - 2rem); margin: 1rem auto; }
+        body.edit-tour-only #tourModal .modal-content { max-height: none; }
+        body.sidebar-toggled.edit-tour-only #tourModal { left: 6.5rem; }
         @media (max-width: 768px) {
             #accordionSidebar { width: 0; }
             #content-wrapper { margin-left: 0; }
             body.sidebar-toggled #content-wrapper { margin-left: 0; }
             .topbar { left: 0; }
             body.sidebar-toggled .topbar { left: 0; }
+            body.edit-tour-only #tourModal, body.sidebar-toggled.edit-tour-only #tourModal { left: 0; top: 70px; }
         }
 
         /* ── Itinerary day location map (Leaflet / OpenStreetMap) ── */
