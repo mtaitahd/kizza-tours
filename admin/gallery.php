@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_gallery');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -36,10 +38,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
                 $converted = convertToWebp($uploadPath);
                 $dbPath = 'uploads/gallery/' . basename($converted);
-                $db->insert(
+                $newId = (int)$db->insert(
                     "INSERT INTO gallery (title, image, category, location, status) VALUES (?, ?, ?, ?, 'active')",
                     [$title, $dbPath, $category, $location]
                 );
+                adminLogActivity('created', 'gallery', $newId, $title !== '' ? $title : basename($dbPath), ['category' => $category]);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image uploaded successfully'];
                 $redirectAnchor = '#recent';
             }
@@ -51,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             unlink('../' . $item['image']);
         }
         $db->query("DELETE FROM gallery WHERE id = ?", [$id]);
+        adminLogActivity('deleted', 'gallery', $id, $item['title'] ?? basename($item['image'] ?? ''));
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image deleted successfully'];
     }
     header('Location: gallery' . $redirectAnchor);
@@ -192,6 +196,7 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

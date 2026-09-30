@@ -10,6 +10,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('view_dashboard');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -137,6 +139,7 @@ $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHE
                     <span>Pages</span>
                 </a>
             </li>
+            <?php echo adminOwnerMenu(); ?>
             <hr class="sidebar-divider">
             <div class="sidebar-heading">Tools</div>
             <li class="nav-item">

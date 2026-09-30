@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_settings');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -57,6 +59,7 @@ if (isset($_POST['ajax_upload']) && isset($_POST['field_key'])) {
             $oldFile = getSetting($key);
             if ($oldFile) deleteFile($oldFile);
             updateSetting($key, $uploaded);
+            adminLogActivity('updated', 'settings', null, 'Site settings', ['changed_field' => $key]);
             echo json_encode(['success' => true, 'url' => SITE_URL . '/' . $uploaded, 'file' => basename($uploaded)]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Upload failed. Check file type (jpg, png, webp, gif, svg, avif) and size (max 10MB).']);
@@ -123,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Settings saved successfully!'];
     }
+    adminLogActivity('updated', 'settings', null, 'Site settings');
     header('Location: settings');
     exit;
 }
@@ -199,6 +203,7 @@ foreach ($textSettings as $key) {
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

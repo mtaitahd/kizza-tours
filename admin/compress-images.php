@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_media');
 
 // Filter passed in from the global header image search (?cat=folder&q=name).
 $filterCat = trim($_GET['cat'] ?? '');
@@ -46,6 +48,7 @@ if ($isAjax) {
                 $selection = isset($_POST['paths']) ? array_values(array_filter(array_map('trim', (array)$_POST['paths']))) : null;
                 $state = $compressor->startJob($selection);
                 $compressor->releaseLock();
+                adminLogActivity('started', 'media', null, 'Image compression job', ['file_count' => count($state['files'] ?? [])]);
                 $respond(['ok' => true, 'state' => compressorTotals($state)]);
             case 'batch':
                 if (!$compressor->acquireLock()) {
@@ -58,6 +61,7 @@ if ($isAjax) {
                 $respond(['ok' => true, 'state' => compressorTotals($compressor->readState())]);
             case 'reset':
                 $compressor->resetState();
+                adminLogActivity('updated', 'media', null, 'Image compression job', ['changed_field' => 'job_state']);
                 $respond(['ok' => true]);
         }
         $respond(['ok' => false, 'error' => 'Unknown action.']);
@@ -82,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'repla
             if (is_uploaded_file($tmp) && $_FILES['replace_image']['error'] === UPLOAD_ERR_OK) {
                 if (move_uploaded_file($tmp, $absPath)) {
                     $replaceMessage = 'Image replaced successfully: ' . htmlspecialchars($relPath);
+                    adminLogActivity('replaced', 'media', null, basename($relPath));
                 }
             }
         }
@@ -247,6 +252,7 @@ if ($filterCat !== '' && !in_array($filterCat, $catOptions, true)) {
             <li class="nav-item active"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <li class="nav-item"><a class="nav-link" href="settings"><i class="fas fa-fw fa-cog"></i><span>Settings</span></a></li>

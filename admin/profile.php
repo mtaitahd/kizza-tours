@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+adminRequireLogin();
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -40,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $db->query("UPDATE admin_users SET full_name = ?, email = ?, username = ? WHERE id = ?",
                     [$fullName, $email, $username, $adminId]);
+                adminLogActivity('updated', 'users', $adminId, $fullName, ['changed_field' => 'profile']);
                 $_SESSION['admin_name'] = $fullName;
                 $flash = '<div class="alert alert-success">Profile updated successfully</div>';
             }
@@ -62,8 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($newPw !== $confirmPw) {
             $flash = '<div class="alert alert-danger">Passwords do not match</div>';
         } else {
-            $db->query("UPDATE admin_users SET password = ? WHERE id = ?",
+            $db->query("UPDATE admin_users SET password = ?, session_version = session_version + 1 WHERE id = ?",
                 [password_hash($newPw, PASSWORD_DEFAULT), $adminId]);
+            $authState = $db->fetchOne("SELECT session_version FROM admin_users WHERE id = ?", [$adminId]);
+            $_SESSION['admin_auth_version'] = (int)($authState['session_version'] ?? $_SESSION['admin_auth_version'] ?? 0);
+            adminLogActivity('password_changed', 'users', $adminId, $_SESSION['admin_name'] ?? null);
             $flash = '<div class="alert alert-success">Password changed successfully</div>';
         }
     }
@@ -84,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         unlink(__DIR__ . '/uploads/profile/' . $old['profile_image']);
                     }
                     $db->query("UPDATE admin_users SET profile_image = ? WHERE id = ?", [$filename, $adminId]);
+                    adminLogActivity('updated', 'users', $adminId, $_SESSION['admin_name'] ?? null, ['changed_field' => 'profile_image']);
                     $_SESSION['admin_image'] = $filename;
                     $flash = '<div class="alert alert-success">Profile image updated</div>';
                 } else {
@@ -103,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unlink(__DIR__ . '/uploads/profile/' . $old['profile_image']);
         }
         $db->query("UPDATE admin_users SET profile_image = NULL WHERE id = ?", [$adminId]);
+        adminLogActivity('updated', 'users', $adminId, $_SESSION['admin_name'] ?? null, ['changed_field' => 'profile_image']);
         $_SESSION['admin_image'] = null;
         $flash = '<div class="alert alert-success">Profile image removed</div>';
     }
@@ -171,6 +179,7 @@ $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item active"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

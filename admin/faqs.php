@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_faqs');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -53,28 +55,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'add') {
-            $db->insert(
+            $newId = (int)$db->insert(
                 "INSERT INTO faq (tour_id, question, answer, category, sort_order, status) VALUES (?, ?, ?, ?, ?, ?)",
                 [$tour_id, $question, $answer, $category, $sort_order, $status]
             );
+            adminLogActivity('created', 'faqs', $newId, $question, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'FAQ added successfully'];
         } else {
             $db->query(
                 "UPDATE faq SET tour_id=?, question=?, answer=?, category=?, sort_order=?, status=? WHERE id=?",
                 [$tour_id, $question, $answer, $category, $sort_order, $status, $id]
             );
+            adminLogActivity('updated', 'faqs', $id, $question, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'FAQ updated successfully'];
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
+        $faq = $db->fetchOne("SELECT question FROM faq WHERE id = ?", [$id]);
         $db->query("DELETE FROM faq WHERE id = ?", [$id]);
+        adminLogActivity('deleted', 'faqs', $id, $faq['question'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'FAQ deleted'];
     } elseif ($action === 'toggle') {
         $id = intval($_POST['id'] ?? 0);
-        $f = $db->fetchOne("SELECT status FROM faq WHERE id = ?", [$id]);
+        $f = $db->fetchOne("SELECT status, question FROM faq WHERE id = ?", [$id]);
         if ($f) {
             $newStatus = $f['status'] === 'active' ? 'inactive' : 'active';
             $db->query("UPDATE faq SET status=? WHERE id=?", [$newStatus, $id]);
+            adminLogActivity('status_changed', 'faqs', $id, $f['question'], ['from_status' => $f['status'], 'to_status' => $newStatus]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'FAQ ' . ($newStatus === 'active' ? 'published' : 'unpublished')];
         }
     } elseif ($action === 'copy_to_tour') {
@@ -89,10 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($source as $s) {
                 $qKey = strtolower(trim($s['question']));
                 if (isset($existing[$qKey])) { $skipped++; continue; }
-                $db->insert(
+                $newFaqId = (int)$db->insert(
                     "INSERT INTO faq (tour_id, question, answer, category, sort_order, status) VALUES (?, ?, ?, ?, ?, ?)",
                     [$tourId, $s['question'], $s['answer'], $s['category'], $s['sort_order'], $s['status']]
                 );
+                adminLogActivity('created', 'faqs', $newFaqId, $s['question'], ['source' => 'copy_to_tour']);
                 $existing[$qKey] = true;
                 $copied++;
             }
@@ -171,6 +179,7 @@ $siteUrl = defined('SITE_URL') ? SITE_URL : '';
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

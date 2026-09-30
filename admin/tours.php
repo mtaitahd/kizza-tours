@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_tours');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -255,6 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
+            adminLogActivity('created', 'tours', $newTourId, $title, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour added successfully'];
             $_SESSION['drafts_cleared'] = true;
         } else {
@@ -328,12 +331,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
+            adminLogActivity('updated', 'tours', $tourId, $title, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
             $_SESSION['drafts_cleared'] = true;
         }
     } elseif ($action === 'delete') {
         $tourId = intval($_POST['tour_id'] ?? 0);
-        $tour = $db->fetchOne("SELECT image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
+        $tour = $db->fetchOne("SELECT title, image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
         if ($tour && $tour['image']) deleteFile($tour['image']);
         if ($tour && $tour['hero_image']) deleteFile($tour['hero_image']);
         foreach ($db->fetchAll("SELECT image_path FROM itinerary_days WHERE tour_id = ?", [$tourId]) as $day) {
@@ -342,6 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try { $db->query("DELETE FROM faq WHERE tour_id = ?", [$tourId]); } catch (\Throwable $ignore) {}
         try { $db->query("DELETE FROM itinerary_days WHERE tour_id = ?", [$tourId]); } catch (\Throwable $ignore) {}
         $db->query("DELETE FROM tour_packages WHERE id = ?", [$tourId]);
+        adminLogActivity('deleted', 'tours', $tourId, $tour['title'] ?? null);
         try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour deleted successfully'];
     }
@@ -636,6 +641,7 @@ if (!empty($legacyBucket['items'])) {
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

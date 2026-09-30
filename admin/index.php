@@ -3,6 +3,7 @@
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once '../includes/mail.php';
+require_once __DIR__ . '/../includes/admin-auth.php';
 session_start();
 
 if (isset($_SESSION['admin_id'])) {
@@ -47,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$username, $username]
                 );
 
-                if ($admin && password_verify($password, $admin['password'])) {
+                if ($admin && (!isset($admin['is_active']) || (int)$admin['is_active'] === 1) && password_verify($password, $admin['password'])) {
                     $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
                     $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
@@ -163,6 +164,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($sessionValid || $dbValid) {
                     $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
+                    if (!$admin || (isset($admin['is_active']) && (int)$admin['is_active'] !== 1)) {
+                        $error = 'This account is inactive. Contact the owner.';
+                        unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_code']);
+                        $admin = null;
+                    }
+
+                    if ($admin) {
 
                     // Clean up OTPs
                     try {
@@ -176,12 +184,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['admin_image'] = $admin['profile_image'] ?? null;
 
                     $db->query("UPDATE admin_users SET last_login = NOW() WHERE id = ?", [$admin['id']]);
+                    $authState = $db->fetchOne("SELECT session_version FROM admin_users WHERE id = ?", [$admin['id']]);
+                    $_SESSION['admin_auth_version'] = (int)($authState['session_version'] ?? 0);
+                    session_regenerate_id(true);
+                    adminLogActivity('login', 'login');
 
                     // Clean up OTP session
                     unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_code']);
 
                     header('Location: dashboard');
                     exit;
+                    }
                 } else {
                     $otpError = 'Invalid or expired verification code';
                     $otpSent = true;
@@ -210,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 $admin = $db->fetchOne("SELECT * FROM admin_users WHERE id = ?", [$adminId]);
-                if ($admin) {
+                if ($admin && (!isset($admin['is_active']) || (int)$admin['is_active'] === 1)) {
                     $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
                     $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 

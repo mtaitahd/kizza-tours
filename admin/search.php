@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+adminRequireLogin();
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -24,28 +26,28 @@ if ($q !== '') {
     $searchTerm = "%$q%";
 
     // Search bookings
-    $results['bookings'] = $db->fetchAll(
+    if (adminCan('manage_bookings')) $results['bookings'] = $db->fetchAll(
         "SELECT * FROM bookings WHERE booking_reference LIKE ? OR full_name LIKE ? OR email LIKE ? OR phone LIKE ? OR status LIKE ? ORDER BY created_at DESC LIMIT 10",
         [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]
     );
     $totalResults += count($results['bookings']);
 
     // Search tours
-    $results['tours'] = $db->fetchAll(
+    if (adminCan('manage_tours')) $results['tours'] = $db->fetchAll(
         "SELECT * FROM tour_packages WHERE title LIKE ? OR slug LIKE ? OR duration LIKE ? OR country LIKE ? OR description LIKE ? ORDER BY title LIMIT 10",
         [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]
     );
     $totalResults += count($results['tours']);
 
     // Search destinations
-    $results['destinations'] = $db->fetchAll(
+    if (adminCan('manage_destinations')) $results['destinations'] = $db->fetchAll(
         "SELECT * FROM destinations WHERE name LIKE ? OR country LIKE ? OR short_description LIKE ? ORDER BY name LIMIT 10",
         [$searchTerm, $searchTerm, $searchTerm]
     );
     $totalResults += count($results['destinations']);
 
     // Search inquiries
-    $results['inquiries'] = $db->fetchAll(
+    if (adminCan('manage_inquiries')) $results['inquiries'] = $db->fetchAll(
         "SELECT * FROM inquiries WHERE full_name LIKE ? OR email LIKE ? OR subject LIKE ? OR message LIKE ? ORDER BY created_at DESC LIMIT 10",
         [$searchTerm, $searchTerm, $searchTerm, $searchTerm]
     );
@@ -111,6 +113,7 @@ if ($q !== '') {
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

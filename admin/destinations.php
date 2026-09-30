@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_destinations');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -40,10 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($action === 'add') {
-            $db->insert(
+            $newId = (int)$db->insert(
                 "INSERT INTO destinations (name, country, slug, description, short_description, image, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [$name, $country, $slug, $description, $short_description, $image, $status]
             );
+            adminLogActivity('created', 'destinations', $newId, $name, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Destination added!'];
         } else {
             if ($image) {
@@ -55,13 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->query("UPDATE destinations SET name=?, country=?, slug=?, description=?, short_description=?, status=? WHERE id=?",
                     [$name, $country, $slug, $description, $short_description, $status, $id]);
             }
+            adminLogActivity('updated', 'destinations', $id, $name, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Destination updated!'];
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
-        $dest = $db->fetchOne("SELECT image FROM destinations WHERE id = ?", [$id]);
+        $dest = $db->fetchOne("SELECT name, image FROM destinations WHERE id = ?", [$id]);
         if ($dest && $dest['image']) deleteFile($dest['image']);
         $db->query("DELETE FROM destinations WHERE id = ?", [$id]);
+        adminLogActivity('deleted', 'destinations', $id, $dest['name'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Destination deleted!'];
     }
     
@@ -126,6 +131,7 @@ $destinations = $db->fetchAll("SELECT * FROM destinations ORDER BY sort_order AS
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

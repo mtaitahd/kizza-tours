@@ -11,6 +11,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_quotes');
 
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
     $row = $db->fetchOne("SELECT profile_image FROM admin_users WHERE id = ?", [$_SESSION['admin_id']]);
@@ -88,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $terms = trim($_POST['terms'] ?? '');
         $validUntil = !empty($_POST['valid_until']) ? $_POST['valid_until'] : null;
 
+        $newQuote = !$quoteId;
         if ($quoteId) {
             $db->query("UPDATE quotes SET tax_percent = ?, discount = ?, notes = ?, terms = ?, valid_until = ? WHERE id = ?",
                 [$taxPercent, $discount, $notes, $terms, $validUntil, $quoteId]);
@@ -102,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     [$sourceId, $quoteNumber, $taxPercent, $discount, $notes, $terms, $validUntil, $_SESSION['admin_id']]);
             }
         }
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
 
         $sortOrder = 0;
         foreach ($items as $item) {
@@ -115,26 +119,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         recalcQuote($db, $quoteId);
+        adminLogActivity($newQuote ? 'created' : 'updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote saved as draft'];
 
     } elseif ($_POST['action'] === 'prepare_quote') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
         $db->query("UPDATE quotes SET status = 'prepared' WHERE id = ?", [$quoteId]);
+        adminLogActivity('status_changed', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['to_status' => 'prepared']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote marked as prepared'];
 
     } elseif ($_POST['action'] === 'confirm_quote') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
         $db->query("UPDATE quotes SET status = 'confirmed' WHERE id = ?", [$quoteId]);
+        adminLogActivity('status_changed', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['to_status' => 'confirmed']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote confirmed'];
 
     } elseif ($_POST['action'] === 'delete_quote') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
-        $quote = $db->fetchOne("SELECT pdf_path FROM quotes WHERE id = ?", [$quoteId]);
+        $quote = $db->fetchOne("SELECT quote_number, pdf_path FROM quotes WHERE id = ?", [$quoteId]);
         if ($quote && !empty($quote['pdf_path'])) {
             $pdfFile = __DIR__ . '/../' . $quote['pdf_path'];
             if (file_exists($pdfFile)) @unlink($pdfFile);
         }
         $db->query("DELETE FROM quotes WHERE id = ?", [$quoteId]);
+        adminLogActivity('deleted', 'quotes', $quoteId, $quote['quote_number'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote deleted'];
 
     } elseif ($_POST['action'] === 'upload_pdf') {
@@ -155,6 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         if (file_exists($oldFile)) @unlink($oldFile);
                     }
                     $db->query("UPDATE quotes SET pdf_path = ? WHERE id = ?", ['uploads/quotes/' . $filename, $quoteId]);
+                    $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+                    adminLogActivity('updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['changed_field' => 'pdf']);
                     $_SESSION['flash'] = ['type' => 'success', 'message' => 'PDF uploaded successfully'];
                 } else {
                     throw new Exception('Failed to upload PDF');
@@ -170,6 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $quoteId = intval($_POST['quote_id'] ?? 0);
         $subject = trim($_POST['email_subject'] ?? '');
         $db->query("UPDATE quotes SET email_subject = ? WHERE id = ?", [$subject, $quoteId]);
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+        adminLogActivity('updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['changed_field' => 'email_subject']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Email subject updated'];
 
     } elseif ($_POST['action'] === 'send_quote_email') {
@@ -177,6 +191,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         try {
             $sent = sendQuoteEmail($quoteId);
             if ($sent) {
+                $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+                adminLogActivity('sent', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote sent via email successfully'];
             } else {
                 $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to send quote email'];
@@ -296,6 +312,7 @@ if (!empty($quoteIds)) {
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

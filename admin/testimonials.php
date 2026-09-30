@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_testimonials');
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -41,10 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($action === 'add') {
-            $db->insert(
+            $newId = (int)$db->insert(
                 "INSERT INTO testimonials (customer_name, customer_title, customer_photo, review, rating, country, tour_package, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [$customer_name, $customer_title, $photo, $review, $rating, $country, $tour_package, $status]
             );
+            adminLogActivity('created', 'testimonials', $newId, $customer_name, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Testimonial added'];
         } else {
             if ($hasNewPhoto) {
@@ -60,13 +63,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$customer_name, $customer_title, $review, $rating, $country, $tour_package, $status, $id]
                 );
             }
+            adminLogActivity('updated', 'testimonials', $id, $customer_name, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Testimonial updated'];
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id'] ?? 0);
-        $t = $db->fetchOne("SELECT customer_photo FROM testimonials WHERE id = ?", [$id]);
+        $t = $db->fetchOne("SELECT customer_name, customer_photo FROM testimonials WHERE id = ?", [$id]);
         if ($t && $t['customer_photo']) deleteFile($t['customer_photo']);
         $db->query("DELETE FROM testimonials WHERE id = ?", [$id]);
+        adminLogActivity('deleted', 'testimonials', $id, $t['customer_name'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Testimonial deleted'];
     }
     
@@ -130,6 +135,7 @@ $testimonials = $db->fetchAll("SELECT * FROM testimonials ORDER BY created_at DE
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

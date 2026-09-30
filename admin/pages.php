@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_pages');
 
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
     $row = $db->fetchOne("SELECT profile_image FROM admin_users WHERE id = ?", [$_SESSION['admin_id']]);
@@ -102,10 +104,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'add') {
-            $db->insert(
+            $newPageId = (int)$db->insert(
                 "INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, image, hero_image, image_2, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [$title, $slug, $content, $meta_title, $meta_description, $meta_keywords, $image, $heroImage, $image2, $status, $sort_order]
             );
+            adminLogActivity('created', 'pages', $newPageId, $title, ['status' => $status]);
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page added successfully', 'preview_url' => SITE_URL . '/' . $slug];
         } else {
@@ -129,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql .= " WHERE id=?";
             $params[] = $pageId;
             $db->query($sql, $params);
+            adminLogActivity('updated', 'pages', $pageId, $title, ['status' => $status]);
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page updated successfully', 'preview_url' => SITE_URL . '/' . $slug];
         }
@@ -139,14 +143,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Sitemap gen error: " . $e->getMessage());
             $ok = false;
         }
+        if ($ok) adminLogActivity('regenerated', 'sitemap', null, 'Sitemap');
         $_SESSION['flash'] = ['type' => $ok ? 'success' : 'danger', 'message' => $ok ? 'Sitemap generated successfully' : 'Sitemap generation failed'];
     } elseif ($action === 'delete') {
         $pageId = intval($_POST['page_id'] ?? 0);
-        $page = $db->fetchOne("SELECT image, hero_image, image_2 FROM pages WHERE id = ?", [$pageId]);
+        $page = $db->fetchOne("SELECT title, image, hero_image, image_2 FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['image']) deleteFile($page['image']);
         if ($page && $page['hero_image']) deleteFile($page['hero_image']);
         if ($page && $page['image_2']) deleteFile($page['image_2']);
         $db->query("DELETE FROM pages WHERE id = ?", [$pageId]);
+        adminLogActivity('deleted', 'pages', $pageId, $page['title'] ?? null);
         try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Page deleted successfully'];
     } elseif ($_POST['action'] === 'remove_image') {
@@ -154,18 +160,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $page = $db->fetchOne("SELECT image FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['image']) deleteFile($page['image']);
         $db->query("UPDATE pages SET image = NULL WHERE id = ?", [$pageId]);
+        adminLogActivity('updated', 'pages', $pageId, null, ['changed_field' => 'image']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image removed'];
     } elseif ($_POST['action'] === 'remove_hero') {
         $pageId = intval($_POST['page_id'] ?? 0);
         $page = $db->fetchOne("SELECT hero_image FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['hero_image']) deleteFile($page['hero_image']);
         $db->query("UPDATE pages SET hero_image = NULL WHERE id = ?", [$pageId]);
+        adminLogActivity('updated', 'pages', $pageId, null, ['changed_field' => 'hero_image']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Hero image removed'];
     } elseif ($_POST['action'] === 'remove_image_2') {
         $pageId = intval($_POST['page_id'] ?? 0);
         $page = $db->fetchOne("SELECT image_2 FROM pages WHERE id = ?", [$pageId]);
         if ($page && $page['image_2']) deleteFile($page['image_2']);
         $db->query("UPDATE pages SET image_2 = NULL WHERE id = ?", [$pageId]);
+        adminLogActivity('updated', 'pages', $pageId, null, ['changed_field' => 'image_2']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Second image removed'];
     }
 
@@ -230,6 +239,7 @@ $pages = $db->fetchAll("SELECT * FROM pages ORDER BY created_at DESC");
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+        <?php echo adminOwnerMenu(); ?>
         <div class="sidebar-heading">Account</div>
         <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
         <hr class="sidebar-divider">

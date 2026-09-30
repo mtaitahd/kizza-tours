@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $db = db();
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_sitemap');
 
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
     $row = $db->fetchOne("SELECT profile_image FROM admin_users WHERE id = ?", [$_SESSION['admin_id']]);
@@ -32,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'regenerate_cache') {
         $ok = seoGenerateSitemap();
+        if ($ok) adminLogActivity('regenerated', 'sitemap', null, 'Sitemap');
         $_SESSION['flash'] = ['type' => $ok ? 'success' : 'danger', 'message' => $ok ? 'Static sitemap.xml regenerated' : 'Regeneration failed'];
     }
     header('Location: sitemap');
@@ -94,6 +97,7 @@ $sitemapUrl = SITE_URL . '/sitemap.xml';
         <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
         <li class="nav-item active"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
         <hr class="sidebar-divider">
+        <?php echo adminOwnerMenu(); ?>
         <div class="sidebar-heading">Account</div>
         <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
         <hr class="sidebar-divider">

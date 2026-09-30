@@ -10,6 +10,8 @@ session_start();
     }
 
     $db = db();
+    require_once __DIR__ . '/../includes/admin-auth.php';
+    requireAdminPermission('manage_inquiries');
 
     if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
         $row = $db->fetchOne("SELECT profile_image FROM admin_users WHERE id = ?", [$_SESSION['admin_id']]);
@@ -79,15 +81,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $id = intval($_POST['id'] ?? 0);
 
     if ($_POST['action'] === 'mark_read') {
+        $before = $db->fetchOne("SELECT status, subject FROM inquiries WHERE id = ?", [$id]);
         $db->query("UPDATE inquiries SET status = 'read' WHERE id = ?", [$id]);
+        if ($before && $before['status'] !== 'read') adminLogActivity('status_changed', 'inquiries', $id, $before['subject'], ['from_status' => $before['status'], 'to_status' => 'read']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Marked as read'];
 
     } elseif ($_POST['action'] === 'mark_replied') {
+        $before = $db->fetchOne("SELECT status, subject FROM inquiries WHERE id = ?", [$id]);
         $db->query("UPDATE inquiries SET status = 'replied' WHERE id = ?", [$id]);
+        if ($before && $before['status'] !== 'replied') adminLogActivity('status_changed', 'inquiries', $id, $before['subject'], ['from_status' => $before['status'], 'to_status' => 'replied']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Updated successfully'];
 
     } elseif ($_POST['action'] === 'delete') {
+        $before = $db->fetchOne("SELECT subject FROM inquiries WHERE id = ?", [$id]);
         $db->query("DELETE FROM inquiries WHERE id = ?", [$id]);
+        adminLogActivity('deleted', 'inquiries', $id, $before['subject'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Deleted successfully'];
 
     } elseif ($_POST['action'] === 'send_reply') {
@@ -110,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             </html>";
             sendMail($inq['email'], $replySubject, $body);
             $db->query("UPDATE inquiries SET status = 'replied' WHERE id = ?", [$inqId]);
+            adminLogActivity('replied', 'inquiries', $inqId, $inq['subject'] ?: $inq['full_name']);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reply sent successfully'];
         } else {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to send reply'];
@@ -128,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $terms = trim($_POST['terms'] ?? '');
         $validUntil = !empty($_POST['valid_until']) ? $_POST['valid_until'] : null;
 
+        $newQuote = !$quoteId;
         if ($quoteId) {
             $db->query("UPDATE quotes SET tax_percent = ?, discount = ?, notes = ?, terms = ?, valid_until = ? WHERE id = ?",
                 [$taxPercent, $discount, $notes, $terms, $validUntil, $quoteId]);
@@ -137,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $quoteId = $db->insert("INSERT INTO quotes (inquiry_id, quote_number, status, tax_percent, discount, notes, terms, valid_until, created_by) VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)",
                 [$inqId, $quoteNumber, $taxPercent, $discount, $notes, $terms, $validUntil, $_SESSION['admin_id']]);
         }
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
 
         $sortOrder = 0;
         foreach ($items as $item) {
@@ -150,26 +161,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         recalcQuote($db, $quoteId);
+        adminLogActivity($newQuote ? 'created' : 'updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? ('Quote #' . $quoteId));
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote saved as draft'];
 
     } elseif ($_POST['action'] === 'prepare_quote') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
         $db->query("UPDATE quotes SET status = 'prepared' WHERE id = ?", [$quoteId]);
+        adminLogActivity('status_changed', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['to_status' => 'prepared']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote marked as prepared'];
 
     } elseif ($_POST['action'] === 'confirm_quote') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
         $db->query("UPDATE quotes SET status = 'confirmed' WHERE id = ?", [$quoteId]);
+        adminLogActivity('status_changed', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['to_status' => 'confirmed']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote confirmed'];
 
     } elseif ($_POST['action'] === 'delete_quote') {
         $quoteId = intval($_POST['quote_id'] ?? 0);
-        $quote = $db->fetchOne("SELECT pdf_path FROM quotes WHERE id = ?", [$quoteId]);
+        $quote = $db->fetchOne("SELECT quote_number, pdf_path FROM quotes WHERE id = ?", [$quoteId]);
         if ($quote && !empty($quote['pdf_path'])) {
             $pdfFile = __DIR__ . '/../' . $quote['pdf_path'];
             if (file_exists($pdfFile)) @unlink($pdfFile);
         }
         $db->query("DELETE FROM quotes WHERE id = ?", [$quoteId]);
+        adminLogActivity('deleted', 'quotes', $quoteId, $quote['quote_number'] ?? null);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote deleted'];
 
     } elseif ($_POST['action'] === 'upload_pdf') {
@@ -190,6 +207,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         if (file_exists($oldFile)) @unlink($oldFile);
                     }
                     $db->query("UPDATE quotes SET pdf_path = ? WHERE id = ?", ['uploads/quotes/' . $filename, $quoteId]);
+                    $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+                    adminLogActivity('updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['changed_field' => 'pdf']);
                     $_SESSION['flash'] = ['type' => 'success', 'message' => 'PDF uploaded successfully'];
                 } else {
                     throw new Exception('Failed to upload PDF');
@@ -205,6 +224,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $quoteId = intval($_POST['quote_id'] ?? 0);
         $subject = trim($_POST['email_subject'] ?? '');
         $db->query("UPDATE quotes SET email_subject = ? WHERE id = ?", [$subject, $quoteId]);
+        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+        adminLogActivity('updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['changed_field' => 'email_subject']);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Email subject updated'];
 
     } elseif ($_POST['action'] === 'send_quote_email') {
@@ -228,23 +249,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             if (file_exists($oldFile)) @unlink($oldFile);
                         }
                         $db->query("UPDATE quotes SET pdf_path = ?, email_subject = ? WHERE id = ?", [$pdfPath, $emailSubject, $quoteId]);
+                        $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+                        adminLogActivity('updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['changed_field' => 'pdf_and_email_subject']);
                     } else {
                         $inquiryId = intval($_POST['inquiry_id'] ?? 0);
                         $quoteNum = 'QT-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
                         $db->query("INSERT INTO quotes (quote_number, inquiry_id, email_subject, pdf_path, status) VALUES (?, ?, ?, ?, 'confirmed')", [$quoteNum, $inquiryId, $emailSubject, $pdfPath]);
                         $quoteId = $db->lastInsertId();
+                        adminLogActivity('created', 'quotes', $quoteId, $quoteNum);
                     }
                 } else {
                     throw new Exception('Failed to upload PDF');
                 }
             } elseif ($quoteId) {
                 $db->query("UPDATE quotes SET email_subject = ? WHERE id = ?", [$emailSubject, $quoteId]);
+                $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+                adminLogActivity('updated', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null, ['changed_field' => 'email_subject']);
             }
 
             if (!$quoteId) throw new Exception('No quote found to send');
 
             $sent = sendQuoteEmail($quoteId);
             if ($sent) {
+                $quoteInfo = $db->fetchOne("SELECT quote_number FROM quotes WHERE id = ?", [$quoteId]);
+                adminLogActivity('sent', 'quotes', $quoteId, $quoteInfo['quote_number'] ?? null);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Quote sent via email successfully'];
             } else {
                 $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to send quote email'];
@@ -256,11 +284,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $ids = $_POST['inquiry_ids'] ?? [];
         if (!empty($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $deletedRows = $db->fetchAll("SELECT id, subject FROM inquiries WHERE id IN ($placeholders)", $ids);
             $db->query("DELETE FROM inquiries WHERE id IN ($placeholders)", $ids);
+            foreach ($deletedRows as $deletedRow) {
+                adminLogActivity('deleted', 'inquiries', (int)$deletedRow['id'], $deletedRow['subject']);
+            }
             $_SESSION['flash'] = ['type' => 'success', 'message' => count($ids) . ' inquiry(ies) deleted successfully'];
         }
     } elseif ($_POST['action'] === 'delete_all') {
+        $inquiryCount = (int)($db->fetchOne("SELECT COUNT(*) AS n FROM inquiries")['n'] ?? 0);
         $db->query("DELETE FROM inquiries");
+        adminLogActivity('deleted', 'inquiries', null, 'All inquiries', ['count' => $inquiryCount]);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'All inquiries deleted successfully'];
     }
 
@@ -360,6 +394,7 @@ if ($quotesTablesOk) {
             <li class="nav-item"><a class="nav-link" href="compress-images"><i class="fas fa-fw fa-compress-alt"></i><span>Compress Images</span></a></li>
             <li class="nav-item"><a class="nav-link" href="sitemap"><i class="fas fa-fw fa-sitemap"></i><span>Sitemap</span></a></li>
             <hr class="sidebar-divider">
+            <?php echo adminOwnerMenu(); ?>
             <div class="sidebar-heading">Account</div>
             <li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <hr class="sidebar-divider">

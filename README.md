@@ -30,6 +30,14 @@ Premium East Africa Tourism Platform.
 | **Meta Keywords** | `safari packing list, what to bring on safari, East Africa safari gear, Tanzania safari essentials, Africa travel tips` |
 | **Meta Description** | `Complete safari packing list for East Africa. Learn what to bring on your Tanzania, Kenya or Uganda safari. Expert tips from Kizza Tours for a comfortable adventure.` |
 
+## Admin Staff and Activity Log
+
+For an existing database, take a backup and apply `database/user-management.sql` once to the database configured for this project. For a new database, first apply `database/schema.sql`, then `database/user-management.sql`. Apply the migration before deploying or opening the updated admin pages. Confirm that the intended owner account has the `super_admin` role and is the only account with that role; the owner account cannot be changed or deactivated through User Management.
+
+The migration adds account activation and session invalidation fields, permission tables, and the append-only activity log. It preserves the access of existing non-owner admin accounts by granting the permissions for current admin modules. New staff accounts receive only the permissions selected by the owner. Activity history starts when the migration and updated PHP code are in use; it does not assign existing content to a user or fabricate past activity.
+
+For rollback, restore the prior PHP files while leaving the new tables and columns in place. Keep the activity table so recorded audit history is retained.
+
 #### Page: Why Choose Kizza Tours
 
 | Field | Example |

@@ -7,6 +7,8 @@ set_time_limit(20);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/mail.php';
+require_once __DIR__ . '/../includes/admin-auth.php';
+requireAdminPermission('manage_settings');
 
 echo "<h2>SMTP Test</h2>";
 
@@ -28,9 +30,11 @@ $result = sendMail('info@kizzatoursandsafaris.com', 'SMTP Test - Kizza Tours', '
 $elapsed = time() - $start;
 
 if ($result) {
+    adminLogActivity('tested', 'settings', null, 'SMTP connection');
     echo "<p style='color:green'><b>Email sent successfully!</b> ({$elapsed}s)</p>";
     echo "<p>Check your inbox AND spam folder.</p>";
 } else {
+    adminLogActivity('tested', 'settings', null, 'SMTP connection', ['result' => 'failed']);
     echo "<p style='color:red'><b>Email FAILED to send.</b> ({$elapsed}s)</p>";
     echo "<p>Check error_log for details.</p>";
 }
