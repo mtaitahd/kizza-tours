@@ -32,9 +32,17 @@ $totalGallery = $db->fetchOne("SELECT COUNT(*) as count FROM gallery WHERE statu
 $totalSubscribers = $db->fetchOne("SELECT COUNT(*) as count FROM subscribers WHERE status = 'active'")['count'] ?? 0;
 $myTourCreates = 0;
 $myTourUpdates = 0;
+$tourActivityFilter = in_array($_GET['tour_activity'] ?? '', ['created', 'updated'], true) ? $_GET['tour_activity'] : '';
+$myTourActivity = [];
 if ($tourOnlyUser) {
     $myTourCreates = (int)($db->fetchOne("SELECT COUNT(*) AS count FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = 'created'", [(int)$currentAdmin['id']])['count'] ?? 0);
     $myTourUpdates = (int)($db->fetchOne("SELECT COUNT(*) AS count FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = 'updated'", [(int)$currentAdmin['id']])['count'] ?? 0);
+    if ($tourActivityFilter !== '') {
+        $myTourActivity = $db->fetchAll(
+            "SELECT action, record_title, created_at, metadata FROM admin_activity_log WHERE actor_admin_id = ? AND module = 'tours' AND action = ? ORDER BY created_at DESC, id DESC LIMIT 100",
+            [(int)$currentAdmin['id'], $tourActivityFilter]
+        );
+    }
 }
 
 ?>
@@ -259,10 +267,16 @@ if ($tourOnlyUser) {
 
                     <?php if ($tourOnlyUser): ?>
                     <div class="row mb-4">
-                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1">Tours added by you</div><div class="h3 mb-0 text-gray-800"><?= number_format($myTourCreates) ?></div></div><i class="fas fa-plus-circle fa-2x text-primary" aria-hidden="true"></i></div></div></div>
-                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1">Tours updated by you</div><div class="h3 mb-0 text-gray-800"><?= number_format($myTourUpdates) ?></div></div><i class="fas fa-edit fa-2x text-success" aria-hidden="true"></i></div></div></div>
+                        <div class="col-md-4 mb-3"><a class="text-decoration-none" href="dashboard?tour_activity=created"><div class="card h-100 border-left-primary"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1 text-primary">Tours added by you</div><div class="h3 mb-0 text-gray-800"><?= number_format($myTourCreates) ?></div><small class="text-muted">Click to see activity</small></div><i class="fas fa-plus-circle fa-2x text-primary" aria-hidden="true"></i></div></div></a></div>
+                        <div class="col-md-4 mb-3"><a class="text-decoration-none" href="dashboard?tour_activity=updated"><div class="card h-100 border-left-success"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1 text-success">Tours updated by you</div><div class="h3 mb-0 text-gray-800"><?= number_format($myTourUpdates) ?></div><small class="text-muted">Click to see activity</small></div><i class="fas fa-edit fa-2x text-success" aria-hidden="true"></i></div></div></a></div>
                         <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1">Total active tours</div><div class="h3 mb-0 text-gray-800"><?= number_format((int)$totalTours) ?></div><a href="tours" class="small">Manage tours</a></div><i class="fas fa-safari fa-2x text-info" aria-hidden="true"></i></div></div></div>
                     </div>
+                    <?php if ($tourActivityFilter !== ''): ?>
+                    <div class="card shadow-sm mb-4"><div class="card-header d-flex justify-content-between align-items-center"><h6 class="m-0 font-weight-bold">Tours <?= $tourActivityFilter === 'created' ? 'added' : 'updated' ?> by you</h6><a class="btn btn-sm btn-outline-secondary" href="dashboard">Close</a></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Date and time</th><th>Tour</th><th>Action</th><th>Status</th></tr></thead><tbody>
+                        <?php if (!$myTourActivity): ?><tr><td colspan="4" class="text-center text-muted py-4">No matching tour activity has been recorded.</td></tr><?php endif; ?>
+                        <?php foreach ($myTourActivity as $activityItem): $activityMeta = json_decode($activityItem['metadata'] ?? '', true) ?: []; ?><tr><td><?= htmlspecialchars(date('d M Y H:i', strtotime($activityItem['created_at']))) ?></td><td><?= htmlspecialchars($activityItem['record_title'] ?: 'Untitled tour') ?></td><td><?= htmlspecialchars(ucfirst($activityItem['action'])) ?></td><td><?= htmlspecialchars($activityMeta['status'] ?? '—') ?></td></tr><?php endforeach; ?>
+                    </tbody></table></div></div>
+                    <?php endif; ?>
                     <?php else: ?>
                     <!-- Stats Cards -->
                     <div class="row mb-4">
