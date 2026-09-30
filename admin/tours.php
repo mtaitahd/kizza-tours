@@ -11,6 +11,7 @@ if (!isset($_SESSION['admin_id'])) {
 $db = db();
 require_once __DIR__ . '/../includes/admin-auth.php';
 requireAdminPermission('manage_tours');
+$editTourId = max(0, (int)($_GET['edit_tour_id'] ?? 0));
 
 // Ensure profile image is in session
 if (empty($_SESSION['admin_image']) && isset($_SESSION['admin_id'])) {
@@ -355,7 +356,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$tours = $db->fetchAll("SELECT p.*, d.name as dest_name FROM tour_packages p LEFT JOIN destinations d ON p.destination_id = d.id ORDER BY p.created_at DESC");
+$tourListSql = "SELECT p.*, d.name as dest_name FROM tour_packages p LEFT JOIN destinations d ON p.destination_id = d.id";
+$tourListParams = [];
+if ($editTourId > 0) {
+    $tourListSql .= " WHERE p.id = ?";
+    $tourListParams[] = $editTourId;
+}
+$tourListSql .= " ORDER BY p.created_at DESC";
+$tours = $db->fetchAll($tourListSql, $tourListParams);
 $destinations = $db->fetchAll("SELECT id, name, country FROM destinations WHERE status = 'active' ORDER BY name");
 
 // Distinct years among tours (from created_at) for the month/year/date filter.
