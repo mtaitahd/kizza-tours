@@ -6,6 +6,13 @@ require_once __DIR__ . '/../includes/admin-auth.php';
 $db = db();
 requireAdminOwner();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'clear_notifications') {
+    verify_csrf();
+    $_SESSION['admin_activity_cleared_id'] = (int)($db->fetchOne("SELECT COALESCE(MAX(id), 0) AS latest_id FROM admin_activity_log")['latest_id'] ?? 0);
+    header('Location: activity?module=tours');
+    exit;
+}
+
 function validActivityDate($value)
 {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$value)) return false;

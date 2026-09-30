@@ -80,6 +80,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        if ($action === 'delete') {
+            $db->beginTransaction();
+            $db->query("DELETE FROM admin_users WHERE id = ?", [$targetId]);
+            $db->commit();
+            adminLogActivity('deleted', 'users', $targetId, $target['full_name']);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'User account deleted.'];
+            header('Location: users');
+            exit;
+        }
+
         if ($action === 'reset_password') {
             $password = (string)($_POST['new_password'] ?? '');
             if (strlen($password) < 12) throw new RuntimeException('Use a password with at least 12 characters.');
@@ -265,7 +275,7 @@ unset($_SESSION['flash']);
                             <button class="btn btn-primary" type="submit"><i class="fas fa-save mr-1"></i> Save user</button>
                         </form><hr>
                         <div class="d-flex flex-wrap align-items-start justify-content-between"><form method="post" class="mb-3"><input type="hidden" name="action" value="toggle"><input type="hidden" name="admin_id" value="<?= (int)$editing['id'] ?>"><?php csrf_field(); ?><button class="btn btn-<?= (int)$editing['is_active'] === 1 ? 'outline-danger' : 'outline-success' ?>" type="submit"><?= (int)$editing['is_active'] === 1 ? 'Deactivate account' : 'Activate account' ?></button></form><form method="post" class="form-inline mb-3"><input type="hidden" name="action" value="reset_password"><input type="hidden" name="admin_id" value="<?= (int)$editing['id'] ?>"><?php csrf_field(); ?><input class="form-control mr-2" type="password" name="new_password" minlength="12" placeholder="New password (12+ chars)" required autocomplete="new-password"><button class="btn btn-outline-primary" type="submit">Reset password</button></form></div>
-                        <p class="small text-muted mb-0">Last login: <?= htmlspecialchars($editing['last_login'] ?: 'Never') ?> · <a href="activity?user_id=<?= (int)$editing['id'] ?>">View this user's activity</a></p>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between"><p class="small text-muted mb-2">Last login: <?= htmlspecialchars($editing['last_login'] ?: 'Never') ?> · <a href="activity?user_id=<?= (int)$editing['id'] ?>">View this user's activity</a></p><form method="post" onsubmit="return confirm('Permanently delete this user account? Their permissions will be removed and their activity history retained.');"><input type="hidden" name="action" value="delete"><input type="hidden" name="admin_id" value="<?= (int)$editing['id'] ?>"><?php csrf_field(); ?><button class="btn btn-outline-danger btn-sm" type="submit"><i class="fas fa-trash-alt mr-1"></i>Delete user</button></form></div>
                         <?php endif; ?>
                     </div></div>
                     <?php endif; ?>
