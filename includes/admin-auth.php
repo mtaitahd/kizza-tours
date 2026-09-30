@@ -182,10 +182,11 @@ function adminOwnerMenu()
     if (!adminIsOwner()) return '';
     $script = basename($_SERVER['SCRIPT_NAME'] ?? '', '.php');
     $usersActive = $script === 'users' ? ' active' : '';
-    $activityActive = $script === 'activity' ? ' active' : '';
+    $activityActive = $script === 'activity' && (($_GET['module'] ?? '') !== 'tours') ? ' active' : '';
+    $tourActivityActive = $script === 'activity' && (($_GET['module'] ?? '') === 'tours') ? ' active' : '';
     return '<hr class="sidebar-divider"><div class="sidebar-heading">Owner</div>' .
         '<li class="nav-item' . $usersActive . '"><a class="nav-link" href="users"><i class="fas fa-fw fa-users-cog"></i><span>Manage Users</span></a></li>' .
-        '<li class="nav-item"><a class="nav-link" href="activity?module=tours"><i class="fas fa-fw fa-safari"></i><span>Tour Activity</span></a></li>' .
+        '<li class="nav-item' . $tourActivityActive . '"><a class="nav-link" href="activity?module=tours"><i class="fas fa-fw fa-safari"></i><span>Tour Activity</span></a></li>' .
         '<li class="nav-item' . $activityActive . '"><a class="nav-link" href="activity"><i class="fas fa-fw fa-clipboard-list"></i><span>Activity Log</span></a></li>';
 }
 
