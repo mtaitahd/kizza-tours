@@ -259,9 +259,9 @@ if ($tourOnlyUser) {
 
                     <?php if ($tourOnlyUser): ?>
                     <div class="row mb-4">
-                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Tours added by you</div><div class="h3 mb-0"><?= number_format($myTourCreates) ?></div></div></div></div>
-                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Tours updated by you</div><div class="h3 mb-0"><?= number_format($myTourUpdates) ?></div></div></div></div>
-                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1">Total active tours</div><div class="h3 mb-0"><?= number_format((int)$totalTours) ?></div><a href="tours" class="small">Manage tours</a></div></div></div>
+                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1">Tours added by you</div><div class="h3 mb-0 text-gray-800"><?= number_format($myTourCreates) ?></div></div><i class="fas fa-plus-circle fa-2x text-primary" aria-hidden="true"></i></div></div></div>
+                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1">Tours updated by you</div><div class="h3 mb-0 text-gray-800"><?= number_format($myTourUpdates) ?></div></div><i class="fas fa-edit fa-2x text-success" aria-hidden="true"></i></div></div></div>
+                        <div class="col-md-4 mb-3"><div class="card h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-xs font-weight-bold text-uppercase mb-1">Total active tours</div><div class="h3 mb-0 text-gray-800"><?= number_format((int)$totalTours) ?></div><a href="tours" class="small">Manage tours</a></div><i class="fas fa-safari fa-2x text-info" aria-hidden="true"></i></div></div></div>
                     </div>
                     <?php else: ?>
                     <!-- Stats Cards -->
