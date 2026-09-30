@@ -800,7 +800,7 @@ if (!empty($legacyBucket['items'])) {
                                                     <a href="../safari/<?php echo htmlspecialchars($tour['slug']); ?>" target="_blank" class="btn btn-sm btn-outline-info mr-1" title="View Tour">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <button class="btn btn-sm btn-outline-secondary mr-1" onclick="editTour(<?php echo htmlspecialchars(json_encode($editTourData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE) ?: '{}'); ?>)">
+                                                    <button class="btn btn-sm btn-outline-secondary mr-1" data-tour-id="<?php echo (int)$tour['id']; ?>" onclick="editTour(<?php echo htmlspecialchars(json_encode($editTourData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE) ?: '{}'); ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this tour?');">
@@ -2091,6 +2091,13 @@ if (!empty($legacyBucket['items'])) {
             });
             filterTable();
         }
+
+        window.addEventListener('load', function () {
+            var editId = new URLSearchParams(window.location.search).get('edit_tour_id');
+            if (!editId) return;
+            var editButton = document.querySelector('[data-tour-id="' + editId.replace(/[^0-9]/g, '') + '"]');
+            if (editButton) editButton.click();
+        });
     </script>
 </body>
 </html>
