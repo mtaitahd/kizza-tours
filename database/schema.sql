@@ -243,7 +243,7 @@ CREATE TABLE IF NOT EXISTS quote_items (
 
 -- Insert Default Admin
 INSERT INTO admin_users (username, email, password, full_name, role)
-VALUES ('admin', 'admin@kizzatours.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrator', 'super_admin');
+VALUES ('admin', 'kizzaadventures@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrator', 'super_admin');
 
 -- Insert Default Settings
 INSERT INTO settings (setting_key, setting_value, setting_group) VALUES
