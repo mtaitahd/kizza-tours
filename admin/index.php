@@ -11,25 +11,48 @@ if (isset($_SESSION['admin_id'])) {
     exit;
 }
 
+$otpEnabled = filter_var(env('ADMIN_OTP_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN);
 $error = '';
 $otpSent = false;
 $otpEmail = '';
 $otpError = '';
 
-// Check if OTP table exists, create if not
-try {
-    $db = db();
-    $db->query("CREATE TABLE IF NOT EXISTS admin_otp (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        admin_id INT NOT NULL,
-        otp_code VARCHAR(6) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        used TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_lookup (admin_id, otp_code, used, expires_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (Exception $e) {
-    error_log("OTP table error: " . $e->getMessage());
+if ($otpEnabled) {
+    // Check if OTP table exists, create if not
+    try {
+        $db = db();
+        $db->query("CREATE TABLE IF NOT EXISTS admin_otp (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            admin_id INT NOT NULL,
+            otp_code VARCHAR(6) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            used TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_lookup (admin_id, otp_code, used, expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {
+        error_log("OTP table error: " . $e->getMessage());
+    }
+}
+
+function completeAdminLogin($db, $admin) {
+    // Complete login
+    $_SESSION['admin_id'] = $admin['id'];
+    $_SESSION['admin_name'] = $admin['full_name'];
+    $_SESSION['admin_role'] = $admin['role'];
+    $_SESSION['admin_image'] = $admin['profile_image'] ?? null;
+
+    $db->query("UPDATE admin_users SET last_login = NOW() WHERE id = ?", [$admin['id']]);
+    $authState = $db->fetchOne("SELECT session_version FROM admin_users WHERE id = ?", [$admin['id']]);
+    $_SESSION['admin_auth_version'] = (int)($authState['session_version'] ?? 0);
+    session_regenerate_id(true);
+    adminLogActivity('login', 'login');
+
+    // Clean up OTP session
+    unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_code']);
+
+    header('Location: dashboard');
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -49,6 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
 
                 if ($admin && (!isset($admin['is_active']) || (int)$admin['is_active'] === 1) && password_verify($password, $admin['password'])) {
+                    if (!$otpEnabled) {
+                        completeAdminLogin($db, $admin);
+                    }
+
                     $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
                     $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
@@ -112,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // STEP 2: OTP Verification
-    if (isset($_POST['login_step']) && $_POST['login_step'] === 'otp') {
+    if ($otpEnabled && ($_POST['login_step'] ?? '') === 'otp') {
         $otpInput = trim($_POST['otp_code'] ?? '');
         $adminId = intval($_SESSION['otp_admin_id'] ?? 0);
 
@@ -165,23 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $db->query("DELETE FROM admin_otp WHERE admin_id = ? AND (expires_at < NOW() OR used = 1)", [$adminId]);
                     } catch (Exception $e) {}
 
-                    // Complete login
-                    $_SESSION['admin_id'] = $admin['id'];
-                    $_SESSION['admin_name'] = $admin['full_name'];
-                    $_SESSION['admin_role'] = $admin['role'];
-                    $_SESSION['admin_image'] = $admin['profile_image'] ?? null;
-
-                    $db->query("UPDATE admin_users SET last_login = NOW() WHERE id = ?", [$admin['id']]);
-                    $authState = $db->fetchOne("SELECT session_version FROM admin_users WHERE id = ?", [$admin['id']]);
-                    $_SESSION['admin_auth_version'] = (int)($authState['session_version'] ?? 0);
-                    session_regenerate_id(true);
-                    adminLogActivity('login', 'login');
-
-                    // Clean up OTP session
-                    unset($_SESSION['otp_admin_id'], $_SESSION['otp_admin_name'], $_SESSION['otp_sent_at'], $_SESSION['otp_code']);
-
-                    header('Location: dashboard');
-                    exit;
+                    completeAdminLogin($db, $admin);
                     }
                 } else {
                     $otpError = 'Invalid or expired verification code';
@@ -198,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Resend OTP
-    if (isset($_POST['login_step']) && $_POST['login_step'] === 'resend') {
+    if ($otpEnabled && ($_POST['login_step'] ?? '') === 'resend') {
         $adminId = intval($_SESSION['otp_admin_id'] ?? 0);
         $lastSent = intval($_SESSION['otp_sent_at'] ?? 0);
 
