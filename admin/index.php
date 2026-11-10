@@ -98,8 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody, '', '', true);
                     if (!$_SESSION['otp_email_sent']) {
                         $otpError = 'The verification email could not be sent. Contact your site administrator.';
-                    } else {
-                        $otpError = 'The verification email could not be sent (' . ($GLOBALS['sendMailError'] ?? 'SMTP error') . '). Please check SMTP settings in Admin > Settings, then use Resend Code.';
                     }
                 } else {
                     $error = 'Invalid username or password';
@@ -255,8 +253,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody, '', '', true);
                     if (!$_SESSION['otp_email_sent']) {
                         $otpError = 'The verification email could not be sent. Contact your site administrator.';
-                    } else {
-                        $otpError = 'The verification email could not be sent (' . ($GLOBALS['sendMailError'] ?? 'SMTP error') . '). Please check SMTP settings in Admin > Settings, then use Resend Code.';
                     }
                 }
             } catch (Exception $e) {
