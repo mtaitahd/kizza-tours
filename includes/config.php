@@ -136,7 +136,7 @@ function loadSettingsCache() {
     }
     try {
         $db = Database::getInstance();
-        $results = $db->fetchAll("SELECT setting_key, setting_value FROM settings");
+        $results = $db->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key <> ?", ['smtp_pass']);
         $settings_cache = [];
         foreach ($results as $row) {
             $settings_cache[$row['setting_key']] = $row['setting_value'];
@@ -151,8 +151,17 @@ function loadSettingsCache() {
 }
 
 function getSetting($key, $default = '') {
-    $cache = loadSettingsCache();
-    $value = $cache[$key] ?? null;
+    if ($key === 'smtp_pass') {
+        // Password changes made directly in the database must take effect immediately.
+        $row = Database::getInstance()->fetchOne(
+            "SELECT setting_value FROM settings WHERE setting_key = ?",
+            [$key]
+        );
+        $value = $row['setting_value'] ?? null;
+    } else {
+        $cache = loadSettingsCache();
+        $value = $cache[$key] ?? null;
+    }
     return ($value !== null && $value !== '') ? $value : $default;
 }
 
