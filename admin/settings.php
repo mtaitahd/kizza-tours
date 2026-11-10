@@ -86,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     foreach ($textFields as $field) {
         if (isset($_POST[$field])) {
-            updateSetting($field, trim($_POST[$field]));
+            $value = $field === 'smtp_pass' ? $_POST[$field] : trim($_POST[$field]);
+            updateSetting($field, $value);
         }
     }
     

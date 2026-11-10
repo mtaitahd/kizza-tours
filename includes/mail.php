@@ -37,7 +37,7 @@ try {
 
 use PHPMailer\PHPMailer\PHPMailer;
 
-function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
+function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '', $useSmtpSender = false) {
     global $phpmailerAvailable, $phpmailerError;
     $GLOBALS['sendMailError'] = '';
     if (!$phpmailerAvailable) {
@@ -85,7 +85,10 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
             ];
         }
 
-        $mail->setFrom(getSetting('site_email', SITE_EMAIL), getSetting('site_name', SITE_NAME));
+        $from = $useSmtpSender && $smtpHost !== '' && $smtpUser !== ''
+            ? $smtpUser
+            : getSetting('site_email', SITE_EMAIL);
+        $mail->setFrom($from, getSetting('site_name', SITE_NAME));
         $mail->addAddress($to);
 
         if (!empty($replyTo)) {

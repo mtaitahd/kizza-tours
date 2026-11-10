@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>";
 
                     $otpSent = true;
-                    $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody);
+                    $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody, '', '', true);
                     if (!$_SESSION['otp_email_sent']) {
                         $otpError = 'The verification email could not be sent. Contact your site administrator.';
                     } else {
@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>";
 
                     $otpSent = true;
-                    $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody);
+                    $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody, '', '', true);
                     if (!$_SESSION['otp_email_sent']) {
                         $otpError = 'The verification email could not be sent. Contact your site administrator.';
                     } else {
