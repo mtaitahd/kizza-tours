@@ -79,9 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $otpEmail = $masked;
 
-                    $otpSent = true;
-
-                    // Build email body for background sending
+                    // Build the verification email
                     $otpBody = "
                     <div style='font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;'>
                         <div style='text-align: center; padding: 20px 0;'>
@@ -96,18 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
 
-                    // Store email info for the background sender (used only as
-                    // a retry fallback if the direct send below fails)
-                    $_SESSION['otp_pending_email'] = $admin['email'];
-                    $_SESSION['otp_pending_otp'] = $otp;
-                    $_SESSION['otp_pending_body'] = $otpBody;
-
-                    // Send the OTP server-side so delivery does not depend on
-                    // the client-side AJAX call, which can be blocked by
-                    // CSP/rewrite issues and fails silently.
-                    $mailOk = sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
-                    if ($mailOk) {
-                        unset($_SESSION['otp_pending_email'], $_SESSION['otp_pending_otp'], $_SESSION['otp_pending_body']);
+                    $otpSent = true;
+                    $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody);
+                    if (!$_SESSION['otp_email_sent']) {
+                        $otpError = 'The verification email could not be sent. Contact your site administrator.';
                     } else {
                         $otpError = 'The verification email could not be sent (' . ($GLOBALS['sendMailError'] ?? 'SMTP error') . '). Please check SMTP settings in Admin > Settings, then use Resend Code.';
                     }
@@ -261,17 +251,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
 
-                    // Store for background sending via AJAX (retry fallback only)
-                    $_SESSION['otp_pending_email'] = $admin['email'];
-                    $_SESSION['otp_pending_otp'] = $otp;
-                    $_SESSION['otp_pending_body'] = $otpBody;
                     $otpSent = true;
-
-                    // Send the OTP server-side so delivery does not depend on
-                    // the client-side AJAX call.
-                    $mailOk = sendMail($admin['email'], "Your Admin Login Code: " . $otp, $otpBody);
-                    if ($mailOk) {
-                        unset($_SESSION['otp_pending_email'], $_SESSION['otp_pending_otp'], $_SESSION['otp_pending_body']);
+                    $_SESSION['otp_email_sent'] = sendMail($admin['email'], 'Your Admin Login Code', $otpBody);
+                    if (!$_SESSION['otp_email_sent']) {
+                        $otpError = 'The verification email could not be sent. Contact your site administrator.';
                     } else {
                         $otpError = 'The verification email could not be sent (' . ($GLOBALS['sendMailError'] ?? 'SMTP error') . '). Please check SMTP settings in Admin > Settings, then use Resend Code.';
                     }
@@ -445,10 +428,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <?php if ($otpSent): ?>
                 <!-- STEP 2: OTP Verification Form -->
-                <div class="success-msg mb-4">
-                    <i class="fas fa-shield-alt me-2"></i>Verification code sent to<br>
-                    <strong><?php echo htmlspecialchars($otpEmail); ?></strong>
-                </div>
+                <?php if (!empty($_SESSION['otp_email_sent'])): ?>
+                    <div class="success-msg mb-4">
+                        <i class="fas fa-shield-alt me-2"></i>Verification code sent to<br>
+                        <strong><?php echo htmlspecialchars($otpEmail); ?></strong>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($otpError): ?>
                     <div class="error-msg mb-4">
@@ -526,20 +511,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        fetch('send-otp-email', { method: 'POST' })
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (!d || d.ok === false && d.msg === 'No pending OTP') return;
-                if (!d || d.ok === false) {
-                    var warn = document.createElement('div');
-                    warn.className = 'error-msg mb-4';
-                    warn.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>The verification email could not be sent. Please use Resend Code or check SMTP settings.';
-                    var card = document.querySelector('.login-card');
-                    if (card) card.insertBefore(warn, card.querySelector('.success-msg') || card.firstChild);
-                }
-            })
-            .catch(function() {});
-
         var boxes = document.querySelectorAll('.otp-box');
         var hidden = document.getElementById('otpHidden');
         var form = document.getElementById('otpForm');

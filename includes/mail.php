@@ -62,7 +62,9 @@ function sendMail($to, $subject, $body, $replyTo = '', $replyToName = '') {
             // Gmail app passwords are stored with formatting spaces (e.g.
             // "abcd efgh ijkl mnop"); the SMTP AUTH handshake must use the
             // plain 16-char value or Gmail rejects it, so strip them here.
-            $mail->Password   = str_replace(' ', '', $smtpPass);
+            $mail->Password   = strcasecmp(trim($smtpHost), 'smtp.gmail.com') === 0
+                ? str_replace(' ', '', $smtpPass)
+                : $smtpPass;
             $mail->Port       = $smtpPort;
             $mail->Timeout    = 15;
             $mail->SMTPKeepAlive = false;
