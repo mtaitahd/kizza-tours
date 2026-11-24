@@ -19,7 +19,7 @@ if (empty($testimonials)) {
         <div class="swiper testimonialSwiper" data-aos="fade-up">
             <div class="swiper-wrapper">
                 <?php foreach ($testimonials as $t): 
-                    $photo = !empty($t['customer_photo']) && file_exists(BASE_PATH . $t['customer_photo']) ? SITE_URL . '/' . $t['customer_photo'] : 'assets/images/placeholder.svg';
+                    $photo = resolveImageUrl($t['customer_photo'] ?? '', SITE_URL . '/assets/images/placeholder.svg');
                     $title = htmlspecialchars($t['customer_title'] ?: '');
                     $rating = intval($t['rating'] ?? 5);
                 ?>
@@ -32,7 +32,7 @@ if (empty($testimonials)) {
                         </div>
                         <div class="testimonial-text"><?php echo $t['review']; ?></div>
                         <div class="testimonial-author">
-                            <img src="<?php echo $photo; ?>" alt="<?php echo htmlspecialchars($t['customer_name']); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+                            <img src="<?php echo $photo; ?>" alt="<?php echo htmlspecialchars($t['customer_name']); ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                             <div class="testimonial-author-info">
                                 <h6><?php echo htmlspecialchars($t['customer_name']); ?></h6>
                                 <span><?php echo $title; ?></span>

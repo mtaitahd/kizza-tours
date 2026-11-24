@@ -55,7 +55,7 @@ foreach ([1, 2, 3] as $oi) {
 }
 if (!$overviewImagesSet) {
     $mainImgRaw = trim($tour['image'] ?? '');
-    if ($mainImgRaw !== '' && file_exists(BASE_PATH . $mainImgRaw)) {
+    if (resolveImageUrl($mainImgRaw) !== '') {
         $rawCandidates[] = $mainImgRaw;
     }
     foreach (array_filter(array_map('trim', explode(',', $tour['gallery'] ?? ''))) as $gi) {
@@ -66,9 +66,8 @@ if (!$overviewImagesSet) {
 $collageUrls = [];
 $seenUrls = [];
 foreach ($rawCandidates as $rc) {
-    $clean = ltrim($rc, '/');
-    if (!file_exists(BASE_PATH . $clean)) continue;
-    $url = SITE_URL . '/' . $clean;
+    $url = resolveImageUrl($rc);
+    if ($url === '') continue;
     if (isset($seenUrls[$url])) continue;
     $seenUrls[$url] = true;
     $collageUrls[] = $url;
@@ -113,7 +112,7 @@ $overviewToggleId = 'tour-overview-toggle';
                     : "onerror=\"this.closest('.tour-overview__frame').style.display='none';\"";
             ?>
             <div class="tour-overview__frame <?php echo $imgClass; ?>">
-                <img src="<?php echo htmlspecialchars($ci['src']); ?>" alt="<?php echo htmlspecialchars($ci['alt']); ?>" loading="lazy" <?php echo $onError; ?>>
+                <img src="<?php echo htmlspecialchars($ci['src']); ?>" alt="<?php echo htmlspecialchars($ci['alt']); ?>" loading="lazy" decoding="async" <?php echo $onError; ?>>
             </div>
             <?php endforeach; ?>
         </div>

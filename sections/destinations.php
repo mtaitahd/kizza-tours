@@ -26,11 +26,11 @@ if (empty($destinations)) {
         </div>
         <div class="destination-grid">
             <?php $delay = 100; foreach ($destinations as $dest): 
-                $img = !empty($dest['image']) && file_exists(BASE_PATH . $dest['image']) ? SITE_URL . '/' . $dest['image'] : 'assets/images/placeholder.svg';
+                $img = resolveImageUrl($dest['image'] ?? '', SITE_URL . '/assets/images/placeholder.svg');
                 $countryImg = strtolower($dest['country']);
             ?>
             <div class="destination-card" data-aos="fade-up" data-aos-delay="<?php echo $delay; ?>">
-                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($dest['name']); ?>" class="destination-card-image" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+                <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($dest['name']); ?>" class="destination-card-image" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                 <div class="destination-card-overlay">
                     <h3 class="destination-card-title"><?php echo htmlspecialchars($dest['name']); ?></h3>
                     <span class="destination-card-country"><?php echo htmlspecialchars($dest['country']); ?></span>

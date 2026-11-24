@@ -77,8 +77,9 @@ $heroBgCandidates = [
 ];
 $heroBgUrl = '';
 foreach ($heroBgCandidates as $candidate) {
-    if ($candidate && file_exists(BASE_PATH . $candidate)) {
-        $heroBgUrl = SITE_URL . '/' . htmlspecialchars($candidate);
+    $candidateUrl = resolveImageUrl($candidate);
+    if ($candidateUrl !== '') {
+        $heroBgUrl = htmlspecialchars($candidateUrl, ENT_QUOTES);
         break;
     }
 }

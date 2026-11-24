@@ -130,13 +130,11 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
-    <!-- Preload LCP hero poster (with responsive srcset) -->
-    <link rel="preload" fetchpriority="high" as="image" href="<?php echo getMediaUrl('hero_poster', 'images/hero-poster.jpg'); ?>" imagesrcset="<?php
-        $posterUrl = getMediaUrl('hero_poster', 'images/hero-poster.jpg');
-        $posterBase = preg_replace('/\.(webp|jpg|jpeg|png)$/', '', $posterUrl);
-        echo "$posterBase-480w.webp 480w, $posterBase-768w.webp 768w, $posterBase-1200w.webp 1200w, $posterBase-1920w.webp 1920w";
-    ?>">
-
+    <?php if (($pageSeo['pageKey'] ?? '') === 'home'):
+        $heroPreload = getMediaUrl('hero_poster', 'images/hero-poster.jpg');
+        if ($heroPreload !== ''): ?>
+    <link rel="preload" fetchpriority="high" as="image" href="<?php echo htmlspecialchars($heroPreload, ENT_QUOTES); ?>">
+    <?php endif; endif; ?>
     <!-- Fonts (non-blocking) -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap"></noscript>
@@ -174,7 +172,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
     <!-- Full Stylesheet (critical) -->
-    <link rel="stylesheet" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=12">
+    <link rel="stylesheet" href="<?php echo ASSETS_PATH; ?>css/style.min.css?v=14">
 
     <!-- Font Awesome (non-blocking) -->
     <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
@@ -247,7 +245,7 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
 <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <img src="<?php echo ASSETS_PATH; ?>images/navimage.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
+            <img src="<?php echo SITE_URL; ?>/assets/images/log.png" alt="Kizza Tours &amp; Safaris" fetchpriority="high">
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

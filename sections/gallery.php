@@ -28,13 +28,13 @@ if (empty($galleryItems)) {
         </div>
         <div class="gallery-grid" id="galleryGrid">
             <?php foreach ($galleryItems as $idx => $item): 
-                $img = !empty($item['image']) && file_exists(BASE_PATH . $item['image']) ? SITE_URL . '/' . $item['image'] : 'assets/images/placeholder.svg';
+                $img = resolveImageUrl($item['image'] ?? '', SITE_URL . '/assets/images/placeholder.svg');
                 $title = htmlspecialchars($item['title'] ?: 'Untitled');
                 $location = htmlspecialchars($item['location'] ?: 'East Africa');
             ?>
             <div class="gallery-item" data-category="<?php echo htmlspecialchars($item['category'] ?: 'wildlife'); ?>" data-aos="zoom-in" data-aos-delay="<?php echo $idx * 100; ?>">
                 <a href="<?php echo $img; ?>" data-lightbox="gallery" data-title="<?php echo $title; ?>">
-                    <img src="<?php echo $img; ?>" alt="<?php echo $title; ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+                    <img src="<?php echo $img; ?>" alt="<?php echo $title; ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                     <div class="gallery-item-overlay">
                         <h5><?php echo $title; ?></h5>
                         <span><?php echo $location; ?></span>

@@ -193,10 +193,40 @@ function updateSetting($key, $value) {
     }
 }
 
+function resolveImageUrl($value, $fallback = '') {
+    $value = trim((string)$value);
+    if (preg_match('~^https?://~i', $value)) {
+        $parts = parse_url($value);
+        if (strcasecmp($parts['host'] ?? '', parse_url(SITE_URL, PHP_URL_HOST) ?? '') !== 0) {
+            return $value;
+        }
+        $value = rawurldecode($parts['path'] ?? '');
+    }
+    $value = str_replace('\\', '/', $value);
+    $value = ltrim($value, '/');
+    // Legacy uploads may include a local project prefix or an absolute server path.
+    foreach (['uploads/', 'assets/'] as $prefix) {
+        $position = strpos($value, $prefix);
+        if ($position !== false) {
+            $value = substr($value, $position);
+            break;
+        }
+    }
+    if ($value !== '' && strpos($value, '..') === false && is_file(BASE_PATH . $value)) {
+        $smaller = preg_replace('/\.(?:webp|jpe?g|png)$/i', '-1200w.webp', $value);
+        if ($smaller !== $value && is_file(BASE_PATH . $smaller)) {
+            $value = $smaller;
+        }
+        return SITE_URL . '/' . implode('/', array_map('rawurlencode', explode('/', $value)));
+    }
+    return $fallback;
+}
+
 function getMediaUrl($key, $fallback = '') {
     $value = getSetting($key, '');
-    if (!empty($value) && file_exists(BASE_PATH . $value)) {
-        return SITE_URL . '/' . $value;
+    $url = resolveImageUrl($value);
+    if ($url !== '') {
+        return $url;
     }
     if (!empty($fallback)) {
         if (strpos($fallback, 'http://') === 0 || strpos($fallback, 'https://') === 0) {
