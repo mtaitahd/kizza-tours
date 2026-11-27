@@ -6,6 +6,7 @@
     let busy = false, running = false, started = false, stage = 'tours', cursor = 0, target = 0, job = '';
     let audit = [], totals = {}, resultRows = [];
     let restoreJob = config.restoreJob || '';
+    let serverJob = config.serverJob || '';
     const labels = {healthy:'Available', failed:'Failed', recoverable:'Path can be repaired', optimize:'WebP conversion available', review:'Needs review', success:'Success'};
     function node(tag, text, cls) {
         const item = document.createElement(tag);
@@ -21,6 +22,8 @@
         el('restoreStart').disabled = busy || started;
         el('restoreFile').disabled = busy || started;
         el('restoreStart').textContent = restoreJob ? 'Resume Backup Restore' : 'Restore Images from ZIP';
+        el('serverStart').disabled = busy || started;
+        el('serverStart').textContent = serverJob ? 'Resume Server Image Repair' : 'Fix Images Already on Server';
         document.querySelectorAll('[data-fix-tour]').forEach(button => { button.disabled = busy || started; });
     }
     async function request(data) {
@@ -184,11 +187,70 @@
             await runRepair(0, true);
         }
     }
+    async function verifyServerImages(entries) {
+        let failed = 0, review = 0;
+        for (let i = 0; i < entries.length; i += 4) {
+            await Promise.all(entries.slice(i, i + 4).map(async entry => {
+                if (entry.field !== 'existing image') return;
+                const path = entry.new_path || entry.path;
+                const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15000);
+                try {
+                    const url = config.siteUrl + '/' + path.split('/').map(encodeURIComponent).join('/') + '?image_check=' + Date.now();
+                    const response = await fetch(url, {method:'HEAD', credentials:'same-origin', cache:'no-store', signal:controller.signal});
+                    const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+                    if (response.status === 405 || response.status === 501) {
+                        review++; if (entry.status === 'success') entry.status = 'review';
+                        entry.message += ' Server does not support HEAD verification; open the image URL to check it.';
+                    } else if (!response.ok || !type.startsWith('image/')) {
+                        failed++; entry.status = 'failed';
+                        entry.message += ' Browser HTTP check: ' + response.status + ', Content-Type: ' + (type || 'missing') + '. ' + (response.status === 403 ? 'Server access denied; check ownership, hotlink protection or hosting rules.' : 'Check the public image URL and document root.');
+                    } else if (path.toLowerCase().endsWith('.webp') && type !== 'image/webp') {
+                        review++; if (entry.status === 'success') entry.status = 'review';
+                        entry.message += ' HTTP ' + response.status + ' but WebP Content-Type is ' + type + '; check server MIME configuration.';
+                    } else { entry.message += ' Browser HTTP ' + response.status + ', ' + type + '.'; }
+                } catch (error) {
+                    review++; if (entry.status === 'success') entry.status = 'review';
+                    entry.message += ' HTTP verification could not finish: ' + error.message;
+                } finally { clearTimeout(timeout); }
+            }));
+        }
+        return {failed, review};
+    }
+    async function repairServerImages() {
+        if (busy || started) return;
+        busy = true; controls(); let completed = false, httpFailed = 0, httpReview = 0;
+        try {
+            if (!serverJob) {
+                resultRows = []; el('resultRows').replaceChildren(); el('emptyResults').hidden = false;
+                el('serverStatus').textContent = 'Finding existing images and checking media folder permissions...';
+                const start = await request({action:'server_start'}); serverJob = start.job;
+                appendResults(start.entries);
+                const d = start.diagnostics;
+                el('serverDiagnostics').textContent = 'Application root: ' + d.application_root + '\nUploads folder checked: ' + d.uploads_folder + '\nDocument root: ' + d.document_root + '\nImages found: ' + d.files_found + '\nFolders checked: ' + d.folders_checked + '\nFolder permissions fixed: ' + d.folder_permissions_fixed + (d.warning ? '\nWARNING: ' + d.warning : '');
+            }
+            while (true) {
+                const reply = await request({action:'server_batch', job:serverJob});
+                el('serverStatus').textContent = 'Checking public image access... ' + reply.result.cursor + '/' + reply.result.total;
+                const http = await verifyServerImages(reply.result.entries);
+                httpFailed += http.failed; httpReview += http.review;
+                appendResults(reply.result.entries);
+                const t = reply.totals;
+                el('serverStatus').textContent = 'Server images checked: ' + reply.result.cursor + '/' + reply.result.total + ' | File permissions fixed: ' + t.permissions_fixed + ' | Formats validated: ' + t.valid + ' | File errors: ' + t.failed + ' | HTTP failures this run: ' + httpFailed + ' | HTTP checks needing review: ' + httpReview;
+                if (reply.result.done) { serverJob = ''; completed = true; break; }
+            }
+        } catch (error) { el('serverStatus').textContent = 'Server image repair stopped: ' + error.message + ' Retry to continue.'; }
+        finally { busy = false; controls(); }
+        if (completed) {
+            el('serverStatus').textContent += '. Server scan complete. Repairing package image references next.';
+            await runRepair(0, true);
+        }
+    }
     el('scan').addEventListener('click', () => scanImages());
     el('start').addEventListener('click', () => runRepair());
     el('stop').addEventListener('click', () => { running = false; el('stop').disabled = true; });
     el('showAll').addEventListener('change', renderAudit);
     el('resultFilter').addEventListener('change', renderResults);
     el('restoreStart').addEventListener('click', restoreBackup);
+    el('serverStart').addEventListener('click', repairServerImages);
     scanImages();
 })();

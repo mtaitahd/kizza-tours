@@ -9,7 +9,7 @@ class Element {
     addEventListener(name, handler) { this.listeners[name] = handler; }
 }
 async function main() {
-    const ids = new Map(), nodes = [], requests = [];
+    const ids = new Map(), nodes = [], requests = [], headRequests = [];
     const get = id => { if (!ids.has(id)) ids.set(id, new Element()); return ids.get(id); };
     get('resultFilter').value = 'all';
     const initialTour = {
@@ -22,6 +22,11 @@ async function main() {
         document:{getElementById:get, createElement:tag=>{const n = new Element(tag);nodes.push(n);return n;},querySelectorAll:()=>nodes.filter(n=>n.dataset.fixTour)},
         URLSearchParams, AbortController, FormData, setTimeout, clearTimeout,
         fetch:async (url, opts) => {
+            if (opts.method === 'HEAD') {
+                headRequests.push(url);
+                const denied = url.includes('denied.webp');
+                return {ok:!denied, status:denied?403:200, headers:{get:()=>denied?'text/html':'image/webp'}};
+            }
             requests.push(Object.fromEntries(opts.body));
             assert.equal(url, 'fix-tour-images.php');
             const next = replies.shift(); assert.ok(next, 'Unexpected request');
@@ -67,6 +72,22 @@ async function main() {
     assert.match(get('restoreStatus').textContent, /Restored: 1/);
     assert.equal(get('imageFailed').textContent, '0');
     assert.equal(get('resultRows').children.length, 2, 'Keep backup and repair outcomes visible together');
-    console.log('Image health UI checks passed: audit counts, single-tour fix, success/failure filters, errors and ZIP restore followed by bulk repair.');
+    replies.push(
+        {ok:true,job:'server-job',entries:[],diagnostics:{application_root:'/site/',uploads_folder:'/site/uploads',document_root:'/site',files_found:2,folders_checked:2,folder_permissions_fixed:1}},
+        {ok:true,result:{cursor:2,total:2,done:true,entries:[
+            {table:'server',id:1,title:'good.webp',field:'existing image',path:'uploads/tours/good.webp',new_path:'uploads/tours/good.webp',status:'success',message:'Permissions fixed.'},
+            {table:'server',id:2,title:'denied.webp',field:'existing image',path:'uploads/tours/denied.webp',new_path:'uploads/tours/denied.webp',status:'success',message:'Permissions checked.'}
+        ]},totals:{permissions_fixed:1,valid:2,failed:0}},
+        {ok:true,stage:'gallery',cursor:0,job:'repair-after-server',done:true,backup:'backup.jsonl',result:{checked:1,updated:0,converted:0,success:1,failed:0,review:0,entries:[]}},
+        {ok:true,rows:[{...initialTour,counts:{healthy:1,failed:0,recoverable:0,optimize:0,review:0}}],cursor:4,done:true}
+    );
+    await get('serverStart').listeners.click();
+    assert.deepEqual(requests.slice(-4).map(r=>r.action), ['server_start','server_batch','start','audit'], 'Existing server images are processed and package paths repaired without uploading');
+    assert.equal(headRequests.length, 2, 'Verify public image access, not only local metadata');
+    assert.match(get('serverStatus').textContent, /HTTP failures this run: 1/);
+    assert.match(get('serverDiagnostics').textContent, /\/site\/uploads/);
+    assert.equal(get('resultRows').children[1].dataset.status, 'failed', 'HTTP 403 is a failed image result');
+    assert.match(get('resultRows').children[1].children[2].children[0].textContent, /403/);
+    console.log('Image health UI checks passed: audit, per-tour repair, ZIP recovery, existing-server repair, public HTTP 403 detection and rescan.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

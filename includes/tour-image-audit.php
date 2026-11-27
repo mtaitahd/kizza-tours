@@ -24,6 +24,8 @@ class TourImageAudit
         }
         $entry['resolved'] = $found;
         if (!is_readable($this->root . $found)) return array_replace($entry, ['status' => 'failed', 'message' => 'File exists but PHP cannot read it. Check file permissions.']);
+        $permissions = @fileperms($this->root . $found);
+        if (PHP_OS_FAMILY !== 'Windows' && $permissions !== false && ($permissions & 0044) !== 0044) return array_replace($entry, ['status' => 'recoverable', 'message' => 'Image exists with restricted permissions ' . sprintf('%04o', $permissions & 0777) . '. Use Fix Images Already on Server to set public image permissions to 0644.']);
         $info = @getimagesize($this->root . $found);
         if (!$info && strtolower(pathinfo($found, PATHINFO_EXTENSION)) !== 'svg') return array_replace($entry, ['status' => 'failed', 'message' => 'Unreadable, damaged or unsupported image format. Replace or convert the file.']);
         if ($this->paths->normalize($value) !== $found) return array_replace($entry, ['status' => 'recoverable', 'message' => 'Stored path differs from the existing image. Fix can restore this reference.']);
