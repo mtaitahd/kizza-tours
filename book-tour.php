@@ -214,7 +214,7 @@ $heroBg = $heroBgImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 
                 <div class="col-md-4" data-aos="fade-up">
                     <div class="package-card">
                         <div class="package-card-image">
-                            <img src="<?php echo !empty($pkg['image']) && file_exists(BASE_PATH . $pkg['image']) ? SITE_URL . '/' . $pkg['image'] : 'assets/images/placeholder.svg'; ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy">
+                            <img src="<?php echo resolveImageUrl($pkg['image'], SITE_URL . '/assets/images/placeholder.svg'); ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy">
                         </div>
                         <div class="package-card-body">
                             <div class="package-card-meta">

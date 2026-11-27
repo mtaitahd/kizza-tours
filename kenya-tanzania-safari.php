@@ -108,9 +108,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
                         <?php
                             $rImg = '';
                             $rt = $r['title'] ?? '';
-                            if (!empty($r['image']) && file_exists(BASE_PATH . $r['image'])) {
-                                $rImg = SITE_URL . '/' . $r['image'];
-                            }
+                            $rImg = resolveImageUrl($r['image']);
                             if (empty($rImg)) {
                                 $ik = '';
                                 if (stripos($rt, 'maasai mara') !== false) $ik = 'maasai_mara_image';
@@ -125,7 +123,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
                             }
                             if (empty($rImg)) $rImg = 'assets/images/placeholder.svg';
                         ?>
-                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'"></div>
+                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'"></div>
                     <div class="package-card-body">
                         <h3 class="package-card-title" style="font-size: 1.1rem;"><?php echo htmlspecialchars($r['title']); ?></h3>
                         <p style="color: var(--text-light); font-size: 0.85rem;"><?php echo htmlspecialchars(substr($r['description'] ?? '', 0, 80)) . '...'; ?></p>
@@ -140,7 +138,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
 
 <?php $ctaBg = getMediaUrl('cta_background', 'images/african-sunset.jpg'); ?>
 <section class="cta-section">
-    <img src="<?php echo $ctaBg; ?>" alt="" class="cta-bg" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+    <img src="<?php echo $ctaBg; ?>" alt="" class="cta-bg" loading="lazy" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
     <div class="cta-overlay"></div>
     <div class="cta-content" data-aos="zoom-in">
         <span class="section-subtitle"><?php echo __('tour_ke_tz_cta_subtitle'); ?></span>

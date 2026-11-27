@@ -69,9 +69,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
                         <?php
                             $pkgImg = '';
                             $pt = $pkg['title'] ?? '';
-                            if (!empty($pkg['image']) && file_exists(BASE_PATH . $pkg['image'])) {
-                                $pkgImg = SITE_URL . '/' . $pkg['image'];
-                            }
+                            $pkgImg = resolveImageUrl($pkg['image']);
                             if (empty($pkgImg)) {
                                 $imgKey = '';
                                 if (stripos($pt, 'maasai mara') !== false) $imgKey = 'maasai_mara_image';
@@ -86,7 +84,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
                             }
                             if (empty($pkgImg)) $pkgImg = 'assets/images/placeholder.svg';
                         ?>
-                            <img src="<?php echo $pkgImg; ?>" alt="<?php echo htmlspecialchars($pt); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+                            <img src="<?php echo $pkgImg; ?>" alt="<?php echo htmlspecialchars($pt); ?>" loading="lazy" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                         </div>
                         <div class="package-card-body">
                             <div class="package-card-meta">
@@ -226,9 +224,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
                         <?php
                             $rImg = '';
                             $rt = $r['title'] ?? '';
-                            if (!empty($r['image']) && file_exists(BASE_PATH . $r['image'])) {
-                                $rImg = SITE_URL . '/' . $r['image'];
-                            }
+                            $rImg = resolveImageUrl($r['image']);
                             if (empty($rImg)) {
                                 $ik = '';
                                 if (stripos($rt, 'maasai mara') !== false) $ik = 'maasai_mara_image';
@@ -243,7 +239,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
                             }
                             if (empty($rImg)) $rImg = 'assets/images/placeholder.svg';
                         ?>
-                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt); ?>" loading="lazy" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                     </div>
                     <div class="package-card-body">
                         <h3 class="package-card-title" style="font-size: 1.1rem;"><?php echo htmlspecialchars($r['title']); ?></h3>
@@ -259,7 +255,7 @@ $heroBg = $heroImg ? "background: linear-gradient(135deg, rgba(10,37,64,0.85) 0%
 
 <?php $ctaBg = getMediaUrl('cta_background', 'images/african-sunset.jpg'); ?>
 <section class="cta-section">
-    <img src="<?php echo $ctaBg; ?>" alt="" class="cta-bg" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+    <img src="<?php echo $ctaBg; ?>" alt="" class="cta-bg" loading="lazy" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
     <div class="cta-overlay"></div>
     <div class="cta-content" data-aos="zoom-in">
         <span class="section-subtitle"><?php echo __('tour_tz_cta_subtitle'); ?></span>

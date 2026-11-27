@@ -116,7 +116,7 @@ $pageSeo['robots'] = 'noindex, nofollow';
             <?php else: ?>
             <div class="row g-4">
                 <?php foreach ($packages as $i => $pkg):
-                    $pkgImg = !empty($pkg['image']) && file_exists(BASE_PATH . $pkg['image']) ? SITE_URL . '/' . $pkg['image'] : ASSETS_PATH . 'images/placeholder.svg';
+                    $pkgImg = resolveImageUrl($pkg['image'], SITE_URL . '/assets/images/placeholder.svg');
                 ?>
                 <div class="col-lg-4 col-md-6">
                     <div class="package-card">

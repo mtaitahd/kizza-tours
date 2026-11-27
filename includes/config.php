@@ -202,7 +202,8 @@ function resolveImageUrl($value, $fallback = '') {
         }
         $value = rawurldecode($parts['path'] ?? '');
     }
-    $value = str_replace('\\', '/', $value);
+    $value = rawurldecode(str_replace('\\', '/', $value));
+    $value = preg_split('/[?#]/', $value, 2)[0];
     $value = ltrim($value, '/');
     // Legacy uploads may include a local project prefix or an absolute server path.
     foreach (['uploads/', 'assets/'] as $prefix) {
@@ -212,12 +213,14 @@ function resolveImageUrl($value, $fallback = '') {
             break;
         }
     }
-    if ($value !== '' && strpos($value, '..') === false && is_file(BASE_PATH . $value)) {
+    if ($value !== '' && strpos($value, '..') === false) {
         $smaller = preg_replace('/\.(?:webp|jpe?g|png)$/i', '-1200w.webp', $value);
         if ($smaller !== $value && is_file(BASE_PATH . $smaller)) {
             $value = $smaller;
         }
-        return SITE_URL . '/' . implode('/', array_map('rawurlencode', explode('/', $value)));
+        if (is_file(BASE_PATH . $value)) {
+            return SITE_URL . '/' . implode('/', array_map('rawurlencode', explode('/', $value)));
+        }
     }
     return $fallback;
 }

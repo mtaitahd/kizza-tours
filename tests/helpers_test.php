@@ -53,5 +53,17 @@ echo "round-trip (storage -> items):\n";
 $stored = tourListStorage(['Safari', 'Lodge', 'Safari']);
 eq(tourListItems($stored), ['Safari', 'Lodge'], 'round trip equality');
 
+echo "resolveImageUrl():\n";
+$image = 'uploads/tours/tour_serengeti-luxury-safari_6a31dfca4c1b5.webp';
+$optimized = SITE_URL . '/uploads/tours/tour_serengeti-luxury-safari_6a31dfca4c1b5-1200w.webp';
+eq(resolveImageUrl($image), $optimized, 'tour image uses smaller WebP');
+eq(resolveImageUrl('/kizza-tours/' . $image), $optimized, 'legacy project prefix');
+eq(resolveImageUrl(str_replace('/', '\\', $image)), $optimized, 'Windows path separators');
+eq(resolveImageUrl($image . '?v=2'), $optimized, 'local cache query');
+eq(resolveImageUrl('uploads/tours/%74our_serengeti-luxury-safari_6a31dfca4c1b5.webp'), $optimized, 'URL encoded local filename');
+eq(resolveImageUrl('https://example.org/photo.jpg?v=2'), 'https://example.org/photo.jpg?v=2', 'external image URL preserved');
+eq(resolveImageUrl('uploads/tours/missing.jpg', 'fallback'), 'fallback', 'missing file uses fallback');
+eq(resolveImageUrl('../includes/config.php', 'fallback'), 'fallback', 'traversal rejected');
+
 echo "\n$checks checks, $failures failures\n";
 exit($failures > 0 ? 1 : 0);

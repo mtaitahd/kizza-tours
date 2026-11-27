@@ -252,9 +252,9 @@ $faqs = $tourFaqs;
                 <div class="package-card" style="height: 100%;">
                     <div class="package-card-image">
                         <?php 
-                        $rImg = !empty($rt['image']) && file_exists(BASE_PATH . $rt['image']) ? SITE_URL . '/' . $rt['image'] : 'assets/images/placeholder.svg';
+                        $rImg = resolveImageUrl($rt['image'], SITE_URL . '/assets/images/placeholder.svg');
                         ?>
-                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt['title'] ?? ''); ?>" loading="lazy" onerror="this.src='assets/images/placeholder.svg'">
+                        <img src="<?php echo $rImg; ?>" alt="<?php echo htmlspecialchars($rt['title'] ?? ''); ?>" loading="lazy" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                     </div>
                     <div class="package-card-body">
                         <h3 class="package-card-title"><?php echo htmlspecialchars($rt['title'] ?? ''); ?></h3>

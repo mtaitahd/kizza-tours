@@ -44,6 +44,11 @@ if (empty($packages)) {
                     if ($imgKey) $img = getMediaUrl($imgKey, '');
                 }
                 if (empty($img)) $img = 'assets/images/placeholder.svg';
+                // Send the same resolved URLs to the popup as to the cards.
+                $packages[$i]['image'] = $img;
+                $packages[$i]['gallery'] = array_values(array_filter(array_map(function ($path) {
+                    return resolveImageUrl($path);
+                }, tourListItems($pkg['gallery'] ?? ''))));
                 $highlightsArr = tourListItems($pkg['highlights'] ?? '');
                 $rating = intval($pkg['rating'] ?? 5);
                 $pkgId = $pkg['id'] ?? 0;
@@ -51,7 +56,7 @@ if (empty($packages)) {
             <div class="col-lg-4 col-md-6 package-item" data-category="<?php echo $countrySlug; ?>" data-aos="fade-up" data-aos-delay="<?php echo 100 + ($i * 100); ?>">
                 <div class="package-card" data-package-id="<?php echo $pkgId; ?>">
                     <div class="package-card-image">
-                        <img src="<?php echo $img; ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
+                        <img src="<?php echo htmlspecialchars($img, ENT_QUOTES); ?>" alt="<?php echo htmlspecialchars($pkg['title']); ?>" width="600" height="400" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.svg'">
                         <?php if ($i === 0): ?><span class="package-card-badge"><?php echo __('pkg_badge_bestseller'); ?></span><?php endif; ?>
                         <?php if ($i === 2): ?><span class="package-card-badge"><?php echo __('pkg_badge_premium'); ?></span><?php endif; ?>
                     </div>

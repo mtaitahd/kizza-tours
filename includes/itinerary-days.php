@@ -109,10 +109,7 @@ $mapJson = htmlspecialchars(json_encode($mapDays), ENT_QUOTES, 'UTF-8');
     $meals      = trim($day['meals'] ?? '');
     $accom      = trim($day['accommodation'] ?? '');
 
-    $dayImg = '';
-    if (!empty($day['image_path']) && file_exists(BASE_PATH . $day['image_path'])) {
-        $dayImg = SITE_URL . '/' . $day['image_path'];
-    }
+    $dayImg = resolveImageUrl($day['image_path'] ?? '');
     $dayAlt = !empty($day['image_alt']) ? trim($day['image_alt']) : (($destination !== '') ? $destination : 'Itinerary day');
     $hasImage = ($dayImg !== '');
 

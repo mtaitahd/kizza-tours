@@ -269,8 +269,8 @@ $(document).ready(function() {
     }
 
     function renderPackageModal(pkg) {
-        const img = pkg.image || 'assets/images/placeholder.svg' + encodeURIComponent(pkg.title);
-        const galleryImages = pkg.gallery && typeof pkg.gallery === 'string' && pkg.gallery.trim()
+        const img = pkg.image || 'assets/images/placeholder.svg';
+        const galleryImages = Array.isArray(pkg.gallery) && pkg.gallery.length ? pkg.gallery : pkg.gallery && typeof pkg.gallery === 'string' && pkg.gallery.trim()
             ? pkg.gallery.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
             : [img];
 
@@ -280,7 +280,7 @@ $(document).ready(function() {
 
         var html = '<div class="pkg-modal-gallery" id="pkgGallery">';
         galleryImages.forEach(function(url, idx) {
-            html += '<img src="' + url + '" alt="' + pkg.title + '" style="display:' + (idx === 0 ? 'block' : 'none') + '; position:absolute;" onerror="this.src=\'assets/images/placeholder.svg' + encodeURIComponent(pkg.title) + '\'">';
+            html += '<img src="' + url + '" alt="' + pkg.title + '" style="display:' + (idx === 0 ? 'block' : 'none') + '; position:absolute;" onerror="this.onerror=null;this.src=\'assets/images/placeholder.svg\'">';
         });
         if (galleryImages.length > 1) {
             html += '<button type="button" class="pkg-modal-gallery-nav prev" id="pkgGalleryPrev"><i class="fas fa-chevron-left"></i></button>';
