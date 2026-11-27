@@ -197,6 +197,7 @@ require_once __DIR__ . '/tour-image-paths.php';
 
 function resolveImageUrl($value, $fallback = '') {
     $value = trim((string)$value);
+    if ($value === '') return $fallback;
     $remoteUrl = '';
     if (preg_match('~^https?://~i', $value)) {
         $parts = parse_url($value);
@@ -227,7 +228,7 @@ function resolveImageUrl($value, $fallback = '') {
         }
     }
     static $imagePaths;
-    if (!$imagePaths) $imagePaths = new TourImagePaths(BASE_PATH);
+    if (!$imagePaths) $imagePaths = new TourImagePaths(BASE_PATH, false);
     $recovered = $imagePaths->find($value);
     return $recovered !== '' ? SITE_URL . '/' . implode('/', array_map('rawurlencode', explode('/', $recovered))) : ($remoteUrl ?: $fallback);
 }

@@ -7,34 +7,14 @@
 // GSAP Animations
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
+    if (typeof gsap === 'undefined' || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
 
     // Short delay for layout settle
     setTimeout(() => {
-        // Hero Animations
-        gsap.from('.hero-title', {
-            duration: 1.5,
-            y: 80,
-            opacity: 0,
-            ease: 'power4.out',
-            delay: 0.5
-        });
-
-        gsap.from('.hero-subtitle', {
-            duration: 1.2,
-            y: 40,
-            opacity: 0,
-            ease: 'power3.out',
-            delay: 0.8
-        });
-
-        gsap.from('.hero-buttons .btn-premium', {
-            duration: 1,
-            y: 30,
-            opacity: 0,
-            stagger: 0.2,
-            ease: 'power3.out',
-            delay: 1.1
-        });
+        // Keep the headline and booking buttons visible while enhancing their position.
+        gsap.from('.hero-title', {duration:0.45, y:20, ease:'power2.out'});
+        gsap.from('.hero-subtitle', {duration:0.35, y:10, ease:'power2.out'});
+        gsap.from('.hero-buttons .btn-premium', {duration:0.3, y:8, stagger:0.06, ease:'power2.out'});
 
         // ScrollTrigger Animations
         gsap.utils.toArray('.value-card').forEach((card, i) => {
@@ -44,10 +24,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     start: 'top 85%',
                     toggleActions: 'play none none none'
                 },
-                y: 60,
+                y: 24,
                 opacity: 0,
-                duration: 0.8,
-                delay: i * 0.1,
+                duration: 0.4,
+                delay: (i % 3) * 0.06,
                 ease: 'power3.out'
             });
         });
@@ -59,10 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     start: 'top 85%',
                     toggleActions: 'play none none none'
                 },
-                y: 60,
+                y: 24,
                 opacity: 0,
-                duration: 0.8,
-                delay: i * 0.1,
+                duration: 0.4,
+                delay: (i % 3) * 0.06,
                 ease: 'power3.out'
             });
         });
@@ -120,14 +100,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create floating particles
         createParticles();
 
-    }, 300);
+    }, 0);
 
     // Create floating particles in hero
     function createParticles() {
         const container = document.getElementById('particlesContainer');
         if (!container) return;
 
-        const particleCount = 50;
+        const particleCount = 12;
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';

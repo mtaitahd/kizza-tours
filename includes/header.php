@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/seo.php';
+// Language and CSRF state are already saved; public page rendering only reads them.
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && session_status() === PHP_SESSION_ACTIVE) session_write_close();
 $siteName = getSetting('site_name', 'Kizza Tours & Safaris');
 $siteEmail = getSetting('site_email', SITE_EMAIL);
 $sitePhone = getSetting('site_phone', SITE_PHONE);
@@ -163,7 +165,8 @@ $pageSeo['pageKey'] = $pageSeo['pageKey'] ?? 'home';
         .tours-dropdown-menu .dropdown-item:hover{background:rgba(255,255,255,0.08);color:var(--secondary)}'; 
     ?></style>
 
-    <script>function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:1000,once:true,offset:100,easing:'ease-out-cubic'})}}
+    <style>html:not(.aos-enabled) [data-aos]{opacity:1!important;transform:none!important;transition:none!important}</style>
+    <script>function aosInit(){if(typeof AOS!=='undefined'){AOS.init({duration:400,once:true,offset:60,easing:'ease-out-cubic'});document.documentElement.classList.add('aos-enabled')}}
     if(document.readyState==='complete'||document.readyState==='interactive'){aosInit()}else{document.addEventListener('DOMContentLoaded',aosInit)}
     function topBarScroll(){var t=document.querySelector('.top-bar');if(!t)return;var s=window.scrollY>80;t.classList.toggle('scroll-hide',s);document.body.classList.toggle('topbar-hidden',s)}
     var _tick;document.addEventListener('scroll',function(){clearTimeout(_tick);_tick=setTimeout(topBarScroll,50)},{passive:true});topBarScroll()</script>

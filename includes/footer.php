@@ -76,12 +76,12 @@ $taUrl = getSetting('tripadvisor_url', '#');
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js" defer></script>
 
 <!-- Main JavaScript (minified) -->
-<script src="<?php echo ASSETS_PATH; ?>js/animations.min.js?v=2" defer></script>
+<script src="<?php echo ASSETS_PATH; ?>js/animations.min.js?v=3" defer></script>
 <script src="<?php echo ASSETS_PATH; ?>js/main.min.js?v=4" defer></script>
 <script src="<?php echo ASSETS_PATH; ?>js/booking.min.js?v=2" defer></script>
 

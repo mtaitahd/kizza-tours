@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/tour-image-paths.php';
 /** Restore exact original image paths from an administrator-supplied ZIP, without overwriting files. */
 class TourImageRestore
 {
@@ -76,6 +77,7 @@ class TourImageRestore
                 if (microtime(true) - $began > 5) break;
             }
             $report['done'] = $report['cursor'] >= $zip->numFiles;
+            if ($report['restored'] > 0) TourImagePaths::invalidate($this->root);
             return $report;
         } finally { $zip->close(); }
     }

@@ -55,6 +55,7 @@ class TourImageDiskRepair
             if ($folderCount + count($roots) > 5000 || count($files) > 50000) throw new RuntimeException('Too many media entries for one job. Contact hosting support to check upload folder layout.');
         }
         sort($files);
+        TourImagePaths::publish($this->root, $files);
         $diagnostics = ['application_root' => $this->root, 'uploads_folder' => $uploadRoot, 'document_root' => str_replace('\\', '/', $documentRoot), 'files_found' => count($files), 'folders_checked' => $folderCount, 'folder_permissions_fixed' => $folderChanges];
         $publicRoot = $documentRoot !== '' ? realpath($documentRoot) : false;
         if ($publicRoot && rtrim(str_replace('\\', '/', $publicRoot), '/') . '/' !== $this->root && is_dir($publicRoot . '/uploads')) $diagnostics['warning'] = 'The application and document root differ, and both have uploads folders. Compare these paths with the hosting folder containing your photos before assuming files are missing.';
