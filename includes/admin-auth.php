@@ -83,6 +83,17 @@ function adminIsTourOnlyUser()
     return true;
 }
 
+function adminToursSidebarMenu()
+{
+    if (!adminCan('manage_tours')) return '';
+    $page = basename($_SERVER['SCRIPT_NAME'] ?? '', '.php');
+    $open = in_array($page, ['tours', 'fix-tour-images'], true) ? ' open' : '';
+    $html = '<li class="nav-item"><details' . $open . '><summary class="nav-link" style="cursor:pointer"><i class="fas fa-fw fa-safari"></i> <span>Tours</span> <span aria-hidden="true" style="float:right">&#9662;</span></summary><div style="padding:0 12px 12px 28px">';
+    $html .= '<a class="d-block py-2" href="tours">All Tour Packages</a>';
+    if (adminCan('manage_media')) $html .= '<a class="d-block py-2" href="fix-tour-images">Image Health &amp; Repair</a>';
+    return $html . '</div></details></li>';
+}
+
 function adminSidebarPermissionStyles()
 {
     $admin = adminRequireLogin();

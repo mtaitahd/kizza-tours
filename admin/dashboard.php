@@ -96,7 +96,7 @@ if ($tourOnlyUser) {
             <?php if ($tourOnlyUser): ?>
             <hr class="sidebar-divider my-0">
             <li class="nav-item active"><a class="nav-link" href="dashboard"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
-            <li class="nav-item"><a class="nav-link" href="tours"><i class="fas fa-fw fa-safari"></i><span>Tours</span></a></li>
+            <?php echo adminToursSidebarMenu(); ?>
             <hr class="sidebar-divider"><li class="nav-item"><a class="nav-link" href="profile"><i class="fas fa-fw fa-user"></i><span>My Profile</span></a></li>
             <li class="nav-item"><a class="nav-link" href="logout"><i class="fas fa-fw fa-sign-out-alt"></i><span>Logout</span></a></li>
             <?php else: ?>
@@ -115,12 +115,7 @@ if ($tourOnlyUser) {
                     <span>Bookings</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="tours">
-                    <i class="fas fa-fw fa-safari"></i>
-                    <span>Tours</span>
-                </a>
-            </li>
+            <?php echo adminToursSidebarMenu(); ?>
             <li class="nav-item">
                 <a class="nav-link" href="destinations">
                     <i class="fas fa-fw fa-map-marker-alt"></i>

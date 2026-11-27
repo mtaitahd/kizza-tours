@@ -1,7 +1,7 @@
 <?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: ./');
@@ -104,6 +104,7 @@ $recentItems = array_slice($recentItems, 0, 8);
 // page images — so the page truly shows all uploaded photos.
 $extraGroups = [
     'Tour Images'    => 'uploads/tours',
+    'Repaired Images' => 'uploads/repaired',
     'Destination Images' => 'uploads/destinations',
     'Page Images'    => 'uploads/pages',
 ];
@@ -170,8 +171,30 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
             .topbar { left: 0; }
             body.sidebar-toggled .topbar { left: 0; }
         }
+        .gallery-load-error{position:absolute;inset:0;z-index:2;background:#fff4f2;color:#8b1d14;display:flex;flex-direction:column;justify-content:center;padding:12px;font-size:12px;overflow-wrap:anywhere}
+        .gallery-load-error a{color:#8b1d14;text-decoration:underline;margin-top:6px}
     </style>
-</head>
+<script>
+    var galleryBrokenPaths = new Set();
+    function markGalleryImageError(img) {
+        if (img.dataset.errorShown) return;
+        img.dataset.errorShown = '1'; img.onerror = null; img.hidden = true;
+        galleryBrokenPaths.add(img.dataset.imagePath || img.src);
+        var box = document.createElement('div'); box.className = 'gallery-load-error';
+        var title = document.createElement('strong'); title.textContent = 'Image failed to load';
+        var reason = document.createElement('span'); reason.textContent = img.dataset.imageMissing === '1' ? 'File not found or path could not be resolved.' : 'Browser could not read this image. Check URL, permissions or file format.';
+        var path = document.createElement('span'); path.textContent = img.dataset.imagePath || '';
+        var link = document.createElement('a'); link.textContent = 'Open image URL'; link.href = img.dataset.imageUrl; link.target = '_blank'; link.rel = 'noopener';
+        box.append(title, reason, path, link); img.parentElement.append(box);
+        var count = document.getElementById('galleryLoadErrors');
+        if (count) count.textContent = String(galleryBrokenPaths.size);
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-gallery-image]').forEach(function (img) {
+            if (img.dataset.imageMissing === '1' || (img.complete && img.naturalWidth === 0)) markGalleryImageError(img);
+        });
+    });
+    </script></head>
 <body id="page-top">
     <?php echo adminSidebarPermissionStyles(); ?>
     <div id="wrapper">
@@ -185,7 +208,7 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
             <hr class="sidebar-divider">
             <div class="sidebar-heading">Management</div>
             <li class="nav-item"><a class="nav-link" href="bookings"><i class="fas fa-fw fa-calendar-check"></i><span>Bookings</span></a></li>
-            <li class="nav-item"><a class="nav-link" href="tours"><i class="fas fa-fw fa-safari"></i><span>Tours</span></a></li>
+            <?php echo adminToursSidebarMenu(); ?>
             <li class="nav-item"><a class="nav-link" href="destinations"><i class="fas fa-fw fa-map-marker-alt"></i><span>Destinations</span></a></li>
             <li class="nav-item active"><a class="nav-link" href="gallery"><i class="fas fa-fw fa-images"></i><span>Gallery</span></a></li>
             <li class="nav-item"><a class="nav-link" href="testimonials"><i class="fas fa-fw fa-star"></i><span>Testimonials</span></a></li>
@@ -258,6 +281,13 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
                         </button>
                     </div>
                     
+                    <div class="alert alert-light border mb-3" role="status">
+                        <strong id="galleryLoadErrors">0</strong> unique images failed to load among previews checked so far. Images are checked as you scroll.
+                        Missing photos are shown with their error instead of the company logo.
+                        <?php if (adminCan('manage_tours') && adminCan('manage_media')): ?>
+                        <a href="fix-tour-images" class="btn btn-sm btn-outline-success ml-2">Image Health &amp; Repair</a>
+                        <?php endif; ?>
+                    </div>
                     <?php if (isset($_SESSION['flash'])): ?>
                         <div class="alert alert-success alert-dismissible fade show">
                             <?php echo htmlspecialchars($_SESSION['flash']['message']); unset($_SESSION['flash']); ?>
@@ -274,7 +304,7 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
                             <div class="gallery-grid">
                                 <?php foreach ($recentItems as $item): ?>
                                 <div class="gallery-item">
-                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='../assets/images/log.png';">
+                                    <?php include __DIR__ . '/../includes/admin-gallery-image.php'; ?>
                                     <div class="overlay">
                                         <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
                                     </div>
@@ -307,7 +337,7 @@ $galleryHasAny = !empty($images) || $hasDiskImages;
                             <div class="gallery-grid">
                                 <?php foreach ($group['items'] as $item): ?>
                                 <div class="gallery-item">
-                                    <img src="../<?php echo htmlspecialchars($item['image']); ?>" alt="<?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?>" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='../assets/images/log.png';">
+                                    <?php include __DIR__ . '/../includes/admin-gallery-image.php'; ?>
                                     <div class="overlay">
                                         <h6><?php echo htmlspecialchars($item['title'] ?: 'Untitled'); ?></h6>
                                         <span class="gallery-cat-label"><?php echo htmlspecialchars($item['category'] ?: 'general'); ?></span>

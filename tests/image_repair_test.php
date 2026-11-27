@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/tour-image-repair.php';
+require_once __DIR__ . '/../includes/tour-image-audit.php';
 if (!extension_loaded('gd')) { fwrite(STDERR, "GD required for this test.\n"); exit(1); }
 $root = sys_get_temp_dir() . '/kizza_image_repair_' . bin2hex(random_bytes(6));
 mkdir($root . '/uploads/gallery', 0755, true);
@@ -43,6 +44,24 @@ try {
     $result = $repair->repair('uploads/gallery/transparent.png');
     $webp = imagecreatefromwebp($root . '/' . $result['path']);
     checkImageRepair(((imagecolorat($webp, 0, 0) >> 24) & 127) === 127, 'PNG transparency preserved'); imagedestroy($webp);
+    $audit = new TourImageAudit($root);
+    checkImageRepair($audit->inspect('uploads/gallery/converted.jpg', 'image')['status'] === 'recoverable', 'Audit identifies repairable broken reference');
+    checkImageRepair($audit->inspect('uploads/gallery/missing.jpg', 'image')['status'] === 'failed', 'Audit counts missing file as failed');
+    checkImageRepair($audit->inspect('uploads/gallery/converted.webp', 'image')['status'] === 'healthy', 'Audit recognizes valid WebP');
+    checkImageRepair($audit->inspect('uploads/gallery/Photo.JPG', 'image')['status'] === 'optimize', 'Existing JPEG needs optimization, not missing');
+    checkImageRepair($audit->inspect('https://remote.example/photo.jpg', 'image')['status'] === 'review', 'Remote images require review rather than reported success');
+    $tourAudit = $audit->tour(['id' => 1, 'title' => 'Sample', 'image' => '', 'hero_image' => '', 'gallery' => 'uploads/gallery/converted.webp'], [['id' => 3, 'day_number' => 1, 'image_path' => 'uploads/gallery/missing.jpg']]);
+    checkImageRepair($tourAudit['counts']['failed'] === 2 && $tourAudit['counts']['healthy'] === 1, 'Tour audit includes missing featured image and itinerary, ignores optional blanks');
+    $metadata = new class {
+        public $sql; public $params;
+        public function fetchOne($sql, $params) { $this->sql = $sql; $this->params = $params; return ['found' => 1]; }
+    };
+    checkImageRepair(tourImageTableExists($metadata, 'itinerary_days') && str_contains($metadata->sql, 'information_schema.tables') && $metadata->params === ['itinerary_days'], 'Metadata lookup binds table name in MariaDB-compatible SELECT');
+    $failingDb = new class { public function query($sql, $params) { throw new RuntimeException('Simulated database write failure'); } };
+    $failureReport = $repair->repairRow($failingDb, 'tour_packages', ['id' => 7, 'image' => 'uploads/gallery/converted.jpg', 'hero_image' => 'uploads/gallery/converted.webp'], ['image', 'hero_image'], $root . '/failure-backup.jsonl');
+    checkImageRepair($failureReport['failed'] === 1 && $failureReport['success'] === 1, 'Database failure does not prevent checking remaining images');
+    checkImageRepair(str_contains($failureReport['entries'][0]['message'], 'Simulated database write failure'), 'Failure report includes exact update error');
+    checkImageRepair($failureReport['updated'] === 0 && $failureReport['entries'][1]['status'] === 'success', 'Success and failed outcomes are distinct');
     if (in_array('sqlite', PDO::getAvailableDrivers(), true)) {
         $db = new class {
             public $pdo;

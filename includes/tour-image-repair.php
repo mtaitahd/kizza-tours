@@ -55,25 +55,66 @@ class TourImageRepair
     }
     public function repairRow($db, $table, array $row, array $fields, $backup)
     {
-        $report = ['checked' => 0, 'updated' => 0, 'converted' => 0, 'issues' => []];
+        $allowed = ['tour_packages', 'itinerary_days', 'gallery'];
+        if (!in_array($table, $allowed, true)) throw new InvalidArgumentException('Invalid image table.');
+        $report = ['checked' => 0, 'updated' => 0, 'converted' => 0, 'success' => 0, 'failed' => 0, 'review' => 0, 'issues' => [], 'entries' => []];
         foreach ($fields as $field) {
-            if (!isset($row[$field]) || trim((string)$row[$field]) === '') continue;
+            if (!preg_match('/^[a-z0-9_]+$/', $field)) throw new InvalidArgumentException('Invalid image field.');
+            if (!isset($row[$field]) || trim((string)$row[$field]) === '') {
+                if ($table === 'tour_packages' && $field === 'image') {
+                    $report['failed']++;
+                    $entry = ['table' => $table, 'id' => (int)$row['id'], 'title' => $row['title'] ?? '', 'field' => $field, 'path' => '', 'new_path' => '', 'status' => 'failed', 'message' => 'No featured image selected. Open Edit Tour and choose a photo.'];
+                    $report['entries'][] = $entry;
+                    $report['issues'][] = "Tour #{$row['id']}: " . $entry['message'];
+                }
+                continue;
+            }
             $old = $row[$field];
             $values = $field === 'gallery' ? tourListItems($old) : [$old];
-            $new = [];
+            $new = []; $entries = []; $converted = 0;
             foreach ($values as $value) {
-                $result = $this->repair($value); $report['checked']++;
+                $report['checked']++;
+                try {
+                    $result = $this->repair($value);
+                    $reason = $result['status'];
+                    $status = in_array($reason, ['missing', 'unsupported', 'too_large'], true) ? 'failed' : ($reason === 'remote' ? 'review' : 'success');
+                    $messages = [
+                        'missing' => 'File not found or filename is ambiguous. Upload or select the correct photo.',
+                        'remote' => 'Remote URL preserved; browser verification required.',
+                        'unsupported' => 'File is unreadable, damaged, or this server cannot convert its format. Original path is retained when possible.',
+                        'too_large' => 'Conversion exceeds the server memory budget. Resize the original first.',
+                        'preserved' => 'GIF preserved to keep animation.',
+                        'converted' => 'Valid WebP prepared; original file preserved.',
+                        'repaired' => 'Matching existing image found and path repaired.',
+                        'unchanged' => 'Image already available; no conversion required.',
+                    ];
+                    $message = $messages[$reason] ?? $reason;
+                    if ($reason === 'converted') $converted++;
+                } catch (Throwable $e) {
+                    $result = ['path' => $value]; $status = 'failed'; $message = $e->getMessage();
+                }
                 $new[] = $result['path'];
-                if ($result['status'] === 'converted') $report['converted']++;
-                if (in_array($result['status'], ['missing', 'remote', 'unsupported', 'preserved', 'too_large'], true)) $report['issues'][] = "$table #{$row['id']} $field: {$result['status']} - $value";
+                $entries[] = ['table' => $table, 'id' => (int)$row['id'], 'title' => $row['title'] ?? ('Tour #' . ($row['tour_id'] ?? $row['id'])), 'field' => $field, 'path' => $value, 'new_path' => $result['path'], 'status' => $status, 'message' => $message];
             }
             $replacement = $field === 'gallery' ? (str_starts_with(trim($old), '[') ? json_encode($new, JSON_UNESCAPED_SLASHES) : implode(',', $new)) : $new[0];
-            if ($replacement === $old) continue;
-            // Record every previous value before updating; originals are never deleted.
-            $record = json_encode(['time' => gmdate('c'), 'table' => $table, 'id' => $row['id'], 'field' => $field, 'old' => $old, 'new' => $replacement], JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
-            if (file_put_contents($backup, $record, FILE_APPEND | LOCK_EX) === false) throw new RuntimeException('Cannot save image path backup. No database update performed.');
-            $statement = $db->query("UPDATE `$table` SET `$field` = ? WHERE id = ? AND `$field` = ?", [$replacement, $row['id'], $old]);
-            $report['updated'] += $statement->rowCount();
+            try {
+                if ($replacement !== $old) {
+                    $record = json_encode(['time' => gmdate('c'), 'table' => $table, 'id' => $row['id'], 'field' => $field, 'old' => $old, 'new' => $replacement], JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
+                    if (file_put_contents($backup, $record, FILE_APPEND | LOCK_EX) === false) throw new RuntimeException('Cannot save path backup; database field was not updated.');
+                    $statement = $db->query("UPDATE `$table` SET `$field` = ? WHERE id = ? AND `$field` = ?", [$replacement, $row['id'], $old]);
+                    if ($statement->rowCount() === 0) throw new RuntimeException('Record changed while repairing. Rescan and retry this tour.');
+                    $report['updated'] += $statement->rowCount();
+                }
+                $report['converted'] += $converted;
+            } catch (Throwable $e) {
+                foreach ($entries as &$entry) { $entry['status'] = 'failed'; $entry['message'] = 'Database/path update failed: ' . $e->getMessage(); }
+                unset($entry);
+            }
+            foreach ($entries as $entry) {
+                $report[$entry['status']]++;
+                $report['entries'][] = $entry;
+                if ($entry['status'] !== 'success') $report['issues'][] = "$table #{$row['id']} $field: " . $entry['message'] . ' - ' . $entry['path'];
+            }
         }
         return $report;
     }
