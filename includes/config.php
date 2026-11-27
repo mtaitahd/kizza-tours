@@ -533,18 +533,11 @@ function uploadFile($file, $targetDir, $prefix = 'file') {
     return false;
 }
 
+require_once __DIR__ . '/media-file-policy.php';
+
 function deleteFile($filePath) {
-    $rel = trim(str_replace('\\', '/', (string)$filePath), '/');
-    // Gallery images are owned by the gallery module and can be referenced by
-    // many tours; a tour save must never orphan-delete them.
-    if ($rel === '' || strpos($rel, 'uploads/gallery') === 0) {
-        return false;
-    }
-    $fullPath = BASE_PATH . ltrim($rel, '/');
-    if (file_exists($fullPath) && is_file($fullPath)) {
-        return unlink($fullPath);
-    }
-    return false;
+    $path = automaticDeletionPath($filePath, BASE_PATH);
+    return $path !== '' ? unlink($path) : false;
 }
 
 // ===========================================

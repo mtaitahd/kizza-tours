@@ -248,9 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (\Throwable $e) {
                 if ($db->getConnection()->inTransaction()) $db->rollback();
                 // Roll back the tour we just created and clean up new uploads.
-                foreach ($uploadedNewImages as $p) deleteFile($p);
-                if ($hasNewImage && !empty($image)) deleteFile($image);
-                if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
+                // Roll back database changes without deleting selected shared photos.
                 try { $db->query("DELETE FROM tour_packages WHERE id = ?", [$newTourId]); } catch (\Throwable $ignore) {}
                 error_log("Tour add error: " . $e->getMessage());
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Could not save the tour with its itinerary days and FAQs.'];
@@ -311,26 +309,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($db->getConnection()->inTransaction()) $db->commit();
             } catch (\Throwable $e) {
                 if ($db->getConnection()->inTransaction()) $db->rollback();
-                foreach ($uploadedNewImages as $p) deleteFile($p);
-                if ($hasNewImage && !empty($image)) deleteFile($image);
-                if ($hasNewHero && !empty($heroImage)) deleteFile($heroImage);
+                // Roll back database changes without deleting selected shared photos.
                 error_log("Tour update save error: " . $e->getMessage());
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'The tour could not be fully saved. No changes were applied.'];
                 header('Location: tours');
                 exit;
             }
 
-            // Cleanup tour-level images only after a successful commit.
-            if ($hasNewImage && !empty($existingRow['image'])) deleteFile($existingRow['image']);
-            if ($hasNewHero && !empty($existingRow['hero_image'])) deleteFile($existingRow['hero_image']);
-            if ($overviewImagesChanged) {
-                foreach ([1, 2, 3] as $ov) {
-                    $old = trim($existingRow['overview_image_' . $ov] ?? '');
-                    $newVal = ${'overviewImage' . $ov};
-                    if ($old !== '' && $old !== $newVal) deleteFile($old);
-                }
-            }
-
+            // Selected photos are reusable media; keep them when references change.
             try { seoGenerateSitemap(); } catch (\Throwable $e) { error_log("Sitemap gen error: " . $e->getMessage()); }
             adminLogActivity('updated', 'tours', $tourId, $title, ['status' => $status]);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Tour updated successfully'];
@@ -339,11 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'delete') {
         $tourId = intval($_POST['tour_id'] ?? 0);
         $tour = $db->fetchOne("SELECT title, image, hero_image FROM tour_packages WHERE id = ?", [$tourId]);
-        if ($tour && $tour['image']) deleteFile($tour['image']);
-        if ($tour && $tour['hero_image']) deleteFile($tour['hero_image']);
-        foreach ($db->fetchAll("SELECT image_path FROM itinerary_days WHERE tour_id = ?", [$tourId]) as $day) {
-            if (!empty($day['image_path'])) deleteFile($day['image_path']);
-        }
+        // Delete records, while preserving photos shared with other tours.
         try { $db->query("DELETE FROM faq WHERE tour_id = ?", [$tourId]); } catch (\Throwable $ignore) {}
         try { $db->query("DELETE FROM itinerary_days WHERE tour_id = ?", [$tourId]); } catch (\Throwable $ignore) {}
         $db->query("DELETE FROM tour_packages WHERE id = ?", [$tourId]);

@@ -50,12 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($_POST['action'] === 'delete') {
         $id = intval($_POST['id'] ?? 0);
         $item = $db->fetchOne("SELECT * FROM gallery WHERE id = ?", [$id]);
-        if ($item && file_exists('../' . $item['image'])) {
-            unlink('../' . $item['image']);
-        }
+        // Remove the gallery record only. Other tours may still use this file.
         $db->query("DELETE FROM gallery WHERE id = ?", [$id]);
         adminLogActivity('deleted', 'gallery', $id, $item['title'] ?? basename($item['image'] ?? ''));
-        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Image deleted successfully'];
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Gallery entry removed. Image file preserved for tours that still use it.'];
     }
     header('Location: gallery' . $redirectAnchor);
     exit;

@@ -1,9 +1,9 @@
 <?php
 /**
- * Persists the structured itinerary days for a tour and manages image cleanup.
+ * Persists itinerary days while retaining shared image files.
  *
  * Shared helper (unit-testable without an admin request lifecycle). Relies on
- * db() and deleteFile() from includes/config.php.
+ * the db() database helper.
  *
  * Safety model:
  *  - Rows are reconciled by their database id: existing rows are updated, new
@@ -12,8 +12,8 @@
  *    wipe out child rows it did not mention.
  *  - The helper participates in an already-open outer transaction instead of
  *    starting a nested one, so the whole tour save can be all-or-nothing.
- *  - Old image files are only removed AFTER a successful commit, and never if
- *    the same path is still referenced by another kept day.
+ *  - Image files are retained on replacement, record deletion and rollback,
+ *    because photos can be shared across tours, overviews and the gallery.
  *
  * @param int   $tourId            The tour id the days belong to.
  * @param array $submittedDays     Each item: day_id, day_number, title,
@@ -22,21 +22,12 @@
  *                                 final_image = the resolved
  *                                 image path (uploaded new, kept existing, or
  *                                 null when removed).
- * @param array $uploadedNewImages Paths of files just uploaded during this
- *                                 request; removed again if the DB save fails so
- *                                 we never leave orphaned uploads.
+ * @param array $uploadedNewImages Legacy argument retained for caller compatibility.
  */
 function saveItineraryDays($tourId, $submittedDays, $uploadedNewImages) {
     $db = db();
 
-    // Final image set so we can safely garbage-collect old files afterwards.
-    $finalImages = [];
-    foreach ($submittedDays as $d) {
-        if (!empty($d['final_image'])) $finalImages[] = $d['final_image'];
-    }
-
-    // Current rows -> memory of what exists, what is being replaced, and what
-    // is removed entirely.
+    // Existing row IDs allow updates and removal without touching shared media.
     $oldRows = $db->fetchAll("SELECT id, image_path FROM itinerary_days WHERE tour_id = ?", [$tourId]);
     $oldById = [];
     foreach ($oldRows as $row) {
@@ -84,11 +75,9 @@ function saveItineraryDays($tourId, $submittedDays, $uploadedNewImages) {
         }
 
         // Delete only rows that existed before but were not re-submitted.
-        $deletedImages = [];
         foreach ($oldById as $id => $oldImage) {
             if (isset($submittedIds[$id])) continue;
             $db->query("DELETE FROM itinerary_days WHERE id=? AND tour_id=?", [$id, $tourId]);
-            $deletedImages[$id] = $oldImage;
         }
 
         if (!$outerTxn) $db->commit();
@@ -96,30 +85,10 @@ function saveItineraryDays($tourId, $submittedDays, $uploadedNewImages) {
         if (!$outerTxn && $db->getConnection()->inTransaction()) {
             $db->rollback();
         }
-        // Remove newly uploaded files so we don't leave orphans.
-        foreach ($uploadedNewImages as $p) {
-            deleteFile($p);
-        }
+        // Preserve media even after rollback: selected files can be shared.
         error_log("saveItineraryDays error: " . $e->getMessage());
         throw $e;
     }
 
-    // Only after a successful commit do we delete now-orphaned old images:
-    // images removed with their row, or replaced on a kept row. A path still
-    // referenced by a kept day is never touched.
-    $toDelete = [];
-    foreach ($oldById as $id => $oldImage) {
-        if (empty($oldImage) || in_array($oldImage, $finalImages, true)) continue;
-        if (isset($submittedIds[$id]) || isset($deletedImages[$id])) {
-            $toDelete[] = $oldImage;
-        }
-    }
-    foreach ($deletedImages as $oldImage) {
-        if (!empty($oldImage) && !in_array($oldImage, $finalImages, true)) {
-            $toDelete[] = $oldImage;
-        }
-    }
-    foreach (array_unique($toDelete) as $p) {
-        deleteFile($p);
-    }
+    // Photo files are retained: another tour or gallery entry may still reference them.
 }

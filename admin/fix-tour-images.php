@@ -7,6 +7,7 @@ requireAdminPermission('manage_tours');
 requireAdminPermission('manage_media');
 require_once '../includes/tour-image-repair.php';
 require_once '../includes/tour-image-audit.php';
+require_once '../includes/tour-image-restore.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -16,7 +17,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db = db();
         $action = $_POST['action'] ?? '';
         $cursor = max(0, (int)($_POST['cursor'] ?? 0));
-        if ($action === 'audit') {
+        if (in_array($action, ['restore_upload', 'restore_batch'], true)) {
+            if (!class_exists('ZipArchive')) throw new RuntimeException('PHP ZIP extension is unavailable. Ask hosting to enable it, or extract the backup uploads folder with the hosting file manager.');
+            if (!is_dir(BASE_PATH . 'cache') && !mkdir(BASE_PATH . 'cache', 0755, true)) throw new RuntimeException('Cannot create cache folder.');
+            $lock = fopen(BASE_PATH . 'cache/tour-image-repair.lock', 'c');
+            if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) throw new RuntimeException('Another image job is running. Retry shortly.');
+            if ($action === 'restore_upload') {
+                $upload = $_FILES['backup'] ?? null;
+                if (!$upload || (int)$upload['error'] !== UPLOAD_ERR_OK) throw new RuntimeException('ZIP upload failed. Check the server upload size limit or use a smaller archive containing images only.');
+                if (strtolower(pathinfo($upload['name'], PATHINFO_EXTENSION)) !== 'zip' || $upload['size'] > 67108864) throw new RuntimeException('Choose an image backup ZIP smaller than 64 MB, or split it into smaller archives.');
+                $restoreJob = bin2hex(random_bytes(16));
+                $archive = BASE_PATH . 'cache/image-backup-' . $restoreJob . '.zip';
+                if (!is_uploaded_file($upload['tmp_name']) || !move_uploaded_file($upload['tmp_name'], $archive)) throw new RuntimeException('Cannot save uploaded backup ZIP.');
+                $probe = new ZipArchive();
+                if ($probe->open($archive) !== true) { unlink($archive); throw new RuntimeException('Invalid ZIP archive.'); }
+                $total = $probe->numFiles; $probe->close();
+                if ($total > 25000) { unlink($archive); throw new RuntimeException('Too many archive entries. Upload an images-only ZIP.'); }
+                $_SESSION['tour_image_restore'] = ['job' => $restoreJob, 'cursor' => 0, 'done' => false, 'totals' => ['restored' => 0, 'kept' => 0, 'failed' => 0, 'ignored' => 0]];
+                adminLogActivity('started', 'media', null, 'Restore images from backup ZIP');
+                echo json_encode(['ok' => true, 'job' => $restoreJob, 'total' => $total]);
+            } else {
+                $restoreState = $_SESSION['tour_image_restore'] ?? null;
+                if (!$restoreState || !hash_equals($restoreState['job'], (string)($_POST['job'] ?? ''))) throw new RuntimeException('Backup restore session expired. Upload the ZIP again; existing files are kept.');
+                if ($restoreState['done']) {
+                    echo json_encode(['ok' => true, 'result' => $restoreState['last'], 'totals' => $restoreState['totals']], JSON_INVALID_UTF8_SUBSTITUTE);
+                } else {
+                    $archive = BASE_PATH . 'cache/image-backup-' . $restoreState['job'] . '.zip';
+                    $result = (new TourImageRestore(BASE_PATH))->batch($archive, $restoreState['cursor']);
+                    $restoreState['cursor'] = $result['cursor']; $restoreState['done'] = $result['done']; $restoreState['last'] = $result;
+                    foreach (array_keys($restoreState['totals']) as $key) $restoreState['totals'][$key] += $result[$key];
+                    $_SESSION['tour_image_restore'] = $restoreState;
+                    if ($result['done']) unlink($archive);
+                    echo json_encode(['ok' => true, 'result' => $result, 'totals' => $restoreState['totals']], JSON_INVALID_UTF8_SUBSTITUTE);
+                }
+            }
+        } elseif ($action === 'audit') {
             session_write_close();
             $rows = $db->fetchAll('SELECT * FROM tour_packages WHERE id > ? ORDER BY id LIMIT 10', [$cursor]);
             $days = [];
@@ -106,6 +141,7 @@ body{background:#f3f7f5;color:#23352d}.image-layout{display:flex;min-height:100v
 <div class="health-card"><strong id="imageRecoverable">0</strong><span>Paths ready to repair</span></div>
 <div class="health-card"><strong id="imageOptimize">0</strong><span>Images to optimize</span></div></div>
 <div class="card mb-3"><div class="card-body">
+<div class="alert alert-success">Shared image protection is enabled: editing or deleting a tour no longer removes its reusable photos.</div>
 <p>Featured, hero, overview, gallery and itinerary photos are included. Original files are preserved. Missing or ambiguous files require selecting or uploading the correct photo. Remote image URLs are marked for review; this scan checks local files, not external HTTP availability.</p>
 <button class="btn btn-outline-primary" id="scan">Rescan Images</button>
 <button class="btn btn-success" id="start" disabled>Fix All Tour Images</button>
@@ -113,9 +149,16 @@ body{background:#f3f7f5;color:#23352d}.image-layout{display:flex;min-height:100v
 <p class="mt-3 mb-1" id="status" role="status" aria-live="polite">Starting image scan...</p>
 <p id="totals" class="mb-1"></p><p id="backup" class="small text-muted mb-0"></p>
 </div></div>
+<div class="card mb-3"><div class="card-header"><strong>Restore missing images in bulk</strong></div><div class="card-body">
+<p>Upload one ZIP containing images from your hosting or local backup, with the original filenames. The system restores missing files in batches and keeps existing files. A full backup with <code>uploads/tours</code> or <code>uploads/gallery</code> folders restores the original paths. A photos-only ZIP is searched by original filename during Fix All.</p>
+<input type="file" id="restoreFile" accept=".zip,application/zip" class="form-control-file mb-2">
+<button class="btn btn-outline-success" id="restoreStart">Restore Images from ZIP</button>
+<p class="small text-muted mt-2 mb-0">Maximum 64 MB per ZIP; your hosting upload limit may be lower. Use several archives if needed. Files that have no backup cannot be reconstructed by conversion.</p>
+<p id="restoreStatus" class="mt-2 mb-0" role="status" aria-live="polite"></p>
+</div></div>
 <div class="card mb-3"><div class="card-header d-flex justify-content-between"><strong>Tour image problems</strong><label class="mb-0 small"><input type="checkbox" id="showAll"> Show healthy tours too</label></div><div class="table-responsive"><table class="table image-table mb-0"><thead><tr><th>Tour</th><th>Image status and reason</th><th>Action</th></tr></thead><tbody id="auditRows"></tbody></table></div><p id="emptyAudit" class="p-3 mb-0">Scanning...</p></div>
 <div class="card"><div class="card-header"><strong>Repair results</strong> <select id="resultFilter" class="ml-2"><option value="all">All results</option><option value="failed">Failed</option><option value="success">Success</option><option value="review">Needs review</option></select></div><div class="table-responsive"><table class="table image-table mb-0"><thead><tr><th>Record / Image</th><th>Result</th><th>Details</th></tr></thead><tbody id="resultRows"></tbody></table></div><p id="emptyResults" class="p-3 mb-0">Run Fix to see successes and failures here.</p></div>
 </main></div>
 <script>
-window.TOUR_IMAGE_HEALTH = <?php echo json_encode(['token' => $_SESSION['csrf_token'], 'siteUrl' => SITE_URL], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-</script><script src="js/tour-image-health.js?v=1" defer></script></body></html>
+window.TOUR_IMAGE_HEALTH = <?php echo json_encode(['token' => $_SESSION['csrf_token'], 'siteUrl' => SITE_URL, 'restoreJob' => empty($_SESSION['tour_image_restore']['done']) ? ($_SESSION['tour_image_restore']['job'] ?? '') : ''], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+</script><script src="js/tour-image-health.js?v=2" defer></script></body></html>

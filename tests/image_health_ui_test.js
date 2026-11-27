@@ -20,7 +20,7 @@ async function main() {
     const context = {
         window:{TOUR_IMAGE_HEALTH:{token:'test-token',siteUrl:'https://example.test'}},
         document:{getElementById:get, createElement:tag=>{const n = new Element(tag);nodes.push(n);return n;},querySelectorAll:()=>nodes.filter(n=>n.dataset.fixTour)},
-        URLSearchParams, AbortController, setTimeout, clearTimeout,
+        URLSearchParams, AbortController, FormData, setTimeout, clearTimeout,
         fetch:async (url, opts) => {
             requests.push(Object.fromEntries(opts.body));
             assert.equal(url, 'fix-tour-images.php');
@@ -54,6 +54,19 @@ async function main() {
     assert.match(get('status').textContent, /Simulated MariaDB error/);
     assert.equal(get('resultRows').children[0].dataset.status, 'failed');
     assert.equal(get('start').disabled, false, 'Retry remains available');
-    console.log('Image health UI checks passed: audit counts, single-tour fix, rescan, success/failure filters and request errors.');
+    get('restoreFile').files = [new File(['backup'], 'backup.zip', {type:'application/zip'})];
+    replies.push(
+        {ok:true,job:'restore-job',total:1},
+        {ok:true,result:{cursor:1,total:1,done:true,entries:[{table:'backup',id:1,title:'Recovered photo',field:'restore',path:'backup/uploads/tours/photo.webp',new_path:'uploads/tours/photo.webp',status:'success',message:'Restored'}]},totals:{restored:1,kept:0,failed:0,ignored:0}},
+        {ok:true,stage:'gallery',cursor:0,job:'repair-after-restore',done:true,backup:'backup.jsonl',result:{checked:1,updated:1,converted:0,success:1,failed:0,review:0,entries:[{table:'tour_packages',id:4,title:'Safari sample',field:'image',path:'photo.webp',new_path:'uploads/tours/photo.webp',status:'success',message:'Path repaired'}]}},
+        {ok:true,rows:[{...initialTour,counts:{healthy:1,failed:0,recoverable:0,optimize:0,review:0}}],cursor:4,done:true}
+    );
+    await get('restoreStart').listeners.click();
+    assert.deepEqual(requests.slice(-4).map(r=>r.action), ['restore_upload','restore_batch','start','audit'], 'Backup upload is followed by bulk repair and fresh audit');
+    assert.equal(requests.at(-4).csrf_token, 'test-token', 'ZIP upload includes CSRF token');
+    assert.match(get('restoreStatus').textContent, /Restored: 1/);
+    assert.equal(get('imageFailed').textContent, '0');
+    assert.equal(get('resultRows').children.length, 2, 'Keep backup and repair outcomes visible together');
+    console.log('Image health UI checks passed: audit counts, single-tour fix, success/failure filters, errors and ZIP restore followed by bulk repair.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

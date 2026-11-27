@@ -5,6 +5,7 @@
     const el = id => document.getElementById(id);
     let busy = false, running = false, started = false, stage = 'tours', cursor = 0, target = 0, job = '';
     let audit = [], totals = {}, resultRows = [];
+    let restoreJob = config.restoreJob || '';
     const labels = {healthy:'Available', failed:'Failed', recoverable:'Path can be repaired', optimize:'WebP conversion available', review:'Needs review', success:'Success'};
     function node(tag, text, cls) {
         const item = document.createElement(tag);
@@ -17,6 +18,9 @@
         el('start').disabled = busy;
         el('start').textContent = started ? 'Resume Repair' : 'Fix All Tour Images';
         el('stop').disabled = !running;
+        el('restoreStart').disabled = busy || started;
+        el('restoreFile').disabled = busy || started;
+        el('restoreStart').textContent = restoreJob ? 'Resume Backup Restore' : 'Restore Images from ZIP';
         document.querySelectorAll('[data-fix-tour]').forEach(button => { button.disabled = busy || started; });
     }
     async function request(data) {
@@ -25,7 +29,7 @@
         try {
             const response = await fetch('fix-tour-images.php', {
                 method:'POST', credentials:'same-origin', signal:abort.signal,
-                body:new URLSearchParams(Object.assign({csrf_token:config.token}, data))
+                body:(typeof FormData !== 'undefined' && data instanceof FormData) ? data : new URLSearchParams(Object.assign({csrf_token:config.token}, data))
             });
             const text = await response.text();
             let result;
@@ -118,12 +122,12 @@
             el('emptyAudit').hidden = false;
         } finally { busy = false; controls(); }
     }
-    async function runRepair(tourId = 0) {
+    async function runRepair(tourId = 0, keepResults = false) {
         if (busy) return;
         if (!started) {
             target = tourId; stage = 'tours'; cursor = 0; job = '';
             totals = {checked:0, updated:0, converted:0, success:0, failed:0, review:0};
-            resultRows = []; el('resultRows').replaceChildren(); el('emptyResults').hidden = false;
+            if (!keepResults) { resultRows = []; el('resultRows').replaceChildren(); el('emptyResults').hidden = false; }
             el('totals').textContent = ''; el('backup').textContent = '';
         }
         busy = true; running = true; controls(); let completed = false;
@@ -152,10 +156,39 @@
         } finally { busy = false; running = false; controls(); }
         if (completed) await scanImages(true);
     }
+    async function restoreBackup() {
+        if (busy || started) return;
+        const file = el('restoreFile').files && el('restoreFile').files[0];
+        if (!file && !restoreJob) { el('restoreStatus').textContent = 'Choose an image backup ZIP first.'; return; }
+        busy = true; controls(); let completed = false;
+        try {
+            if (file) {
+                resultRows = []; el('resultRows').replaceChildren(); el('emptyResults').hidden = false;
+                el('restoreStatus').textContent = 'Uploading image backup...';
+                const data = new FormData();
+                data.append('csrf_token', config.token); data.append('action', 'restore_upload'); data.append('backup', file);
+                const uploaded = await request(data); restoreJob = uploaded.job; el('restoreFile').value = '';
+            }
+            while (true) {
+                const reply = await request({action:'restore_batch', job:restoreJob});
+                appendResults(reply.result.entries);
+                const t = reply.totals;
+                el('restoreStatus').textContent = 'Backup entries checked: ' + reply.result.cursor + '/' + reply.result.total + '. Restored: ' + t.restored + ' | Existing files kept: ' + t.kept + ' | Failed: ' + t.failed + ' | Non-image entries ignored: ' + t.ignored;
+                if (reply.result.done) { restoreJob = ''; completed = true; break; }
+            }
+        } catch (error) {
+            el('restoreStatus').textContent = 'Restore stopped: ' + error.message + ' Resume or upload the ZIP again to retry.';
+        } finally { busy = false; controls(); }
+        if (completed) {
+            el('restoreStatus').textContent += '. Restore complete. Repairing all tour image references next.';
+            await runRepair(0, true);
+        }
+    }
     el('scan').addEventListener('click', () => scanImages());
     el('start').addEventListener('click', () => runRepair());
     el('stop').addEventListener('click', () => { running = false; el('stop').disabled = true; });
     el('showAll').addEventListener('change', renderAudit);
     el('resultFilter').addEventListener('change', renderResults);
+    el('restoreStart').addEventListener('click', restoreBackup);
     scanImages();
 })();
