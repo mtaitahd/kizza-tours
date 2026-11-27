@@ -193,13 +193,17 @@ function updateSetting($key, $value) {
     }
 }
 
+require_once __DIR__ . '/tour-image-paths.php';
+
 function resolveImageUrl($value, $fallback = '') {
     $value = trim((string)$value);
+    $remoteUrl = '';
     if (preg_match('~^https?://~i', $value)) {
         $parts = parse_url($value);
-        if (strcasecmp($parts['host'] ?? '', parse_url(SITE_URL, PHP_URL_HOST) ?? '') !== 0) {
+        if (strcasecmp($parts['host'] ?? '', parse_url(SITE_URL, PHP_URL_HOST) ?? '') !== 0 && !preg_match('~/(?:uploads|assets)/~i', $parts['path'] ?? '')) {
             return $value;
         }
+        if (strcasecmp($parts['host'] ?? '', parse_url(SITE_URL, PHP_URL_HOST) ?? '') !== 0) $remoteUrl = $value;
         $value = rawurldecode($parts['path'] ?? '');
     }
     $value = rawurldecode(str_replace('\\', '/', $value));
@@ -222,7 +226,10 @@ function resolveImageUrl($value, $fallback = '') {
             return SITE_URL . '/' . implode('/', array_map('rawurlencode', explode('/', $value)));
         }
     }
-    return $fallback;
+    static $imagePaths;
+    if (!$imagePaths) $imagePaths = new TourImagePaths(BASE_PATH);
+    $recovered = $imagePaths->find($value);
+    return $recovered !== '' ? SITE_URL . '/' . implode('/', array_map('rawurlencode', explode('/', $recovered))) : ($remoteUrl ?: $fallback);
 }
 
 function getMediaUrl($key, $fallback = '') {
@@ -425,8 +432,8 @@ function convertToWebp($sourcePath, $quality = 80) {
         return $sourcePath;
     }
     $webpPath = preg_replace('/\.' . preg_quote($ext, '/') . '$/i', '.webp', $sourcePath);
-    if (file_exists($webpPath)) {
-        return $sourcePath;
+    if (file_exists($webpPath) && (@getimagesize($webpPath)['mime'] ?? '') === 'image/webp') {
+        return $webpPath;
     }
     $image = null;
     switch ($ext) {
@@ -490,8 +497,8 @@ function convertToWebp($sourcePath, $quality = 80) {
 
     $result = @imagewebp($image, $webpPath, $quality);
     imagedestroy($image);
-    if ($result) {
-        @unlink($sourcePath);
+    if ($result && (@getimagesize($webpPath)['mime'] ?? '') === 'image/webp') {
+        // Other tours/gallery entries may still reference the original file.
         return $webpPath;
     }
     return $sourcePath;

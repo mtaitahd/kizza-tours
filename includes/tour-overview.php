@@ -58,7 +58,7 @@ if (!$overviewImagesSet) {
     if (resolveImageUrl($mainImgRaw) !== '') {
         $rawCandidates[] = $mainImgRaw;
     }
-    foreach (array_filter(array_map('trim', explode(',', $tour['gallery'] ?? ''))) as $gi) {
+    foreach (tourListItems($tour['gallery'] ?? '') as $gi) {
         if ($gi === '') continue;
         $rawCandidates[] = $gi;
     }

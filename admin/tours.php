@@ -1,7 +1,7 @@
 <?php
 require_once '../includes/config.php';
 require_once '../includes/db.php';
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: ./');
@@ -415,7 +415,7 @@ foreach ($galleryImages as $g) {
 }
 // Mix in any images that are already saved on tours but not in the gallery yet
 // (e.g. legacy uploads/tours images) so the picker never shows a broken choice.
-$referencedPaths = ['uploads/tours/' => true];
+$referencedPaths = [];
 foreach ($tours as $tour) {
     foreach (['image', 'hero_image', 'overview_image_1', 'overview_image_2', 'overview_image_3'] as $imgField) {
         if (!empty($tour[$imgField])) $referencedPaths[$tour[$imgField]] = true;
@@ -437,6 +437,15 @@ foreach ($referencedPaths as $path => $_) {
 if (!empty($legacyBucket['items'])) {
     $galleryTree['_legacy'] = $legacyBucket;
 }
+$tourImageUrls = [];
+foreach ($galleryTree as &$imageCategory) {
+    foreach ($imageCategory['items'] as &$imageItem) {
+        $imageItem['url'] = resolveImageUrl($imageItem['path'], SITE_URL . '/assets/images/placeholder.svg');
+        $tourImageUrls[$imageItem['path']] = $imageItem['url'];
+    }
+    unset($imageItem);
+}
+unset($imageCategory);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -712,6 +721,9 @@ if (!empty($legacyBucket['items'])) {
                 <div class="container-fluid" id="container-wrapper">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h4 class="mb-0 text-gray-800"><img src="../assets/images/log.png" alt="" height="32" class="mr-2"> Manage Tours</h4>
+                        <?php if (adminCan('manage_media')): ?>
+                        <a href="fix-tour-images" class="btn btn-sm btn-success"><i class="fas fa-images"></i> Fix All Tour Images</a>
+                        <?php endif; ?>
                         <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#tourModal" onclick="openAddTour()">
                             <i class="fas fa-plus"></i> Add Tour
                         </button>
@@ -775,7 +787,7 @@ if (!empty($legacyBucket['items'])) {
                                         <tr data-created="<?php echo htmlspecialchars($tourCreated); ?>">
                                             <td>
                                                 <?php if (!empty($tour['image'])): ?>
-                                                    <img src="../<?php echo htmlspecialchars($tour['image']); ?>" style="width:60px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" alt="Thumb" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg';">
+                                                    <img src="<?php echo htmlspecialchars(resolveImageUrl($tour['image'], SITE_URL . '/assets/images/placeholder.svg'), ENT_QUOTES); ?>" style="width:60px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" alt="Thumb" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg';">
                                                 <?php else: ?>
                                                     <span class="text-muted"><i class="fas fa-image"></i></span>
                                                 <?php endif; ?>
@@ -1107,7 +1119,15 @@ if (!empty($legacyBucket['items'])) {
     <script src="../templates/assets/js/ruang-admin.min.js"></script>
     <script>
         var TOUR_DRAFTS_CLEARED = <?php echo $draftsCleared ? 'true' : 'false'; ?>;
-        var TOUR_GALLERY_TREE = <?php echo json_encode($galleryTree ?: new stdClass()); ?>;
+        var TOUR_GALLERY_TREE = <?php echo json_encode($galleryTree ?: new stdClass(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE); ?>;
+        var TOUR_IMAGE_URLS = <?php echo json_encode($tourImageUrls, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE); ?>;
+        function tourImageUrl(path) {
+            if (!path) return '';
+            if (TOUR_IMAGE_URLS[path]) return TOUR_IMAGE_URLS[path];
+            if (/^https?:\/\//i.test(path)) return path;
+            path = path.replace(/\\/g, '/').replace(/^.*?((?:uploads|assets)\/)/i, '$1');
+            return <?php echo json_encode(SITE_URL . '/'); ?> + path.replace(/^\/+/, '');
+        }
 
         // ── Gallery image picker ─────────────────────────────────
         // Every image field in the tour form opens a centred picker that shows
@@ -1157,7 +1177,7 @@ if (!empty($legacyBucket['items'])) {
                 g += '<div class="d-flex flex-wrap">';
                 (cat.items || []).forEach(function (item) {
                     g += '<button type="button" class="gal-thumb" data-path="' + escapeAttr(item.path) + '" data-title="' + escapeAttr(item.title || '') + '">'
-                        + '<img src="../' + escapeAttr(item.path).replace(/^\//, '') + '" alt="" loading="lazy">'
+                        + '<img src="' + escapeAttr(item.url || tourImageUrl(item.path)) + '" alt="" loading="lazy">'
                         + '<span>' + escapeAttr(item.title || '') + '</span></button>';
                 });
                 g += '</div></div>';
@@ -1221,7 +1241,7 @@ if (!empty($legacyBucket['items'])) {
                 if (input) input.value = path;
                 var wrap = document.getElementById(t.wrapId);
                 var previewImg = document.getElementById(t.previewImgId);
-                if (previewImg) previewImg.src = path ? '../' + path.replace(/^\//, '') : '';
+                if (previewImg) previewImg.src = path ? tourImageUrl(path) : '';
                 if (wrap) wrap.classList.toggle('d-none', !path);
             } else if (t.type === 'overview') {
                 setOverviewSlot(t.idx, path);
@@ -1247,7 +1267,7 @@ if (!empty($legacyBucket['items'])) {
             var previewImg = document.getElementById(previewImgId);
             var wrap = document.getElementById(wrapId);
             var path = input ? input.value : '';
-            if (previewImg) previewImg.src = path ? '../' + path.replace(/^\//, '') : '';
+            if (previewImg) previewImg.src = path ? tourImageUrl(path) : '';
             if (wrap) wrap.classList.toggle('d-none', !path);
         }
 
@@ -1599,7 +1619,7 @@ if (!empty($legacyBucket['items'])) {
             if (cur) cur.value = path || '';
             if (rem) rem.checked = false;
             if (path) {
-                setOverviewPreview(i, '../' + path.replace(/^\//, ''));
+                setOverviewPreview(i, tourImageUrl(path));
             } else {
                 var img = document.getElementById('ovPrev' + i);
                 var empty = document.getElementById('ovEmpty' + i);
@@ -1751,7 +1771,7 @@ if (!empty($legacyBucket['items'])) {
 
             if (existing) {
                 html += '<div class="mt-2 d-flex align-items-center itinerary-day-existing-block">';
-                html += '<img src="../' + esc(existing) + '" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:4px;margin-right:10px;">';
+                html += '<img src="' + esc(tourImageUrl(existing)) + '" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:4px;margin-right:10px;">';
                 html += '<div class="form-check">';
                 html += '<input class="form-check-input" type="checkbox" onchange="this.closest(\'.itinerary-day-row\').querySelector(\'.itinerary-day-remove-value\').value = this.checked ? 1 : 0" ' + (existing && false ? 'checked' : '') + '>';
                 html += '<label class="form-check-label small">Remove current image</label>';
@@ -1811,7 +1831,7 @@ if (!empty($legacyBucket['items'])) {
             if (block) {
                 if (path) {
                     var img = block.querySelector('img');
-                    if (img) img.src = '../' + path.replace(/^\//, '');
+                    if (img) img.src = tourImageUrl(path);
                     block.style.display = '';
                 } else {
                     block.style.display = 'none';
@@ -1819,7 +1839,7 @@ if (!empty($legacyBucket['items'])) {
             } else if (preview) {
                 if (path) {
                     preview.style.display = 'block';
-                    preview.innerHTML = '<img src="../' + path.replace(/^\//, '') + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
+                    preview.innerHTML = '<img src="' + escapeAttr(tourImageUrl(path)) + '" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:4px;margin-top:8px;">';
                 } else {
                     preview.style.display = 'none';
                     preview.innerHTML = '';
